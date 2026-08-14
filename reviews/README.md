@@ -1,4 +1,4 @@
-# Reviews — cli-template
+# Reviews — sudoer-cli
 
 Public product review surface (peer of `tests/`).
 
@@ -11,8 +11,8 @@ Public product review surface (peer of `tests/`).
 | `index.md` | Report index |
 | `reports/` | Dated review run reports |
 
-**Ship unit:** `src/cli-template` (**VERSION 1.0.0**)  
+**Ship unit:** `src/sudoer-cli` (**VERSION 1.0.0**)  
 **Suite:** `./tests/run.sh`  
 **Last suite baseline:** see `test-plan.md`
 
-**Review focus:** Type 0 local lifecycle; no backup/restore/sudoers-file surface.
+**Review focus:** Type 0 local lifecycle **and** routed Type 0 domain convert/submit/list/show. No backup/restore. Type 1 dest/`useradd` not live in CI. Latest report: `reports/2026-08-14-revisions-and-test-plan.md`.

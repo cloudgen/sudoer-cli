@@ -1,12 +1,12 @@
 **file**: docs/requirements/requirement-project-folder.md  
-**Status**: Active (Version 2.0.0)  
+**Status**: Active (Version 3.0.0)  
 **Area**: architecture  
 **Key**: `requirement-project-folder`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
 
 ## 1. Purpose
 
-Define **project folder structure** and path ownership for the cli-template CLI: source layout, install locations, and scratch/cache. This product has **no** durable host backup deposit.
+Define **project folder structure** and path ownership for the sudoer-cli CLI: source layout, install locations, and scratch/cache. Host paths (`/etc/sudoers.d`, LPU home) are **not** project-folder layout. This product has **no** durable host backup deposit.
 
 ---
 
@@ -16,7 +16,7 @@ Define **project folder structure** and path ownership for the cli-template CLI:
 
 | Path | Role |
 |------|------|
-| `src/cli-template` | **Ship unit** — single POSIX shell executable source |
+| `src/sudoer-cli` | **Ship unit** — single POSIX shell executable source |
 | `tests/` | CLI tests when present |
 | `docs/requirements/` | Product law (this surface) |
 | Product root README / CHANGELOG / LICENSE / SECURITY | Product user docs when specialized |
@@ -30,8 +30,8 @@ Define **project folder structure** and path ownership for the cli-template CLI:
 
 | Mode | Binary path | Default |
 |------|-------------|---------|
-| **Per-user (normal)** | `${USER_BIN}/${APP_NAME}` | `${HOME}/.local/bin/cli-template` |
-| **Global (root)** | `${GLOBAL_BIN}/${APP_NAME}` | `/usr/local/bin/cli-template` |
+| **Per-user (normal)** | `${USER_BIN}/${APP_NAME}` | `${HOME}/.local/bin/sudoer-cli` |
+| **Global (root)** | `${GLOBAL_BIN}/${APP_NAME}` | `/usr/local/bin/sudoer-cli` |
 
 Rules:
 
@@ -58,12 +58,12 @@ Rules:
 
 | Item | Value |
 |------|--------|
-| **APP_NAME** | `cli-template` |
-| **Ship unit path** | `src/cli-template` |
+| **APP_NAME** | `sudoer-cli` |
+| **Ship unit path** | `src/sudoer-cli` |
 | **USER_BIN default** | `${HOME}/.local/bin` |
 | **GLOBAL_BIN default** | `/usr/local/bin` |
-| **Config dir (optional)** | `${HOME}/.config/cli-template/` if needed later |
-| **No Type 2 app data tree** | No dedicated system app user for routine ops |
+| **Config dir (optional)** | `${HOME}/.config/sudoer-cli/` if needed later |
+| **No Type 2 app data tree** | sudoer-adm is an authorizer, not a Type 2 euid |
 | **No backup deposit** | `/var/backup` is not a product path |
 
 ### 2.5 Why This Requirement Exists (CIAO)
@@ -89,7 +89,7 @@ Rules:
 
 1. Move the ship unit out of `src/` without updating this requirement and install paths.  
 2. Make online channel paths required for install.  
-3. Grant the product unrestricted write under `/var` or `/etc`.  
+3. Grant the product unrestricted write under `/var` or `/etc` outside product-owned sudoers/LPU/backup paths.  
 4. Reintroduce a durable backup deposit as if it were still product law.  
 5. Rename protected temp isolation away from per-user roots.
 
@@ -101,8 +101,8 @@ Rules:
 
 | ID | Criterion |
 |----|-----------|
-| AC-1 | Ship unit lives at `src/cli-template` |
-| AC-2 | Default user install path is `~/.local/bin/cli-template` |
+| AC-1 | Ship unit lives at `src/sudoer-cli` |
+| AC-2 | Default user install path is `~/.local/bin/sudoer-cli` |
 | AC-3 | No product law requires `/var/backup` |
 
 ---
@@ -124,6 +124,7 @@ Rules:
 |------|--------|------|
 | 2026-08-03 | Active 1.0.0 | folder-backup layout + `/var/backup` deposit |
 | 2026-08-13 | Active 2.0.0 | cli-template: retarget; remove deposit |
+| 2026-08-13 | Active 3.0.0 | Specialize: ship unit `src/sudoer-cli` |
 
 ---
 

@@ -1,19 +1,19 @@
 # Requirements
 
-Authoritative specialized product law for **cli-template** lives here.
+Authoritative specialized product law for **sudoer-cli** lives here.
 
-**Current state (2026-08-13):** Specialized **software-development** product. Left genesis. **This product is the Type 0 bootstrap origin** (no live parent). Registry is populated — see `index.md`.
+**Current state (2026-08-14):** Specialized **software-development** product. Historical origin **cli-template**. Domain SSOT is Active **2.4.0** (file-based JSON approval; dest `{{service}}-{{user}}`; Type 1 dest/loop **Gap**). Registry is populated — see `index.md`.
 
 ## Product identity (summary)
 
 | Field | Value |
 |-------|--------|
-| Product / `APP_NAME` | `cli-template` |
+| Product / `APP_NAME` | `sudoer-cli` |
 | Version SSOT | `1.0.0` (ship unit hard-assign) |
-| Ship unit | `src/cli-template` |
-| Default install | `~/.local/bin/cli-template` |
+| Ship unit | `src/sudoer-cli` |
+| Default install | `~/.local/bin/sudoer-cli` (global `/usr/local/bin/sudoer-cli` for production F6) |
 | Install mode | **Local-only** |
-| Domain surface | **None** (Type 0 bootstrap/template: version, install, about, help) |
+| Domain surface | File-based JSON approval; Type 0 convert/submit/list/show **routed**; Type 1 hook/`interactive` **law**; live LPU/dest/loop **Gap** |
 
 ## Class requirement gate
 
@@ -45,4 +45,4 @@ Typical: `draft` · `Active` · `approved` · `in-progress` · `done` · `deprec
 2. Class files only via class process; non-class via create-specific process.  
 3. Never dump harness inventories into this versioned surface.  
 4. Online install requirements stay **absent** unless product mode is explicitly changed.  
-5. Do **not** create a hollow `requirement-domain-*` that restates Type 0, and do **not** add host `setup`.
+5. Keep exactly one Active domain SSOT. Do **not** list unrouted domain verbs in `help`.

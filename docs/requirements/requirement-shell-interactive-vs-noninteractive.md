@@ -1,12 +1,12 @@
 **file**: docs/requirements/requirement-shell-interactive-vs-noninteractive.md  
-**Status**: Active (Version 1.0.0)  
+**Status**: Active (Version 1.2.0)  
 **Area**: shell  
 **Key**: `requirement-shell-interactive-vs-noninteractive`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
 
 ## 1. Purpose
 
-This requirement is the **project Single Source of Truth** for how cli-template behaves in **interactive** (human + TTY) versus **non-interactive** (automation, CI/CD, pipes, `--json` / often `--quiet`) environments.
+This requirement is the **project Single Source of Truth** for how sudoer-cli behaves in **interactive** (human + TTY) versus **non-interactive** (automation, CI/CD, pipes, `--json` / often `--quiet`) environments.
 
 ---
 
@@ -23,11 +23,19 @@ This requirement is the **project Single Source of Truth** for how cli-template 
 
 | Signal | Variable / check | Meaning |
 |--------|------------------|---------|
-| TTY | `TTY=1` when stdin and stdout are terminals | Interactive UX possible |
+| TTY | `TTY=1` when stdin and stdout are terminals **at measurement time** | Interactive UX possible |
 | Quiet | `QUIET=1` | Suppress non-essential human chatter |
 | JSON | `JSON=1` (implies quiet) | Machine output; no human hang |
 | Debug | `DEBUG=1` | Extra stderr diagnostics |
 | Force | `FORCE=1` | Skip confirms / force reinstall where documented |
+
+**TTY measurement (no-retest):**
+
+1. Live `[ -t 0 ]` / `[ -t 1 ]` that decide **interactive capability** **MUST** run in the **main process, outside functions** (script top after defaults). After `--json` / `--quiet` parse, `app_main` **MAY** refresh the same globals in the main process.  
+2. A dedicated **direct mode setter** that **assigns** `TTY` (never invoked only via `$(…)`) counts as main-process measurement.  
+3. Helpers (`prompt_*`, `out_*` color, `app_about`, domain confirm) **MUST consume** `TTY` / `JSON` / `QUIET` / `FORCE`. They **MUST NOT** re-test live `[ -t 0 ]` / `[ -t 1 ]` as the sole interactive-policy gate (prompt, color, confirm, “can we prompt?”).  
+4. Allowed exception: probing **whether this invocation’s stdin is a pipe vs a terminal** to choose a **data source** (e.g. `--file` xor stdin) is not interactive-capability SSOT.  
+5. “Never call `[ -t` anywhere” is **wrong** — entry / main-process measurement is required.
 
 Rules:
 
@@ -41,15 +49,19 @@ Rules:
 |--------|-------------|-----------------|
 | `uninstall` | Confirm unless `--force` | **Fail closed** without `--force` (`confirm_required`) |
 | `install` | May inform; no required confirm for first install | Proceed without hang |
+| `interactive` (Type 1) | Review loop when `TTY=1` and authz holds (domain SSOT) | **Fail closed** `confirm_required` — no hang. `--json` same. `--force` does **not** auto-approve |
+| Login hook (LPU `.bashrc`) | May launch `sudo -n … interactive` once | **Skip** (`scp` / `SSH_ORIGINAL_COMMAND` / no TTY / no `PS1`). `sudo -n` failure is a warning; login continues |
 | Missing required operand | Clear error | Clear error; non-zero exit |
 
 ### 2.4 Implementation Notes (this project)
 
 | Item | Value |
 |------|--------|
-| **Product** | `cli-template` |
+| **Product** | `sudoer-cli` |
 | **No curl\|sh auto-install path** | Local-only; non-interactive does not mean Type O install-ensure |
-| **Prompt helper** | `prompt_yes_no` for uninstall (and any future destructive confirm) |
+| **Prompt helper** | `prompt_yes_no` for uninstall (and any future destructive confirm); helpers **read `TTY`**, they do not re-test `[ -t` |  
+| **TTY SSOT** | Set once at script top (`[ -t 0 ] && [ -t 1 ] && TTY=1`); consume thereafter |
+| **Domain review** | `interactive` loop and hook snippet owned by `requirement-domain-sudoer-approval`; this file owns mode / no-hang |
 
 ### 2.5 Why This Requirement Exists (CIAO)
 
@@ -75,7 +87,10 @@ Rules:
 1. Hang on stdin in non-interactive/json modes.  
 2. Auto-yes destructive uninstall without `--force` in non-interactive mode.  
 3. Scatter unguarded `read` calls outside `prompt_*`.  
-4. Treat non-interactive as license to skip required validation.
+4. Treat non-interactive as license to skip required validation.  
+5. Re-test live `[ -t 0 ]` / `[ -t 1 ]` **inside functions** as the interactive-policy gate (`prompt_*`, `app_about`, color, “can we prompt?”). Measure outside functions; helpers consume `TTY`.  
+6. Let the login hook hang `scp` / CI, or `exit` the login shell when `sudo -n` fails.  
+7. Treat a TTY login as license to turn empty argv into `interactive`.
 
 **Violating this rule is a critical interaction-mode regression.**
 
@@ -88,6 +103,8 @@ Rules:
 | AC-1 | Non-interactive uninstall without force fails closed |
 | AC-2 | JSON mode never prompts |
 | AC-3 | Lifecycle commands never hang waiting for optional confirm by default |
+| AC-4 | Interactive capability is measured **outside functions**; `prompt_*` / `out_*` / `app_about` consume `TTY` (no live `[ -t` policy gate) |
+| AC-5 | `interactive` without `TTY=1` fails closed; hook skips non-interactive login |
 
 ---
 
@@ -97,19 +114,35 @@ Rules:
 |-----|--------------|
 | `requirement-shell-cli-interface` | Flags |
 | `requirement-shell-local-self-management` | Uninstall confirm |
-| `requirement-shell-output-requirements` | Quiet/json emission |
+| `requirement-shell-output-requirements` | Quiet/json emission; colors consume `TTY` |
+| `requirement-shell-modular-function-design` | `prompt_*` consume `TTY` |
+| `requirement-shell-prompt` | Helper bodies + samples |
+| `requirement-domain-sudoer-approval` | `interactive` loop + login hook |
+| `requirement-shell-cli-zero-arguments` | Empty argv ≠ review |
 | `docs/requirements/index.md` | Registry |
 
 ---
 
-## 7. Status history
+## 7. Design-time verification
 
-| Date | Status | Note |
-|------|--------|------|
-| 2026-08-03 | Active | Interactive vs non-interactive for folder-backup |
+| TP-ID | Intent | Suite |
+|-------|--------|-------|
+| TP-LC-05 | Uninstall JSON without force fails closed | `tests/test_local_lifecycle.sh` |
+| TP-ELEV-07 | Static: `prompt_*` / `app_about` consume `TTY` | `tests/test_cli.sh` |
+| TP-SR-INT-02 | `interactive` non-TTY / `--json` fail closed | `tests/test_domain_sr.sh` (todo) |
 
 ---
 
-**Last Updated**: 2026-08-03  
+## 8. Status history
+
+| Date | Status | Note |
+|------|--------|------|
+| 2026-08-03 | Active 1.0.0 | Interactive vs non-interactive for folder-backup |
+| 2026-08-14 | Active 1.1.0 | TTY measured outside functions; helpers consume `TTY` (no-retest) |
+| 2026-08-14 | Active 1.2.0 | Matrix: Type 1 `interactive` + login hook; no-hang / no empty-argv hijack |
+
+---
+
+**Last Updated**: 2026-08-14  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

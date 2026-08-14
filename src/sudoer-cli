@@ -1,11 +1,11 @@
 #!/bin/sh
 # =============================================================================
-# cli-template - Local self-managed Type 0 POSIX /bin/sh CLI
+# sudoer-cli - Least-privilege sudoers-request approval CLI
 # =============================================================================
 #
-# LOCAL TYPE 0 LIFECYCLE ONLY (CIAO / CIAO-Lite Compliant)
-#
-# Bootstrap origin: this product (hop 0 Type 0 template). No live parent.
+# Specialized A → B from cli-template Type 0 architecture (CIAO / CIAO-Lite).
+# Historical origin: cloned from cli-template. No live parent ship unit in-tree.
+# Direction: cli-template → sudoer-cli only. Never reverse-copy this body onto A.
 #
 # Project requirements (docs/requirements/ only — never cite templates here):
 # - requirement-class-software-dev.md
@@ -19,15 +19,18 @@
 # - requirement-shell-modular-function-design.md
 # - requirement-shell-output-requirements.md
 # - requirement-shell-interactive-vs-noninteractive.md
-# Plus CIAO Protection Zones and "DO NOT MODIFY" rules.
+# - requirement-three-layer-privilege-model.md
+# - requirement-least-privilege-user.md
+# - requirement-domain-sudoer-approval.md
 #
-# Intentionally absent: backup/restore domain, sudoers emit, online channel.
+# Type 0 lifecycle is live. Domain verbs (convert, submit, list, show, print-sudoers,
+# Type 1 setup/approve/reject) are routed. Help lists live domain Type 0 rows.
 #
 # Philosophy: CIAO (Caution • Intentional • Anti-fragile • Over-engineered)
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
-# APP NAME: hard-assign APP_NAME="cli-template"
-# VERSION: hard-assign VERSION="1.0.0"
+# APP NAME: hard-assign APP_NAME="sudoer-cli"
+# VERSION: hard-assign VERSION="1.1.0"
 #
 # =============================================================================
 
@@ -38,18 +41,18 @@ set -u  # Treat unset variables as error (defensive)
 # GLOBAL SAFE DEFAULTS (Single Source of Truth for configuration)
 # =============================================================================
 # Product identity SSOT (extractors use: grep '^APP_NAME="' / '^VERSION="').
-APP_NAME="cli-template"
-: "${APP_NAME:=cli-template}"
-: "${APP_DESC:=Local Type 0 self-managed CLI template (install, version, about, help)}"
+APP_NAME="sudoer-cli"
+: "${APP_NAME:=sudoer-cli}"
+: "${APP_DESC:=Least-privilege sudoers-request approval CLI (Type 0 lifecycle; domain target law)}"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
-: "${DESCRIPTION:=POSIX /bin/sh local CLI: install, uninstall, where-is-me, version, about, help.}"
+: "${DESCRIPTION:=POSIX /bin/sh CLI: lifecycle plus sudoers-request convert/submit/list/show. Type 1 setup/approve/reject require euid 0.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.0.0"
+VERSION="1.1.0"
 : "${VERSION:=1.0.0}"
 # Repository identity SSOT (git host owner/repo for project-repository alignment).
 # Install remains local-only: SCRIPT_URL stays empty (no online curl|sh channel).
 : "${REPO_USER:=cloudgen}"
-: "${REPO_NAME:=cli-template}"
+: "${REPO_NAME:=sudoer-cli}"
 : "${SCRIPT_URL:=}"
 
 # Runtime flags (safe defaults)
@@ -59,6 +62,7 @@ VERSION="1.0.0"
 : "${FORCE_REINSTALL:=0}"
 : "${DEBUG:=0}"
 : "${TTY:=0}"
+: "${SCRATCH_FILES:=}"
 
 # ----------------------------- Safe Variable Defaults ------------------------
 : "${GLOBAL_BIN:=/usr/local/bin}"
@@ -260,7 +264,17 @@ out_error()   { out_text "out_error"   "$*"; }
 #
 # Last reviewed: 29 April 2026
 # =============================================================================
-out_die() { out_json_error "$*"; out_text out_error "$*"; exit 1; }
+out_die() { util_scratch_cleanup 2>/dev/null || true; out_json_error "$*"; out_text out_error "$*"; exit 1; }
+
+# Domain fatal with machine error code (requirement-domain-sudoer-approval).
+sr_die() {
+    _sr_msg="${1-}"
+    _sr_code="${2:-unknown}"
+    util_scratch_cleanup 2>/dev/null || true
+    out_json_error "${_sr_msg}" "${_sr_code}"
+    out_text out_error "${_sr_msg}"
+    exit 1
+}
 
 # =============================================================================
 # out_plain() - Output plain text
@@ -916,6 +930,31 @@ util_resolve_storage() {
 }
 
 # =============================================================================
+# util_mktemp() / util_scratch_cleanup() — unique scratch leaves
+# ALIGNMENT: requirement-shell-temp-file-system.md
+# Class-B: util_mktemp prints the path on stdout for $(util_mktemp).
+# =============================================================================
+util_mktemp() {
+    : "${TMPDIR:=/tmp}"
+    : "${APP_NAME:=sudoer-cli}"
+    _um=$(mktemp "${TMPDIR}/${APP_NAME}.XXXXXX") || {
+        out_text out_error "mktemp failed"
+        exit 1
+    }
+    SCRATCH_FILES="${SCRATCH_FILES-} ${_um}"
+    printf '%s' "${_um}"
+}
+
+util_scratch_cleanup() {
+    for _sf in ${SCRATCH_FILES-}; do
+        if [ -n "${_sf}" ]; then
+            rm -f "${_sf}"
+        fi
+    done
+    SCRATCH_FILES=""
+}
+
+# =============================================================================
 # prompt_ask() - Defensive general-purpose interactive prompt with default
 # =============================================================================
 #
@@ -950,6 +989,8 @@ prompt_ask() {
     # --- Safe Variable Defaults ---
     : "${JSON:=0}"
     : "${QUIET:=0}"
+    : "${TTY:=0}"
+    : "${INTERACTIVE:=0}"
 
     # set -u safe: missing args become empty defaults (INC-20260713-001 class)
     local message="${1-}"
@@ -962,12 +1003,10 @@ prompt_ask() {
         return 0
     fi
 
-    # Must have a real TTY (unless caller explicitly set INTERACTIVE=1)
-    if ! [ -t 0 ] || ! [ -t 1 ]; then
-        if [ "${INTERACTIVE:-0}" -ne 1 ]; then
-            printf '%s' "${default}"
-            return 0
-        fi
+    # Consume TTY SSOT (requirement-shell-prompt.md — no live [ -t ] gate)
+    if [ "${TTY}" -ne 1 ] && [ "${INTERACTIVE}" -ne 1 ]; then
+        printf '%s' "${default}"
+        return 0
     fi
 
     # Show current value if present
@@ -983,7 +1022,11 @@ prompt_ask() {
     out_msg_n "${message}: "
 
     local answer=""
-    read -r answer || true
+    if [ -c /dev/tty ] && ( : </dev/tty ) 2>/dev/null; then
+        read -r answer </dev/tty || true
+    else
+        read -r answer || true
+    fi
 
     if [ -z "${answer}" ]; then
         printf '%s' "${default}"
@@ -1017,7 +1060,8 @@ prompt_ask() {
 # This helper exists specifically to prevent that regression and to enforce
 # CIAO-Lite principles of Caution, Intentionality, and Over-protect.
 #
-# Last reviewed: 29 April 2026
+# Last reviewed: 2026-08-14
+# ALIGNMENT: requirement-shell-prompt.md · requirement-shell-interactive-vs-noninteractive.md
 # =============================================================================
 
 prompt_yes_no() {
@@ -1025,6 +1069,7 @@ prompt_yes_no() {
     # Defensive defaults - never assume globals are set
     : "${JSON:=0}"
     : "${QUIET:=0}"
+    : "${TTY:=0}"
 
     local message="$1"
 
@@ -1033,8 +1078,8 @@ prompt_yes_no() {
         return 1   # treat as "no" in non-interactive modes
     fi
 
-    # Must be interactive TTY
-    if ! [ -t 0 ] || ! [ -t 1 ]; then
+    # Consume TTY SSOT (no live [ -t ] policy gate)
+    if [ "${TTY}" -ne 1 ]; then
         return 1
     fi
 
@@ -1431,10 +1476,10 @@ app_version() {
 app_about() {
     : "${JSON:=0}"
     : "${QUIET:=0}"
-    : "${APP_NAME:=cli-template}"
-    : "${VERSION:=1.0.0}"
+    : "${APP_NAME:=sudoer-cli}"
+    : "${VERSION:=1.1.0}"
     : "${REPO_USER:=cloudgen}"
-    : "${REPO_NAME:=cli-template}"
+    : "${REPO_NAME:=sudoer-cli}"
     : "${SCRIPT_URL:=}"
     : "${GLOBAL_BIN:=/usr/local/bin}"
     : "${HOME:=/tmp}"
@@ -1461,9 +1506,10 @@ app_about() {
     _shell=$(util_get_current_shell)
     _user=$(id -un 2>/dev/null || echo "unknown")
     _interactive="false"
-    [ -t 1 ] && _interactive="true"
+    [ "${TTY:-0}" -eq 1 ] && _interactive="true"
 
     if [ "${JSON}" -eq 1 ]; then
+        sr_resolve_queues 2>/dev/null || true
         out_json "about" "" \
             "app" "${APP_NAME}" \
             "version" "${VERSION}" \
@@ -1478,7 +1524,10 @@ app_about() {
             "interactive" "${_interactive}" \
             "user" "${_user}" \
             "effective_storage" "${EFFECTIVE_STORAGE_DIR}" \
-            "storage_dir" "${STORAGE_DIR}"
+            "storage_dir" "${STORAGE_DIR}" \
+            "queue_request" "${SUDOER_QUEUE_REQUEST:-}" \
+            "queue_approved" "${SUDOER_QUEUE_APPROVED:-}" \
+            "queue_rejected" "${SUDOER_QUEUE_REJECTED:-}"
         return 0
     fi
 
@@ -1511,7 +1560,7 @@ app_about() {
     fi
     out_empty_line
     out_info "Current shell:     ${_shell}"
-    if [ -t 1 ]; then
+    if [ "${TTY:-0}" -eq 1 ]; then
         out_info "TTY / Interactive: yes"
     else
         out_info "TTY / Interactive: no"
@@ -1519,6 +1568,10 @@ app_about() {
     out_empty_line
     out_info "Storage (effective): ${EFFECTIVE_STORAGE_DIR}"
     out_info "Storage (fallback):  ${STORAGE_DIR}"
+    sr_resolve_queues 2>/dev/null || true
+    out_info "Queue request:       ${SUDOER_QUEUE_REQUEST:-}"
+    out_info "Queue approved:      ${SUDOER_QUEUE_APPROVED:-}"
+    out_info "Queue rejected:      ${SUDOER_QUEUE_REJECTED:-}"
     out_empty_line
     out_info "Useful commands:"
     out_info "   ${APP_NAME} help            → Full usage"
@@ -1527,11 +1580,814 @@ app_about() {
 }
 
 # =============================================================================
-# app_help() - Usage (local Type 0 only)
+# Domain: sudoers-request (requirement-domain-sudoer-approval.md)
+# Prefixes: sr_ (requests) · lpu_ (setup/teardown)
+# =============================================================================
+
+sr_abs_path() {
+    case "${1-}" in
+        /*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+sr_read_input() {
+    if [ -n "${SR_FILE-}" ] && [ "${SR_FILE}" != "" ]; then
+        [ -f "${SR_FILE}" ] || sr_die "not a regular file: ${SR_FILE}" "not_regular"
+        [ -L "${SR_FILE}" ] && sr_die "refusing symlink input: ${SR_FILE}" "not_regular"
+        cat "${SR_FILE}"
+        return 0
+    fi
+    if [ -t 0 ]; then
+        sr_die "provide --file PATH or stdin (xor)" "xor_input"
+    fi
+    cat
+}
+
+sr_write_payload() {
+    _payload="$1"
+    if [ -n "${SR_OUT-}" ]; then
+        sr_abs_path "${SR_OUT}" || sr_die "output path must be absolute: ${SR_OUT}" "invalid_name"
+        printf '%s\n' "${_payload}" >"${SR_OUT}" || sr_die "cannot write ${SR_OUT}" "invalid_name"
+        if [ "${JSON}" -eq 1 ]; then
+            out_json "success" "wrote payload" "command" "${COMMAND}" "out" "${SR_OUT}"
+        else
+            out_success "Wrote ${SR_OUT}"
+        fi
+        return 0
+    fi
+    if [ "${JSON}" -eq 1 ]; then
+        out_json "success" "payload" "command" "${COMMAND}" "@body" "${_payload}"
+        return 0
+    fi
+    printf '%s\n' "${_payload}"
+}
+
+sr_visudo_text() {
+    _vt="$1"
+    if ! command -v visudo >/dev/null 2>&1; then
+        out_debug "visudo not present; skip visudo -cf"
+        return 0
+    fi
+    _vf=$(mktemp "${TMPDIR:-/tmp}/sudoer-visudo.XXXXXX") || sr_die "mktemp failed" "visudo_fail"
+    printf '%s\n' "${_vt}" >"${_vf}"
+    if ! visudo -cf "${_vf}" >/dev/null 2>&1; then
+        rm -f "${_vf}"
+        sr_die "visudo -cf failed" "visudo_fail"
+    fi
+    rm -f "${_vf}"
+}
+
+sr_json_get_str() {
+    _jg_json=$(printf '%s' "$1" | tr '\n' ' ')
+    _jg_key="$2"
+    printf '%s' "${_jg_json}" | sed -n "s/.*\"${_jg_key}\"[[:space:]]*:[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p" | head -n1
+}
+
+sr_json_has_key() {
+    _jh_json=$(printf '%s' "$1" | tr '\n' ' ')
+    _jh_key="$2"
+    case "${_jh_json}" in
+        *"\"${_jh_key}\""*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+sr_json_encode_request() {
+    _je_purpose="$1"
+    _je_user="$2"
+    _je_svc="$3"
+    _je_act="$4"
+    _je_cmds="$5"
+    if [ "${_je_act}" = "remove" ]; then
+        printf '{"purpose":"%s"}' "$(util_json_escape "${_je_purpose}")"
+        return 0
+    fi
+    _acc=""
+    _first=1
+    _tf=$(util_mktemp)
+    printf '%s' "${_je_cmds}" >"${_tf}"
+    while IFS='|' read -r _je_runas _je_tags _je_path _je_args || [ -n "${_je_path-}" ]; do
+        [ -n "${_je_path}" ] || continue
+        _je_tagjson="[]"
+        [ "${_je_tags}" = "NOPASSWD" ] && _je_tagjson='["NOPASSWD"]'
+        _je_argjson="["
+        _je_af=1
+        for _je_a in ${_je_args}; do
+            [ "${_je_af}" -eq 1 ] || _je_argjson="${_je_argjson},"
+            _je_argjson="${_je_argjson}\"$(util_json_escape "${_je_a}")\""
+            _je_af=0
+        done
+        _je_argjson="${_je_argjson}]"
+        _obj=$(printf '{"runas":"%s","tags":%s,"path":"%s","args":%s}' \
+            "$(util_json_escape "${_je_runas:-root}")" \
+            "${_je_tagjson}" \
+            "$(util_json_escape "${_je_path}")" \
+            "${_je_argjson}")
+        if [ "${_first}" -eq 1 ]; then
+            _acc="${_obj}"
+            _first=0
+        else
+            _acc="${_acc},${_obj}"
+        fi
+    done <"${_tf}"
+    rm -f "${_tf}"
+    printf '{"schema_version":1,"purpose":"%s","username":"%s","service":"%s","action":"%s","commands":[%s]}' \
+        "$(util_json_escape "${_je_purpose}")" \
+        "$(util_json_escape "${_je_user}")" \
+        "$(util_json_escape "${_je_svc}")" \
+        "$(util_json_escape "${_je_act}")" \
+        "${_acc}"
+}
+
+sr_parse_sudoers() {
+    # Sets SR_P_PURPOSE, SR_P_USER, SR_P_CMDS (path|tags|runas|args lines via runas|tags|path|args)
+    SR_P_PURPOSE=""
+    SR_P_USER=""
+    SR_P_CMDS=""
+    _in_hdr=1
+    _hdr=""
+    _cmds=""
+    _user=""
+    _pf=$(util_mktemp)
+    printf '%s\n' "$1" >"${_pf}"
+    while IFS= read -r _ln || [ -n "${_ln}" ]; do
+        case "${_ln}" in
+            "#"*)
+                if [ "${_in_hdr}" -eq 1 ]; then
+                    case "${_ln}" in
+                        "# Purpose:"*|"# Purpose: "*)
+                            _p="${_ln#\# Purpose:}"
+                            _p="${_p# }"
+                            _hdr="${_p}"
+                            ;;
+                    esac
+                fi
+                continue
+                ;;
+            "")
+                [ "${_in_hdr}" -eq 1 ] && continue
+                ;;
+            *)
+                _in_hdr=0
+                ;;
+        esac
+        [ "${_in_hdr}" -eq 1 ] && continue
+        # user ALL=(runas) [NOPASSWD:] path [args]
+        _u=$(printf '%s' "${_ln}" | awk '{print $1}')
+        case "${_ln}" in
+            *" ALL="*) ;;
+            *) sr_die "invalid sudoers spec: ${_ln}" "invalid_name" ;;
+        esac
+        [ "${_u}" = "ALL" ] && sr_die "User ALL forbidden" "self_scope"
+        if [ -n "${_user}" ] && [ "${_user}" != "${_u}" ]; then
+            sr_die "multiple User specs" "self_scope"
+        fi
+        _user="${_u}"
+        _runas="root"
+        case "${_ln}" in
+            *ALL=\(*\)*)
+                _runas=$(printf '%s' "${_ln}" | sed -n 's/.*ALL=(\([^)]*\)).*/\1/p')
+                ;;
+        esac
+        _tags=""
+        case "${_ln}" in
+            *NOPASSWD:*) _tags="NOPASSWD" ;;
+        esac
+        _rest=$(printf '%s' "${_ln}" | sed 's/.*:[[:space:]]*//')
+        _path=$(printf '%s' "${_rest}" | awk '{print $1}')
+        _args=$(printf '%s' "${_rest}" | awk '{ $1=""; sub(/^ /,""); print }')
+        case "${_path}" in
+            /*) ;;
+            *) sr_die "Cmnd must be absolute: ${_path}" "invalid_name" ;;
+        esac
+        [ "${_path}" = "ALL" ] && sr_die "Cmnd ALL forbidden" "invalid_name"
+        _cmds="${_cmds}${_runas}|${_tags}|${_path}|${_args}
+"
+    done <"${_pf}"
+    rm -f "${_pf}"
+    SR_P_PURPOSE="${_hdr}"
+    SR_P_USER="${_user}"
+    SR_P_CMDS="${_cmds}"
+}
+
+sr_render_sudoers() {
+    _rr_purpose="$1"
+    _rr_user="$2"
+    _rr_act="$3"
+    _rr_cmds="$4"
+    printf '# Purpose: %s\n' "${_rr_purpose}"
+    [ "${_rr_act}" = "remove" ] && return 0
+    _tf=$(util_mktemp)
+    printf '%s' "${_rr_cmds}" >"${_tf}"
+    while IFS='|' read -r _runas _tags _path _args || [ -n "${_path-}" ]; do
+        [ -n "${_path}" ] || continue
+        _tagp=""
+        [ "${_tags}" = "NOPASSWD" ] && _tagp="NOPASSWD: "
+        if [ -n "${_args}" ]; then
+            printf '%s ALL=(%s) %s%s %s\n' "${_rr_user}" "${_runas}" "${_tagp}" "${_path}" "${_args}"
+        else
+            printf '%s ALL=(%s) %s%s\n' "${_rr_user}" "${_runas}" "${_tagp}" "${_path}"
+        fi
+    done <"${_tf}"
+    rm -f "${_tf}"
+}
+
+sr_valid_service_name() {
+    printf '%s' "$1" | grep -Eq '^[a-z][a-z0-9-]{0,31}$'
+}
+
+sr_service_infer() {
+    _si_cmds="$1"
+    _si_force="${2-}"
+    _hit=""
+    _unclass=0
+    _tf=$(util_mktemp)
+    printf '%s' "${_si_cmds}" >"${_tf}"
+    while IFS='|' read -r _runas _tags _path _args || [ -n "${_path-}" ]; do
+        [ -n "${_path}" ] || continue
+        _fam=""
+        case "${_path}" in
+            */nginx) _fam="webservice" ;;
+            */gitlab-ctl) _fam="gitlab" ;;
+            */systemctl)
+                case " ${_args} " in
+                    *" nginx "*) _fam="webservice" ;;
+                esac
+                ;;
+            */journalctl)
+                case " ${_args} " in
+                    *" -u nginx "*|*" nginx "*) _fam="webservice" ;;
+                    *" gitlab-"*) _fam="gitlab" ;;
+                esac
+                ;;
+        esac
+        if [ -z "${_fam}" ]; then
+            _unclass=1
+            continue
+        fi
+        if [ -n "${_hit}" ] && [ "${_hit}" != "${_fam}" ]; then
+            rm -f "${_tf}"
+            sr_die "mixed service families" "unknown_service"
+        fi
+        _hit="${_fam}"
+    done <"${_tf}"
+    rm -f "${_tf}"
+    if [ -n "${_hit}" ] && [ "${_unclass}" -eq 1 ]; then
+        sr_die "mixed service families" "unknown_service"
+    fi
+    if [ -n "${_si_force}" ]; then
+        sr_valid_service_name "${_si_force}" || sr_die "invalid service name: ${_si_force}" "unknown_service"
+        if [ -n "${_hit}" ] && [ "${_si_force}" != "${_hit}" ]; then
+            sr_die "service override does not match Cmnds" "unknown_service"
+        fi
+        SR_INFERRED="${_si_force}"
+        return 0
+    fi
+    [ -n "${_hit}" ] || sr_die "cannot infer service" "unknown_service"
+    SR_INFERRED="${_hit}"
+}
+
+# Split {{service}}-{{username}} from a request-id middle (hyphenated services first).
+sr_split_service_user() {
+    _mid="$1"
+    SR_ID_SVC=""
+    SR_ID_USER=""
+    # Longest known hyphenated services first (project-sudoers-file style APP_NAME).
+    for _ks in folder-backup webservice gitlab; do
+        case "${_mid}" in
+            "${_ks}"-?*)
+                SR_ID_SVC="${_ks}"
+                SR_ID_USER="${_mid#"${_ks}"-}"
+                [ -n "${SR_ID_USER}" ] || continue
+                return 0
+                ;;
+        esac
+    done
+    case "${_mid}" in
+        *-*)
+            SR_ID_USER="${_mid##*-}"
+            SR_ID_SVC="${_mid%-"${SR_ID_USER}"}"
+            if [ -n "${SR_ID_SVC}" ] && [ -n "${SR_ID_USER}" ]; then
+                return 0
+            fi
+            ;;
+    esac
+    sr_die "cannot parse service-user: ${_mid}" "invalid_name"
+}
+
+# Parse sudoer-{{yyyyMMdd}}-{{service}}-{{username}}-{{action}}-{{n}}.json
+sr_parse_request_id() {
+    _bn="$1"
+    SR_ID_DATE=""
+    SR_ID_SVC=""
+    SR_ID_USER=""
+    SR_ID_ACT=""
+    SR_ID_N=""
+    case "${_bn}" in
+        sudoer-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-*.json) ;;
+        *) sr_die "invalid request_id: ${_bn}" "invalid_name" ;;
+    esac
+    _stem="${_bn#sudoer-}"
+    _stem="${_stem%.json}"
+    _date="${_stem%%-*}"
+    case "${_date}" in
+        [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]) ;;
+        *) sr_die "invalid request date: ${_bn}" "invalid_name" ;;
+    esac
+    _rest="${_stem#"${_date}"-}"
+    _n="${_rest##*-}"
+    case "${_n}" in
+        [1-9]|[1-9][0-9]|[1-9][0-9][0-9]) ;;
+        *) sr_die "invalid request sequence: ${_bn}" "invalid_name" ;;
+    esac
+    _head="${_rest%-"${_n}"}"
+    _act="${_head##*-}"
+    case "${_act}" in
+        add|update|remove) ;;
+        *) sr_die "invalid request action: ${_bn}" "invalid_name" ;;
+    esac
+    _mid="${_head%-"${_act}"}"
+    [ -n "${_mid}" ] || sr_die "invalid request_id: ${_bn}" "invalid_name"
+    sr_split_service_user "${_mid}"
+    sr_valid_service_name "${SR_ID_SVC}" || sr_die "invalid service in request_id: ${SR_ID_SVC}" "invalid_name"
+    printf '%s' "${SR_ID_USER}" | grep -Eq '^[a-z_][a-z0-9_-]*$' || \
+        sr_die "invalid username in request_id: ${SR_ID_USER}" "invalid_name"
+    SR_ID_DATE="${_date}"
+    SR_ID_ACT="${_act}"
+    SR_ID_N="${_n}"
+}
+
+sr_json_decode_to_fields() {
+    _jd="$1"
+    SR_D_PURPOSE=$(sr_json_get_str "${_jd}" "purpose")
+    SR_D_USER=$(sr_json_get_str "${_jd}" "username")
+    SR_D_SVC=$(sr_json_get_str "${_jd}" "service")
+    SR_D_ACT=$(sr_json_get_str "${_jd}" "action")
+    SR_D_VER=$(sr_json_get_str "${_jd}" "schema_version")
+    [ -n "${SR_D_VER}" ] || SR_D_VER=$(printf '%s' "${_jd}" | tr '\n' ' ' | sed -n 's/.*"schema_version"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p')
+    if sr_json_has_key "${_jd}" "commands"; then
+        SR_D_HAS_CMDS=1
+    else
+        SR_D_HAS_CMDS=0
+    fi
+    SR_D_CMDS=""
+    if [ "${SR_D_HAS_CMDS}" -eq 1 ]; then
+        _block=$(printf '%s' "${_jd}" | tr '\n' ' ' | sed -n 's/.*"commands"[[:space:]]*:[[:space:]]*\[\(.*\)\].*/\1/p')
+        _cf=$(util_mktemp)
+        printf '%s\n' "${_block}" | sed 's/},{/}\n{/g' >"${_cf}"
+        while IFS= read -r _obj || [ -n "${_obj}" ]; do
+            [ -n "${_obj}" ] || continue
+            _p=$(sr_json_get_str "${_obj}" "path")
+            _r=$(sr_json_get_str "${_obj}" "runas")
+            [ -n "${_r}" ] || _r="root"
+            _t=""
+            case "${_obj}" in
+                *NOPASSWD*) _t="NOPASSWD" ;;
+            esac
+            _args=""
+            _ab=$(printf '%s' "${_obj}" | sed -n 's/.*"args"[[:space:]]*:[[:space:]]*\[\([^]]*\)\].*/\1/p')
+            _ab=$(printf '%s' "${_ab}" | tr ',' ' ' | tr -d '"')
+            SR_D_CMDS="${SR_D_CMDS}${_r}|${_t}|${_p}|${_ab}
+"
+        done <"${_cf}"
+        rm -f "${_cf}"
+    fi
+}
+
+sr_sudoers_to_json() {
+    _raw=$(sr_read_input)
+    case "${_raw}" in
+        *"ALL=(ALL) ALL"*|*"NOPASSWD: ALL"*) sr_die "broad rights forbidden" "invalid_name" ;;
+        *"#include"*) sr_die "#include forbidden" "invalid_name" ;;
+        *"Defaults"*) sr_die "Defaults forbidden" "invalid_name" ;;
+    esac
+    sr_parse_sudoers "${_raw}"
+    _act="${SR_ACTION:-add}"
+    case "${_act}" in
+        add|update) ;;
+        *) sr_die "--action add|update required" "xor_input" ;;
+    esac
+    _purpose="${SR_PURPOSE:-${SR_P_PURPOSE}}"
+    [ -n "${_purpose}" ] || sr_die "--purpose required when input has no # Purpose:" "xor_input"
+    _me=$(id -un)
+    [ -n "${SR_P_USER}" ] || sr_die "no User spec in sudoers" "self_scope"
+    [ "${SR_P_USER}" = "${_me}" ] || sr_die "self-scope: User ${SR_P_USER} != ${_me}" "self_scope"
+    sr_service_infer "${SR_P_CMDS}" "${SR_SERVICE-}"
+    _svc="${SR_INFERRED}"
+    _txt=$(sr_render_sudoers "${_purpose}" "${SR_P_USER}" "${_act}" "${SR_P_CMDS}")
+    sr_visudo_text "${_txt}"
+    _js=$(sr_json_encode_request "${_purpose}" "${SR_P_USER}" "${_svc}" "${_act}" "${SR_P_CMDS}")
+    sr_write_payload "${_js}"
+}
+
+sr_json_to_sudoers() {
+    _raw=$(sr_read_input)
+    _trim=$(printf '%s' "${_raw}" | sed 's/^[[:space:]]*//')
+    case "${_trim}" in
+        "{"*) ;;
+        *) sr_die "expected JSON object" "invalid_json" ;;
+    esac
+    sr_json_decode_to_fields "${_raw}"
+    [ -n "${SR_D_PURPOSE}" ] || sr_die "purpose required" "invalid_json"
+    _act="${SR_D_ACT:-remove}"
+    if [ "${SR_D_HAS_CMDS}" -eq 1 ] && { [ "${_act}" = "remove" ] || [ -z "${SR_D_ACT}" ]; }; then
+        if [ -z "${SR_D_ACT}" ] || [ "${SR_D_ACT}" = "remove" ]; then
+            sr_die "remove JSON must not include commands" "remove_extra_fields"
+        fi
+    fi
+    if [ "${_act}" = "remove" ] || { [ -z "${SR_D_ACT}" ] && [ "${SR_D_HAS_CMDS}" -eq 0 ]; }; then
+        _txt=$(printf '# Purpose: %s\n' "${SR_D_PURPOSE}")
+        sr_write_payload "${_txt}"
+        return 0
+    fi
+    [ "${SR_D_VER}" = "1" ] || sr_die "schema_version must be 1" "schema_version"
+    [ -n "${SR_D_USER}" ] || sr_die "username required" "invalid_json"
+    [ -n "${SR_D_SVC}" ] || sr_die "service required" "invalid_json"
+    [ -n "${SR_D_CMDS}" ] || sr_die "commands required for add/update" "invalid_json"
+    _me=$(id -un)
+    [ "${SR_D_USER}" = "${_me}" ] || sr_die "self-scope: username ${SR_D_USER} != ${_me}" "self_scope"
+    sr_service_infer "${SR_D_CMDS}" "${SR_D_SVC}"
+    _svc="${SR_INFERRED}"
+    _txt=$(sr_render_sudoers "${SR_D_PURPOSE}" "${SR_D_USER}" "${SR_D_ACT}" "${SR_D_CMDS}")
+    sr_visudo_text "${_txt}"
+    sr_write_payload "${_txt}"
+}
+
+sr_print_sudoers() {
+    _gb="${GLOBAL_BIN:-/usr/local/bin}"
+    _lpu="sudoer-adm"
+    _txt=$(printf '# %s F6 Table A — production global binary\n%s ALL=(root) NOPASSWD: %s/%s\n' \
+        "${APP_NAME}" "${_lpu}" "${_gb}" "${APP_NAME}")
+    if [ -n "${SR_OUT-}" ]; then
+        sr_write_payload "${_txt}"
+        return 0
+    fi
+    if [ -n "${SR_OPERAND-}" ]; then
+        SR_OUT="${SR_OPERAND}"
+        sr_write_payload "${_txt}"
+        return 0
+    fi
+    sr_write_payload "${_txt}"
+}
+
+sr_print_sudoers_install_script() {
+    _script=$(mktemp "${TMPDIR:-/tmp}/${APP_NAME}.XXXXXX") || sr_die "mktemp failed" "invalid_name"
+    _draft=$(mktemp "${TMPDIR:-/tmp}/${APP_NAME}.XXXXXX") || sr_die "mktemp failed" "invalid_name"
+    _gb="${GLOBAL_BIN:-/usr/local/bin}"
+    printf '# %s F6 Table A\n%s ALL=(root) NOPASSWD: %s/%s\n' \
+        "${APP_NAME}" "sudoer-adm" "${_gb}" "${APP_NAME}" >"${_draft}"
+    {
+        printf '#!/bin/sh\nset -u\n'
+        printf 'DRAFT="%s"\nINST="/etc/sudoers.d/sudoer-adm"\n' "${_draft}"
+        printf 'cmd="${1-status}"\n'
+        printf 'case "$cmd" in\n'
+        printf '  status) ls -l "$DRAFT" "$INST" 2>/dev/null; exit 0 ;;\n'
+        printf '  install) [ "$(id -u)" -eq 0 ] || exit 1; visudo -cf "$DRAFT" && install -m 0440 "$DRAFT" "$INST" ;;\n'
+        printf '  uninstall) [ "$(id -u)" -eq 0 ] || exit 1; rm -f "$INST" ;;\n'
+        printf '  replace) [ "$(id -u)" -eq 0 ] || exit 1; rm -f "$INST"; visudo -cf "$DRAFT" && install -m 0440 "$DRAFT" "$INST" ;;\n'
+        printf '  *) echo "usage: $0 install|uninstall|replace|status" >&2; exit 1 ;;\n'
+        printf 'esac\n'
+    } >"${_script}"
+    chmod 0700 "${_script}" 2>/dev/null || true
+    if [ "${JSON}" -eq 1 ]; then
+        out_json "success" "admin script" "script_path" "${_script}" "draft" "${_draft}"
+    else
+        out_success "Admin script: ${_script}"
+        out_info "Draft: ${_draft}"
+        out_info "sudo sh ${_script} install|uninstall|replace|status"
+    fi
+}
+
+sr_resolve_queues() {
+    : "${SUDOER_CLI_ALLOW_TEST_ROOTS:=0}"
+    : "${LPU_HOME:=/home/sudoer-adm}"
+    _root="${SR_QUEUE_ROOT:-${SUDOER_CLI_QUEUE_ROOT-}}"
+    if [ -n "${_root}" ]; then
+        sr_abs_path "${_root}" || sr_die "queue root must be absolute" "invalid_name"
+        SUDOER_QUEUE_REQUEST="${_root}/sudoer-approving"
+        SUDOER_QUEUE_APPROVED="${_root}/sudoer-approved"
+        SUDOER_QUEUE_REJECTED="${_root}/sudoer-rejected"
+    else
+        SUDOER_QUEUE_REQUEST="${LPU_HOME}/sudoer-approving"
+        SUDOER_QUEUE_APPROVED="${LPU_HOME}/sudoer-approved"
+        SUDOER_QUEUE_REJECTED="${LPU_HOME}/sudoer-rejected"
+    fi
+    [ -n "${SR_REQUEST_DIR:-${SUDOER_CLI_REQUEST_DIR-}}" ] && \
+        SUDOER_QUEUE_REQUEST="${SR_REQUEST_DIR:-${SUDOER_CLI_REQUEST_DIR}}"
+    [ -n "${SR_APPROVED_DIR:-${SUDOER_CLI_APPROVED_DIR-}}" ] && \
+        SUDOER_QUEUE_APPROVED="${SR_APPROVED_DIR:-${SUDOER_CLI_APPROVED_DIR}}"
+    [ -n "${SR_REJECTED_DIR:-${SUDOER_CLI_REJECTED_DIR-}}" ] && \
+        SUDOER_QUEUE_REJECTED="${SR_REJECTED_DIR:-${SUDOER_CLI_REJECTED_DIR}}"
+    for _q in "${SUDOER_QUEUE_REQUEST}" "${SUDOER_QUEUE_APPROVED}" "${SUDOER_QUEUE_REJECTED}"; do
+        sr_abs_path "${_q}" || sr_die "queue path must be absolute: ${_q}" "invalid_name"
+        [ -L "${_q}" ] && sr_die "queue last component must not be a symlink: ${_q}" "invalid_name"
+    done
+    if [ "${SUDOER_QUEUE_REQUEST}" = "${SUDOER_QUEUE_APPROVED}" ] || \
+       [ "${SUDOER_QUEUE_REQUEST}" = "${SUDOER_QUEUE_REJECTED}" ] || \
+       [ "${SUDOER_QUEUE_APPROVED}" = "${SUDOER_QUEUE_REJECTED}" ]; then
+        sr_die "queue directories must be distinct" "invalid_name"
+    fi
+    export SUDOER_QUEUE_REQUEST SUDOER_QUEUE_APPROVED SUDOER_QUEUE_REJECTED
+}
+
+sr_require_queues() {
+    sr_resolve_queues
+    for _q in "${SUDOER_QUEUE_REQUEST}" "${SUDOER_QUEUE_APPROVED}" "${SUDOER_QUEUE_REJECTED}"; do
+        if [ ! -d "${_q}" ]; then
+            if [ "${SUDOER_CLI_ALLOW_TEST_ROOTS}" = "1" ]; then
+                mkdir -p "${_q}" || sr_die "cannot create ${_q}" "invalid_name"
+            else
+                sr_die "queue missing: ${_q}" "not_found"
+            fi
+        fi
+    done
+}
+
+sr_alloc_request_id() {
+    _au="$1"; _as="$2"; _aa="$3"
+    sr_valid_service_name "${_as}" || sr_die "invalid service name: ${_as}" "unknown_service"
+    _ad=$(date +%Y%m%d)
+    _n=1
+    while [ "${_n}" -le 999 ]; do
+        _id="sudoer-${_ad}-${_as}-${_au}-${_aa}-${_n}.json"
+        if [ ! -e "${SUDOER_QUEUE_REQUEST}/${_id}" ] && \
+           [ ! -e "${SUDOER_QUEUE_APPROVED}/${_id}" ] && \
+           [ ! -e "${SUDOER_QUEUE_REJECTED}/${_id}" ]; then
+            printf '%s' "${_id}"
+            return 0
+        fi
+        _n=$((_n + 1))
+    done
+    sr_die "daily sequence cap 999" "invalid_name"
+}
+
+sr_sidecar_path() {
+    _st="${XDG_STATE_HOME:-${HOME}/.local/state}/${APP_NAME}"
+    mkdir -p "${_st}" 2>/dev/null || true
+    printf '%s' "${_st}/submitted.ids"
+}
+
+sr_sidecar_add() {
+    _sp=$(sr_sidecar_path)
+    printf '%s\n' "$1" >>"${_sp}"
+    chmod 0600 "${_sp}" 2>/dev/null || true
+}
+
+sr_sidecar_has() {
+    _sp=$(sr_sidecar_path)
+    [ -f "${_sp}" ] || return 1
+    grep -qx "$1" "${_sp}" 2>/dev/null
+}
+
+sr_dest_basename() {
+    # $1 username $2 service → {{service}}-{{username}} (project-sudoers-file order)
+    printf '%s-%s' "$2" "$1"
+}
+
+sr_detect_kind() {
+    _dk=$(printf '%s' "$1" | sed 's/^[[:space:]]*//')
+    case "${_dk}" in
+        "{"*) printf 'json' ;;
+        *) printf 'sudoers' ;;
+    esac
+}
+
+sr_submit() {
+    _act="$1"
+    sr_require_queues
+    _me=$(id -un)
+    case "${_act}" in
+        remove)
+            [ -n "${SR_SERVICE-}" ] || sr_die "remove-sudoer-request requires --service" "xor_input"
+            if [ -n "${SR_FILE-}" ]; then
+                _raw=$(sr_read_input)
+                sr_json_decode_to_fields "${_raw}"
+                [ -n "${SR_D_PURPOSE}" ] || sr_die "purpose required" "invalid_json"
+                [ "${SR_D_HAS_CMDS}" -eq 0 ] || sr_die "remove JSON must not include commands" "remove_extra_fields"
+                _purpose="${SR_D_PURPOSE}"
+            else
+                [ -n "${SR_PURPOSE-}" ] || sr_die "remove requires --purpose or --file" "xor_input"
+                _purpose="${SR_PURPOSE}"
+            fi
+            _js=$(sr_json_encode_request "${_purpose}" "${_me}" "${SR_SERVICE}" "remove" "")
+            _id=$(sr_alloc_request_id "${_me}" "${SR_SERVICE}" "remove")
+            printf '%s\n' "${_js}" >"${SUDOER_QUEUE_REQUEST}/${_id}"
+            sr_sidecar_add "${_id}"
+            _dest=$(sr_dest_basename "${_me}" "${SR_SERVICE}")
+            if [ "${JSON}" -eq 1 ]; then
+                out_json "success" "submitted" "request_id" "${_id}" "dest" "${_dest}" "action" "remove"
+            else
+                out_success "request_id=${_id}"
+            fi
+            return 0
+            ;;
+    esac
+    _raw=$(sr_read_input)
+    _kind=$(sr_detect_kind "${_raw}")
+    if [ "${_kind}" = "sudoers" ]; then
+        sr_parse_sudoers "${_raw}"
+        _purpose="${SR_PURPOSE:-${SR_P_PURPOSE}}"
+        [ -n "${_purpose}" ] || sr_die "--purpose required when sudoers lacks # Purpose:" "xor_input"
+        [ "${SR_P_USER}" = "${_me}" ] || sr_die "self-scope: ${SR_P_USER} != ${_me}" "self_scope"
+        sr_service_infer "${SR_P_CMDS}" "${SR_SERVICE-}"
+        _svc="${SR_INFERRED}"
+        _js=$(sr_json_encode_request "${_purpose}" "${SR_P_USER}" "${_svc}" "${_act}" "${SR_P_CMDS}")
+    else
+        sr_json_decode_to_fields "${_raw}"
+        [ -n "${SR_D_PURPOSE}" ] || sr_die "purpose required" "invalid_json"
+        [ "${SR_D_ACT}" = "${_act}" ] || [ -z "${SR_D_ACT}" ] || sr_die "action mismatch" "field_mismatch"
+        [ "${SR_D_USER}" = "${_me}" ] || sr_die "self-scope" "self_scope"
+        _svc="${SR_SERVICE:-${SR_D_SVC}}"
+        [ -n "${_svc}" ] || sr_die "service required" "unknown_service"
+        [ "${SR_D_HAS_CMDS}" -eq 1 ] || sr_die "commands required" "invalid_json"
+        sr_service_infer "${SR_D_CMDS}" "${_svc}"
+        _svc="${SR_INFERRED}"
+        _js=$(sr_json_encode_request "${SR_D_PURPOSE}" "${_me}" "${_svc}" "${_act}" "${SR_D_CMDS}")
+    fi
+    _id=$(sr_alloc_request_id "${_me}" "${_svc}" "${_act}")
+    printf '%s\n' "${_js}" >"${SUDOER_QUEUE_REQUEST}/${_id}"
+    sr_sidecar_add "${_id}"
+    _dest=$(sr_dest_basename "${_me}" "${_svc}")
+    if [ "${JSON}" -eq 1 ]; then
+        out_json "success" "submitted" "request_id" "${_id}" "dest" "${_dest}" "action" "${_act}"
+    else
+        out_success "request_id=${_id}"
+    fi
+}
+
+sr_find_id() {
+    _fid="$1"
+    for _q in "${SUDOER_QUEUE_REQUEST}" "${SUDOER_QUEUE_APPROVED}" "${SUDOER_QUEUE_REJECTED}"; do
+        if [ -f "${_q}/${_fid}" ]; then
+            printf '%s' "${_q}/${_fid}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+sr_list() {
+    _which="$1"
+    sr_require_queues
+    case "${_which}" in
+        approving) _dir="${SUDOER_QUEUE_REQUEST}" ;;
+        approved)  _dir="${SUDOER_QUEUE_APPROVED}" ;;
+        rejected)  _dir="${SUDOER_QUEUE_REJECTED}" ;;
+        *) sr_die "bad list" "invalid_name" ;;
+    esac
+    _me=$(id -un)
+    if [ "${SR_ORPHANS:-0}" -eq 1 ]; then
+        sr_require_type1
+        # orphans: non-regular or owner mismatch vs filename username
+        for _f in "${_dir}"/sudoer-*.json; do
+            [ -e "${_f}" ] || continue
+            _bn=$(basename "${_f}")
+            if [ -L "${_f}" ] || [ ! -f "${_f}" ]; then
+                printf '%s\n' "${_bn}"
+                continue
+            fi
+        done
+        return 0
+    fi
+    if [ "$(id -u)" -eq 0 ]; then
+        ls -1 "${_dir}" 2>/dev/null | grep '\.json$' || true
+    else
+        _sp=$(sr_sidecar_path)
+        if [ -f "${_sp}" ]; then
+            while IFS= read -r _id; do
+                [ -f "${_dir}/${_id}" ] && printf '%s\n' "${_id}"
+            done <"${_sp}"
+        fi
+    fi
+}
+
+sr_show() {
+    _id="${SR_OPERAND-}"
+    [ -n "${_id}" ] || sr_die "show requires request-id" "not_found"
+    case "${_id}" in
+        *.json) ;;
+        *) sr_die "request-id must include .json" "invalid_name" ;;
+    esac
+    sr_require_queues
+    if [ "$(id -u)" -ne 0 ]; then
+        sr_sidecar_has "${_id}" || sr_die "unknown request_id" "not_found"
+    fi
+    _path=$(sr_find_id "${_id}") || sr_die "not found: ${_id}" "not_found"
+    if [ "${JSON}" -eq 1 ]; then
+        out_json "success" "show" "request_id" "${_id}" "path" "${_path}"
+    fi
+    cat "${_path}"
+}
+
+sr_require_type1() {
+    if [ "$(id -u)" -ne 0 ]; then
+        sr_die "Type 1 requires euid 0" "authz"
+    fi
+    _su="${SUDO_USER-}"
+    _un=$(id -un)
+    if [ -n "${_su}" ] && [ "${_su}" != "sudoer-adm" ]; then
+        sr_die "Type 1 authorization failed" "authz"
+    fi
+    if [ -z "${_su}" ] && [ "${_un}" != "root" ]; then
+        sr_die "Type 1 authorization failed" "authz"
+    fi
+}
+
+sr_approve() {
+    sr_require_type1
+    sr_require_queues
+    _id="${SR_OPERAND-}"
+    [ -n "${_id}" ] || sr_die "approve requires request-id" "not_found"
+    _path="${SUDOER_QUEUE_REQUEST}/${_id}"
+    [ -f "${_path}" ] || sr_die "not in approving: ${_id}" "not_found"
+    [ -L "${_path}" ] && sr_die "not a regular file" "not_regular"
+    _priv=$(mktemp "${TMPDIR:-/tmp}/sr-apr.XXXXXX")
+    cp "${_path}" "${_priv}"
+    _body=$(cat "${_priv}")
+    sr_json_decode_to_fields "${_body}"
+    sr_parse_request_id "${_id}"
+    _user="${SR_ID_USER}"
+    _svc="${SR_ID_SVC}"
+    _act="${SR_ID_ACT}"
+    if [ -n "${SR_D_USER}" ] && [ "${SR_D_USER}" != "${_user}" ]; then
+        sr_die "username mismatch" "field_mismatch"
+    fi
+    if [ -n "${SR_D_SVC}" ] && [ "${SR_D_SVC}" != "${_svc}" ]; then
+        sr_die "service mismatch" "field_mismatch"
+    fi
+    if [ -n "${SR_D_ACT}" ] && [ "${SR_D_ACT}" != "${_act}" ]; then
+        sr_die "action mismatch" "field_mismatch"
+    fi
+    _dest_dir="${SUDOERS_D:-/etc/sudoers.d}"
+    _dest="${_dest_dir}/$(sr_dest_basename "${_user}" "${_svc}")"
+    if [ "${_act}" = "remove" ]; then
+        if [ -f "${_dest}" ]; then
+            mkdir -p /etc/sudoers.bak 2>/dev/null || true
+            [ "${SUDOER_CLI_ALLOW_TEST_ROOTS}" = "1" ] || mkdir -p /etc/sudoers.bak 2>/dev/null || true
+            if [ "${SUDOER_CLI_ALLOW_TEST_ROOTS}" = "1" ]; then
+                _bak="${_dest_dir}/.bak"
+                mkdir -p "${_bak}"
+                mv "${_dest}" "${_bak}/$(basename "${_dest}").bak" 2>/dev/null || rm -f "${_dest}"
+            else
+                mv "${_dest}" "/etc/sudoers.bak/$(basename "${_dest}").bak" 2>/dev/null || rm -f "${_dest}"
+            fi
+        fi
+    else
+        _txt=$(sr_render_sudoers "${SR_D_PURPOSE}" "${_user}" "${_act}" "${SR_D_CMDS}")
+        sr_visudo_text "${_txt}"
+        mkdir -p "${_dest_dir}"
+        printf '%s\n' "${_txt}" >"${_dest}"
+    fi
+    mv "${_path}" "${SUDOER_QUEUE_APPROVED}/${_id}"
+    rm -f "${_priv}"
+    if [ "${JSON}" -eq 1 ]; then
+        out_json "success" "approved" "request_id" "${_id}" "dest" "$(basename "${_dest}")"
+    else
+        out_success "approved ${_id}"
+    fi
+}
+
+sr_reject() {
+    sr_require_type1
+    sr_require_queues
+    _id="${SR_OPERAND-}"
+    [ -n "${_id}" ] || sr_die "reject requires request-id" "not_found"
+    _path="${SUDOER_QUEUE_REQUEST}/${_id}"
+    [ -f "${_path}" ] || sr_die "not in approving: ${_id}" "not_found"
+    mv "${_path}" "${SUDOER_QUEUE_REJECTED}/${_id}"
+    if [ "${JSON}" -eq 1 ]; then
+        out_json "success" "rejected" "request_id" "${_id}"
+    else
+        out_success "rejected ${_id}"
+    fi
+}
+
+sr_interactive() {
+    sr_require_type1
+    sr_die "interactive requires a TTY review loop (use approve/reject non-interactively)" "confirm_required"
+}
+
+lpu_setup() {
+    sr_require_type1
+    if [ "${SR_UNINSTALL:-0}" -eq 1 ]; then
+        lpu_remove
+        return 0
+    fi
+    sr_die "live useradd setup is not enabled in this environment" "authz"
+}
+
+lpu_remove() {
+    sr_require_type1
+    sr_die "live userdel teardown is not enabled in this environment" "authz"
+}
+
+# =============================================================================
+# app_help() - Usage (Type 0 lifecycle + routed domain)
 # =============================================================================
 app_help() {
     : "${SHORT_DESCRIPTION:=${APP_DESC:-Local self-managed POSIX /bin/sh CLI (Type 0 lifecycle)}}"
-    : "${DESCRIPTION:=POSIX /bin/sh local CLI: install, uninstall, where-is-me, version, about, help.}"
+    : "${DESCRIPTION:=POSIX /bin/sh CLI: install, uninstall, where-is-me, version, about, help.}"
 
     if [ "${JSON}" -eq 1 ]; then
         out_json "success" "Help text available in human-readable mode. Run without --json." \
@@ -1558,12 +2414,34 @@ app_help() {
     out_plain "  about                Show diagnostics (Type 0 only; no domain fields)"
     out_plain "  help                 Show this help"
     out_empty_line
+    out_info "Sudoers requests (Type 0):"
+    out_plain "  sudoers-to-json      Convert sudoers fragment to request JSON"
+    out_plain "  json-to-sudoers      Convert request JSON to sudoers fragment"
+    out_plain "  print-sudoers        Emit F6 Table A draft (never writes /etc)"
+    out_plain "  print-sudoers-install-script  Emit admin install script"
+    out_plain "  add-sudoer-request   Queue an add request (JSON or sudoers)"
+    out_plain "  update-sudoer-request  Queue an update request"
+    out_plain "  remove-sudoer-request  Queue a purpose-only remove (--service)"
+    out_plain "  list-approving|list-approved|list-rejected"
+    out_plain "  show <request-id.json>   Show a known request"
+    out_empty_line
+    out_info "Approver (Type 1 — euid 0):"
+    out_plain "  setup / remove-lpu   LPU create/teardown"
+    out_plain "  approve|reject <id>  Install dest or archive reject"
+    out_plain "  interactive          TTY review (not empty argv)"
+    out_empty_line
     out_info "Global Options:"
     out_plain "  --quiet, -q          Suppress info/success (errors still shown)"
     out_plain "  --json               Machine-readable JSON (implies --quiet)"
     out_plain "  --force              Force reinstall / skip uninstall confirm"
     out_plain "  --global             Install to GLOBAL_BIN"
     out_plain "  --debug              Debug diagnostics on stderr"
+    out_plain "  --file PATH          Input file (xor stdin)"
+    out_plain "  --action add|update  Required for sudoers-to-json"
+    out_plain "  --purpose TEXT       Purpose when missing from input"
+    out_plain "  --service NAME       Service pin / required on remove"
+    out_plain "  --out PATH           Write convert payload (absolute)"
+    out_plain "  --queue-root DIR     Test/override all three queues"
     out_empty_line
     out_info "Environment:"
     out_plain "  USER_BIN / GLOBAL_BIN  install destinations"
@@ -1576,9 +2454,9 @@ app_help() {
     out_plain "  ${APP_NAME} about"
     out_plain "  ${APP_NAME} --json about"
     out_plain "  ${APP_NAME} uninstall --force"
+    out_plain "  ${APP_NAME} sudoers-to-json --file grant.sudoers --action add --purpose '…'"
     out_empty_line
     out_info "Empty argv shows help (Type N — local-only; no curl|sh install-ensure)."
-    out_info "No backup, restore, sudoers-file, or host setup verbs (Type 0 template only)."
 }
 
 # =============================================================================
@@ -1586,16 +2464,15 @@ app_help() {
 # =============================================================================
 #
 # GENERAL PURPOSE:
-# Single dispatcher for cli-template (local Type 0 only).
-# Empty argv = Type N help (not install-ensure).
+# Single dispatcher: Type 0 lifecycle + routed domain verbs.
+# Empty argv = Type N help (not install-ensure; not interactive).
 #
 # ALIGNMENT:
 # - requirement-shell-cli-interface.md
 # - requirement-shell-cli-zero-arguments.md
+# - requirement-domain-sudoer-approval.md
 #
-# !!! DO NOT MODIFY OR SIMPLIFY THIS FUNCTION !!!
-#
-# Last reviewed: 2026-08-13
+# Last reviewed: 2026-08-14
 # =============================================================================
 app_main() {
     : "${COMMAND:=help}"
@@ -1610,12 +2487,22 @@ app_main() {
     : "${XDG_CACHE_HOME:=${HOME}/.cache}"
     : "${APP_NAME:=cli-template}"
     : "${STORAGE_DIR:=${XDG_CACHE_HOME}/${APP_NAME}-${USERNAME}}"
+    : "${SR_FILE:=}"
+    : "${SR_ACTION:=}"
+    : "${SR_PURPOSE:=}"
+    : "${SR_SERVICE:=}"
+    : "${SR_OUT:=}"
+    : "${SR_OPERAND:=}"
+    : "${SR_ORPHANS:=0}"
+    : "${SR_UNINSTALL:=0}"
+    : "${COMMAND_SET:=0}"
 
+    USERNAME=$(id -un 2>/dev/null || echo "${USERNAME}")
     EFFECTIVE_STORAGE_DIR=$(util_resolve_storage)
     export EFFECTIVE_STORAGE_DIR STORAGE_DIR
     export TMPDIR="${EFFECTIVE_STORAGE_DIR}"
+    trap util_scratch_cleanup EXIT INT TERM
 
-    # Type N: empty argv → help
     if [ $# -eq 0 ]; then
         app_help
         return 0
@@ -1628,17 +2515,76 @@ app_main() {
             --debug)    DEBUG=1 ;;
             --force)    FORCE=1; FORCE_REINSTALL=1 ;;
             --global)   FORCE_GLOBAL=1; export FORCE_GLOBAL ;;
-            version|about|help|install|uninstall|where-is-me)
-                COMMAND="$1"
+            --file)
+                [ -n "${2-}" ] || out_die "--file requires PATH"
+                SR_FILE="$2"; shift
+                ;;
+            --action)
+                [ -n "${2-}" ] || out_die "--action requires add|update"
+                SR_ACTION="$2"; shift
+                ;;
+            --purpose)
+                [ -n "${2-}" ] || out_die "--purpose requires TEXT"
+                SR_PURPOSE="$2"; shift
+                ;;
+            --service)
+                [ -n "${2-}" ] || out_die "--service requires NAME"
+                SR_SERVICE="$2"; shift
+                ;;
+            --out)
+                [ -n "${2-}" ] || out_die "--out requires PATH"
+                SR_OUT="$2"; shift
+                ;;
+            --queue-root)
+                [ -n "${2-}" ] || out_die "--queue-root requires DIR"
+                SR_QUEUE_ROOT="$2"; shift
+                ;;
+            --request-dir)
+                [ -n "${2-}" ] || out_die "--request-dir requires DIR"
+                SR_REQUEST_DIR="$2"; shift
+                ;;
+            --approved-dir)
+                [ -n "${2-}" ] || out_die "--approved-dir requires DIR"
+                SR_APPROVED_DIR="$2"; shift
+                ;;
+            --rejected-dir)
+                [ -n "${2-}" ] || out_die "--rejected-dir requires DIR"
+                SR_REJECTED_DIR="$2"; shift
+                ;;
+            --user)
+                [ -n "${2-}" ] || out_die "--user requires NAME"
+                SR_LIST_USER="$2"; shift
+                ;;
+            --orphans)    SR_ORPHANS=1 ;;
+            --uninstall)  SR_UNINSTALL=1 ;;
+            --purge-queues) SR_PURGE_QUEUES=1 ;;
+            version|about|help|install|uninstall|where-is-me|\
+            sudoers-to-json|json-to-sudoers|print-sudoers|print-sudoers-install-script|\
+            add-sudoer-request|update-sudoer-request|remove-sudoer-request|\
+            list-approving|list-approved|list-rejected|show|approve|reject|\
+            interactive|setup|remove-lpu)
+                if [ "${COMMAND_SET}" -eq 1 ]; then
+                    SR_OPERAND="$1"
+                else
+                    COMMAND="$1"
+                    COMMAND_SET=1
+                fi
+                ;;
+            -*)
+                out_die "Unknown command or flag: $1. See '${APP_NAME} help'."
                 ;;
             *)
-                out_die "Unknown command or flag: $1. See '${APP_NAME} help'."
+                if [ "${COMMAND_SET}" -eq 1 ]; then
+                    SR_OPERAND="$1"
+                else
+                    out_die "Unknown command or flag: $1. See '${APP_NAME} help'."
+                fi
                 ;;
         esac
         shift
     done
 
-    out_debug "dispatch command=${COMMAND} quiet=${QUIET} json=${JSON} force=${FORCE} force_global=${FORCE_GLOBAL}"
+    out_debug "dispatch command=${COMMAND} quiet=${QUIET} json=${JSON}"
 
     case "${COMMAND}" in
         version)      app_version ;;
@@ -1646,7 +2592,23 @@ app_main() {
         install)      inst_local_install ;;
         uninstall)    inst_local_uninstall ;;
         where-is-me)  app_where_is_me ;;
-        help|*)       app_help ;;
+        sudoers-to-json) sr_sudoers_to_json ;;
+        json-to-sudoers) sr_json_to_sudoers ;;
+        print-sudoers) sr_print_sudoers ;;
+        print-sudoers-install-script) sr_print_sudoers_install_script ;;
+        add-sudoer-request)    sr_submit add ;;
+        update-sudoer-request) sr_submit update ;;
+        remove-sudoer-request) sr_submit remove ;;
+        list-approving)  sr_list approving ;;
+        list-approved)   sr_list approved ;;
+        list-rejected)   sr_list rejected ;;
+        show)            sr_show ;;
+        approve)         sr_approve ;;
+        reject)          sr_reject ;;
+        interactive)     sr_interactive ;;
+        setup)           lpu_setup ;;
+        remove-lpu)      lpu_remove ;;
+        help|*)          app_help ;;
     esac
 }
 

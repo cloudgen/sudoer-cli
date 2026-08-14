@@ -6,7 +6,7 @@
 
 ## 1. Purpose
 
-This requirement is the **project Single Source of Truth** for **local self-managed lifecycle** of the cli-template POSIX shell CLI: **`install`**, **`uninstall`**, and **`where-is-me`**, plus the local diagnostics package contract for **`version`**, **`about`**, and **`help`** (wiring owned with CLI interface).
+This requirement is the **project Single Source of Truth** for **local self-managed lifecycle** of the sudoer-cli POSIX shell CLI: **`install`**, **`uninstall`**, and **`where-is-me`**, plus the local diagnostics package contract for **`version`**, **`about`**, and **`help`** (wiring owned with CLI interface).
 
 **Install mode:** **local-only**. Online channel install, remote version-check, self-update, and self-uninstall are **out of scope** (intentionally absent).
 
@@ -81,7 +81,7 @@ This product ships as a **POSIX shell script** (interpreted). Execution by any n
 
 | Variable | Role | Default / note |
 |----------|------|----------------|
-| `APP_NAME` | Binary basename SSOT | hard-assign `cli-template` |
+| `APP_NAME` | Binary basename SSOT | hard-assign `sudoer-cli` |
 | `VERSION` | Local version SSOT | hard-assign `1.0.0` |
 | `GLOBAL_BIN` | System-wide bin | `/usr/local/bin` |
 | `USER_BIN` | Per-user bin | `${HOME}/.local/bin` |
@@ -93,9 +93,9 @@ This product ships as a **POSIX shell script** (interpreted). Execution by any n
 
 | Item | Value |
 |------|--------|
-| **Product / binary** | `cli-template` |
-| **Ship unit** | `src/cli-template` |
-| **Primary install path story** | Type 0 day-to-day: `${HOME}/.local/bin/cli-template`; multi-user: `/usr/local/bin/cli-template` |
+| **Product / binary** | `sudoer-cli` |
+| **Ship unit** | `src/sudoer-cli` |
+| **Primary install path story** | Type 0 day-to-day: `${HOME}/.local/bin/sudoer-cli`; multi-user: `/usr/local/bin/sudoer-cli` |
 | **Handlers** | `inst_local_install`, `inst_local_uninstall`, `app_where_is_me`, `app_version` |
 | **Detect** | `inst_is_installed` / privilege-correct path helpers |
 | **Online package** | **Absent by design** (bootstrap trim) |

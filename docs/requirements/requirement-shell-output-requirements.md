@@ -1,14 +1,14 @@
 **file**: docs/requirements/requirement-shell-output-requirements.md  
-**Status**: Active (Version 1.0.0)  
+**Status**: Active (Version 1.1.0)  
 **Area**: shell  
 **Key**: `requirement-shell-output-requirements`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
 
 ## 1. Purpose
 
-This requirement is the **project Single Source of Truth** for **all CLI output** of cli-template: human messages, machine JSON, channel split (stdout vs stderr), and mode behavior (normal / quiet / JSON / debug).
+This requirement is the **project Single Source of Truth** for **all CLI output** of sudoer-cli: human messages, machine JSON, channel split (stdout vs stderr), and mode behavior (normal / quiet / JSON / debug).
 
-This origin owns the `out_*` family. No domain messages.
+This origin owns the `out_*` family. Domain verbs **MUST** use the same `out_*` family (convert/submit messages are live).
 
 ---
 
@@ -61,14 +61,14 @@ Rules:
 
 1. Fatal paths use `out_die` / `out_json_error`.  
 2. JSON mode: no colors, banners, or progress mixed into stdout JSON.  
-3. Capture pattern: `cli-template --json <cmd> 2>err.log`.  
+3. Capture pattern: `sudoer-cli --json <cmd> 2>err.log`.  
 4. **No secrets** on either channel (tokens, passwords, private keys, full private key material).
 
 ### 2.4 Mode behavior
 
 | Mode | Contract |
 |------|----------|
-| Normal (TTY) | Prefixed human messages; colors only when TTY and not quiet/json |
+| Normal (TTY) | Prefixed human messages; colors only when **`TTY=1`** and not quiet/json (consume the mode SSOT; do not re-test `[ -t 1 ]` in `out_*`) |
 | Quiet | Suppress info/success/plain; still show errors (and should show warnings) |
 | JSON | Force quiet; structured JSON only on success path; structured errors on failure |
 | Debug | Extra diagnostics on stderr; suppressed under JSON purity rules for stdout |
@@ -77,8 +77,8 @@ Rules:
 
 | Item | Value |
 |------|--------|
-| **Product** | `cli-template` |
-| **Ship unit** | `src/cli-template` |
+| **Product** | `sudoer-cli` |
+| **Ship unit** | `src/sudoer-cli` |
 | **Human prefixes** | `[INFO]`, `[OK]`, `[WARN]`, `[ERROR]` (or equivalent consistent set) |
 | **Domain messages** | None (Type 0 only) |
 | **Bootstrap role** | This product is hop 0; `out_*` is this origin’s family |
@@ -108,7 +108,8 @@ Rules:
 2. Print user-facing banners with raw `echo` outside allowed exceptions.  
 3. Mix human text into JSON stdout success paths.  
 4. Log secrets or private key material.  
-5. Remove quiet/json contracts for “simplicity.”
+5. Remove quiet/json contracts for “simplicity.”  
+6. Re-test live `[ -t 1 ]` inside `out_*` for color — consume `TTY` set outside functions.
 
 **Violating this rule is a critical output SSOT regression.**
 
@@ -141,9 +142,10 @@ Rules:
 |------|--------|------|
 | 2026-08-03 | Active | Output SSOT for folder-backup |
 | 2026-08-13 | Active | Retarget to cli-template; drop domain message law |
+| 2026-08-14 | Active 1.1.0 | Colors consume `TTY`; do not re-test `[ -t 1 ]` in `out_*` |
 
 ---
 
-**Last Updated**: 2026-08-13  
+**Last Updated**: 2026-08-14  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

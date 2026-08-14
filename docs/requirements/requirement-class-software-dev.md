@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-class-software-dev.md  
-**Status**: Active (Version 1.3.0 – cli-template class law + residual stack)  
+**Status**: Active (Version 1.4.0 – sudoer-cli class law + residual stack)  
 **Area**: class  
 **Key**: `requirement-class-software-dev`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -66,9 +66,9 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 
 ### 2.7 Implementation Notes (this project)
 
-| Field | Value (cli-template) |
+| Field | Value (sudoer-cli) |
 |-------|---------------------|
-| **Project display name** | `cli-template` |
+| **Project display name** | `sudoer-cli` |
 | **Project class** | software-development |
 | **Class requirement basename** | `requirement-class-software-dev.md` |
 | **Primary language(s)** | `posix-sh` (`/bin/sh`) |
@@ -84,9 +84,9 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | **Primary runtime / OS family** | POSIX Linux (and compatible UNIX where `/bin/sh` + `mktemp` + `date` exist) |
 | **Architectures supported** | any arch with POSIX sh and the external tools the script invokes |
 | **Git surface** | used when product is published |
-| **Ship unit / install** | yes — `src/cli-template` → `${USER_BIN}/cli-template` (default `~/.local/bin/cli-template`); **local-only** install (no online channel) |
-| **Product version SSOT** | `VERSION="1.0.0"` hard-assign in `src/cli-template` |
-| **Bootstrap origin** | **this product** (`cli-template`) — hop 0 Type 0 template. No live parent. |
+| **Ship unit / install** | yes — `src/sudoer-cli` → `${USER_BIN}/sudoer-cli` (default `~/.local/bin/sudoer-cli`); **local-only** install (no online channel) |
+| **Product version SSOT** | `VERSION="1.0.0"` hard-assign in `src/sudoer-cli` |
+| **Bootstrap origin** | Historical **cli-template**. This product is **sudoer-cli**. No live parent ship unit. |
 
 **Residual ownership table:**
 
@@ -95,7 +95,9 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | Project class membership | **this file** | Fixed |
 | Primary language + toolchain policy | **this file** | posix-sh, unconstrained |
 | Package/build tool + lockfile | **this file** | none / not used |
-| Bootstrap lineage / keep-trim | `requirement-bootstrap-chain` | cli-template is hop 0 (no live parent) |
+| Bootstrap lineage / keep-trim | `requirement-bootstrap-chain` | sudoer-cli specialized from cli-template |
+| Privilege / LPU / Type map | `requirement-three-layer-privilege-model` · `requirement-least-privilege-user` | Do not duplicate |
+| Domain sudoers-approval | `requirement-domain-sudoer-approval` | File-based JSON approval; Type 0 routed; Type 1 dest Gap |
 | Project layout / ship path | `requirement-project-folder` | `src/` + bin targets |
 | Type 0 CLI surface / flags / dispatch | `requirement-shell-cli-interface` | Do not duplicate |
 | Empty argv Type N help | `requirement-shell-cli-zero-arguments` | Local-only |
@@ -105,10 +107,8 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | Idempotency / re-run safety | `requirement-shell-idempotency` | Do not duplicate |
 | Interactive vs non-interactive | `requirement-shell-interactive-vs-noninteractive` | Do not duplicate |
 | Modular prefixes / single-file layout | `requirement-shell-modular-function-design` | Do not duplicate |
-| Privilege / sudoers-file emit | **intentionally absent** | Not this product’s domain |
 | Folder archive backup / restore / retention | **intentionally absent** | Not this product’s domain (sibling folder-backup) |
-| Domain surface (`requirement-domain-*`) | **intentionally absent** | Type 0 bootstrap/template; not host-OS setup |
-| Online install / remote self-management / companion checksum | **intentionally absent** | Not this origin’s channel |
+| Online install / remote self-management / companion checksum | **intentionally absent** | Not this product’s channel |
 
 ---
 
@@ -188,6 +188,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | 2026-08-13 | Active 1.1.0 | Retarget to cli-template; drop domain/privilege residual owners |
 | 2026-08-13 | Active 1.2.0 | Bootstrap origin = selfmanaged; folder-backup hop retired (no longer maintain bootstrap from it) |
 | 2026-08-13 | Active 1.3.0 | This product is hop 0; selfmanaged is not origin |
+| 2026-08-13 | Active 1.4.0 | Specialize to sudoer-cli; point residual at privilege + domain REQs |
 
 ---
 

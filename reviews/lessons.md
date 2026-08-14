@@ -1,4 +1,4 @@
-# Lessons — cli-template
+# Lessons — sudoer-cli
 
 Durable failure modes. **Always re-check on product review.**
 
@@ -12,6 +12,10 @@ Durable failure modes. **Always re-check on product review.**
 | L-PUSH-VAULT-01 | Bare `git push` uses wrong active SSH vault when default face ≠ repository-user | Pre-git report + bound SSH transport; incident 20260810-001 | open watch |
 | L-SETU-01 | `set -u` crash with unset HOME | TP-CLI-11 | open watch |
 | L-STOR-01 | Shared world-writable storage | util_resolve_storage; TP-CLI-12 | open watch |
+| L-TTY-01 | Interactive policy from live `[ -t` **inside** `prompt_*` / `about` / `$(…)` (false non-interactive) | Measure `[ -t` outside functions; helpers consume `TTY`; AC-4; **TP-ELEV-07** | watch |
+| L-LAW-ROUTE-01 | Registry/REQ still say domain “not yet routed” after convert/submit/help/about are live | Retarget domain + CLI interface in the same change as routing; do not leave “Until routed” paragraphs | watch |
+| L-LAW-PRESENT-01 | Domain REQ has verbs/schema but does not **name** the file-based JSON approval machine (roles, submit-when, verify table) | Domain §2.0 in product language; sufficient-check Step 3e | watch |
+| L-LAW-INT-01 | “TTY login as LPU approves” with no authz table, hook snippet, or consume-`TTY` loop — or empty argv hijacked | Domain §2.2 hook + loop; Step 3f; empty argv stays help | watch |
 
 **Related-product only (do not re-apply as this origin’s law):** L-DEPOSIT-01, L-SUDOERS-01..05, L-OVERWRITE-01 stay on folder-backup. Type O empty-argv / online-channel lessons stay on products that own those surfaces. This product is hop 0.
 

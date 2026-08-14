@@ -1,14 +1,14 @@
 **file**: docs/requirements/requirement-shell-cli-interface.md  
-**Status**: Active (Version 2.0.0)  
+**Status**: Active (Version 3.1.1)  
 **Area**: shell  
 **Key**: `requirement-shell-cli-interface`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
 
 ## 1. Purpose
 
-This requirement is the **project Single Source of Truth** for the **POSIX shell CLI interface** of cli-template: command surface, privilege typing, global flags, dispatcher behavior, help/about contracts, and mode rules.
+This requirement is the **project Single Source of Truth** for the **POSIX shell CLI interface** of sudoer-cli: live command surface, privilege typing, global flags, dispatcher behavior, help/about contracts, and mode rules.
 
-It defines a **Type 0–centric local self-managed shell CLI** with **no domain verbs**. Full lifecycle rules live in `requirement-shell-local-self-management.md`.
+The **live** dispatcher is Type 0 lifecycle **plus** Type 0 domain convert/submit/list/show/print-sudoers. Domain catalog and Type 1 fail-closed behavior are owned by `requirement-domain-sudoer-approval.md` and `requirement-three-layer-privilege-model.md`. Help **MUST NOT** list a verb with no `case` arm. Full lifecycle rules live in `requirement-shell-local-self-management.md`.
 
 ---
 
@@ -20,9 +20,9 @@ Every command **MUST** map to exactly one privilege type. Unclassified commands 
 
 | Category | Privilege | Meaning |
 |----------|-----------|---------|
-| **Type 0 – CLI lifecycle + diagnostics** | Invoking user | `install`, `uninstall`, `where-is-me`, `version`, `about`, `help` |
-| **Type 1 – Narrow elevated host ops** | Controlled sudo | **Not in scope** |
-| **Type 2 – Dedicated system user app ops** | Dedicated app user | **Not in scope** |
+| **Type 0 – CLI lifecycle + diagnostics + domain convert** | Invoking user | Lifecycle: `install`, `uninstall`, `where-is-me`, `version`, `about`, `help`. Domain Type 0: convert / submit / list / show / `print-sudoers` (catalog on domain SSOT) |
+| **Type 1 – Narrow elevated host ops** | Controlled sudo | Names **routed**; **fail closed** without euid 0 (`setup` / `approve` / `reject` / `interactive`). TTY login as `sudoer-adm` enters review **only** via F6 + `interactive` (domain SSOT). Live `useradd` / hook install / review loop / `/etc` dest is a **Gap** |
+| **Type 2 – Dedicated system user app ops** | Dedicated app user euid | **Not used** (sudoer-adm is an authorizer, not a Type 2 execution context) |
 
 ### 2.2 Global flags (portable)
 
@@ -45,7 +45,7 @@ Additional flags **MAY** be added only when documented here (or a superseding re
 3. **Empty argv:** **Type N → help** (`requirement-shell-cli-zero-arguments.md`).  
 4. **No raw user I/O:** User-facing messages **MUST** go through `out_*`.  
 5. Script end **MUST** call `app_main "$@"` (no basename gate that blocks dispatch).  
-6. Trimmed parent verbs (`backup`, `restore`, `print-sudoers`, `print-sudoers-install-script`, `remove-project-sudoers`) **MUST** fail as unknown.
+6. Trimmed parent verbs (`backup`, `restore`, `remove-project-sudoers`) **MUST** fail as unknown. `print-sudoers` and `print-sudoers-install-script` are **domain Type 0** (not trimmed).
 
 ### 2.4 Help surface
 
@@ -58,23 +58,23 @@ Additional flags **MAY** be added only when documented here (or a superseding re
 
 In JSON mode, help **MUST NOT** dump long human text; return a short structured success/note object.
 
-`help` **MUST NOT** list backup, restore, or sudoers-file verbs.
+`help` **MUST** list live domain Type 0 rows per the domain SSOT. `help` **MUST NOT** list a verb with no dispatcher arm.
 
 ### 2.5 Implementation Notes (this project)
 
-| Item | Value for cli-template |
+| Item | Value for sudoer-cli |
 |------|-------------------------|
-| **Product / binary name** | `cli-template` (`APP_NAME`) |
-| **Primary executable** | `src/cli-template` (POSIX `/bin/sh`, single-file ship unit) |
+| **Product / binary name** | `sudoer-cli` (`APP_NAME`) |
+| **Primary executable** | `src/sudoer-cli` (POSIX `/bin/sh`, single-file ship unit) |
 | **Dispatcher** | `app_main` |
 | **Output SSOT** | `out_text` + wrappers (`out_info`, `out_success`, `out_warn`, `out_error`, `out_die`, `out_plain`, `out_json`, …) |
 | **Version SSOT** | `VERSION="1.0.0"` hard-assign in ship unit |
 | **Install paths** | Global: `GLOBAL_BIN` default `/usr/local/bin`; User: `USER_BIN` default `${HOME}/.local/bin` |
-| **Primary install story** | User bin: `~/.local/bin/cli-template` |
+| **Primary install story** | User bin: `~/.local/bin/sudoer-cli`; global `/usr/local/bin/sudoer-cli` for production F6 |
 | **Online channel env** | **Not product UX** (trimmed) |
-| **Type 1 / Type 2 commands** | None |
-| **Dedicated system user** | Not required |
-| **About** | Type 0 only; no domain fields |
+| **Type 1 / Type 2 commands** | Type 1 **routed, fail closed** without euid 0 (no live `useradd` / `/etc`); Type 2 **not used** |
+| **Dedicated system user** | `sudoer-adm` (authorizer; see LPU REQ) |
+| **About** | Type 0 only until domain about pillar is routed |
 
 #### Supported commands (normative for this project)
 
@@ -85,7 +85,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | `uninstall` | Type 0 | `inst_local_uninstall` | Remove managed binary; confirm unless `--force` |
 | `where-is-me` | Type 0 | `app_where_is_me` | Running + install paths + installed flag |
 | `version` | Type 0 | `app_version` | Local `VERSION` only; no network |
-| `about` | Type 0 | `app_about` | Diagnostics: install presence, paths, user, shell, TTY, storage; **no** channel one-liner; **no** backup/sudoers fields |
+| `about` | Type 0 | `app_about` | Diagnostics: install presence, paths, user, shell, TTY, storage, **resolved queue paths**; **no** channel one-liner; **no** backup/restore fields |
 | `help` | Type 0 | `app_help` | Full usage in human mode; short JSON note in JSON mode |
 
 #### Global flags (normative wiring)
@@ -100,18 +100,18 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 
 #### Dispatcher acceptance criteria
 
-1. Unknown token after flag parse → `out_die` with pointer to `cli-template help`.  
+1. Unknown token after flag parse → `out_die` with pointer to `sudoer-cli help`.  
 2. Zero-arg → help (not install).  
-3. Command routing table in `app_main` **must** include every row above and **no** trimmed parent verbs.  
+3. Command routing table in `app_main` **must** include every lifecycle row above **and** the live domain Type 0 verbs from the domain SSOT, and **no** trimmed parent verbs (`backup` / `restore` / `remove-project-sudoers`).  
 4. Help text **must** stay aligned with that table.
 
 #### Explicitly out of scope
 
 - Online: `version-check`, `self-update`, `self-uninstall`, channel `install` via URL  
 - Domain: `backup`, `restore`  
-- Sudoers-file: `print-sudoers`, `print-sudoers-install-script`, `remove-project-sudoers`  
-- Type 1 host-mutating setup  
-- Type 2 app runtime under a dedicated system user  
+- Parent leftovers: `backup`, `restore`, `remove-project-sudoers`  
+- Live `useradd`/`userdel` (Type 1 `setup` / `remove-lpu` fail closed until live LPU test)  
+- Type 2 app runtime euid under sudoer-adm  
 
 ### 2.6 Why This Requirement Exists (Direct CIAO Alignment)
 
@@ -119,7 +119,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 - **CIAO Principle 2 – Intentional**: Every command has one privilege type and one handler family.  
 - **CIAO Principle 5 – Single Source of Output**: Central `out_*`.  
 - **CIAO Principle 6 – Single Point of Entry**: `app_main` is the dispatcher SSOT.  
-- **CIAO Principle 9 – Three Types of Commands**: Type 0 lifecycle only.  
+- **CIAO Principle 9 – Three Types of Commands**: Type 0 lifecycle + Type 0 domain; Type 1 fail-closed.  
 - **CIAO Principle 10 – Least-Privilege User**: No invented system-user requirement for binary lifecycle.  
 - **CIAO Principle 16 – Interactive vs Non-Interactive**: No hang in non-interactive mode.  
 - **CIAO Principle 4 / 20 – Over-protect**: Protection Rule blocks privilege and UX regressions.
@@ -129,9 +129,9 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 ## 3. Design Principles (CIAO / CIAO-Lite)
 
 - **Caution**: Fail closed on unknown verbs, including trimmed parent verbs.  
-- **Intentional**: Type 0 catalog is the whole product surface.  
+- **Intentional**: Lifecycle Type 0 plus domain Type 0; Type 1 fail-closed until live LPU.  
 - **Anti-fragile**: Same dispatcher contract as parent.  
-- **Over-protect**: Do not silently restore domain verbs “because the name is cli-template.”
+- **Over-protect**: Do not reintroduce parent `backup` / `restore`.
 
 ---
 
@@ -139,7 +139,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 
 **Future AI assistants, Grok, or maintainers MUST NOT**:
 
-1. Add domain or sudoers verbs without a new Active requirement and explicit user order.  
+1. List a verb in `help` that has no dispatcher arm, or reintroduce `backup` / `restore`.  
 2. Change empty argv from Type N help to install-ensure.  
 3. Bypass `out_*` for user-facing messages.  
 4. Advertise an online install channel in help/about.  
@@ -153,8 +153,8 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 
 | ID | Criterion |
 |----|-----------|
-| AC-1 | Help lists install / uninstall / where-is-me / version / about / help |
-| AC-2 | Help and about omit backup / restore / print-sudoers |
+| AC-1 | Help lists lifecycle Type 0 **and** `sudoers-to-json` / `json-to-sudoers` / `add-sudoer-request` / `print-sudoers` |
+| AC-2 | Help and about omit `backup` / `restore` / `remove-project-sudoers` |
 | AC-3 | Unknown and trimmed verbs exit non-zero |
 | AC-4 | Empty argv is help |
 
@@ -167,7 +167,9 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | `requirement-shell-cli-zero-arguments` | Empty argv |
 | `requirement-shell-local-self-management` | install / uninstall / where-is-me |
 | `requirement-shell-output-requirements` | `out_*` |
-| `requirement-bootstrap-chain` | Trimmed surfaces |
+| `requirement-bootstrap-chain` | Historical origin |
+| `requirement-domain-sudoer-approval` | File-based JSON approval + verb catalog (Type 0 routed; Type 1 Gap) |
+| `requirement-three-layer-privilege-model` | Type 1 / Table A |
 | `docs/requirements/index.md` | Registry |
 
 ---
@@ -176,7 +178,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 
 | TP family / ID | Suite | Status | Note |
 |----------------|-------|--------|------|
-| **TP-CLI-01..13** | `tests/test_cli.sh` | have | includes stripped-verb fail-closed |
+| **TP-CLI-01..14** | `tests/test_cli.sh` | have | includes stripped-verb fail-closed + convert routed |
 | **TP-LC-*** | `tests/test_local_lifecycle.sh` | have | lifecycle |
 
 **Matrix:** `reviews/requirement-test-matrix.md`  
@@ -188,9 +190,12 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 |------|--------|------|
 | 2026-08-03 | Active 1.0.0 | folder-backup Type 0 + domain verbs |
 | 2026-08-13 | Active 2.0.0 | cli-template Type 0 only |
+| 2026-08-13 | Active 3.0.0 | Specialize sudoer-cli; domain catalog owned by domain SSOT |
+| 2026-08-14 | Active 3.1.0 | Type 0 domain live; `print-sudoers` not trimmed; Type 1 fail-closed Gap |
+| 2026-08-14 | Active 3.1.1 | Type 1: TTY login review only via F6 + `interactive` |
 
 ---
 
-**Last Updated**: 2026-08-13  
+**Last Updated**: 2026-08-14  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

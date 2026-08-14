@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/helpers.sh — shared assertions for cli-template CI tests
+# tests/helpers.sh — shared assertions for sudoer-cli CI tests
 # =============================================================================
 # Source from test scripts (POSIX /bin/sh). Does not modify product code.
 # =============================================================================
@@ -7,8 +7,8 @@
 # shellcheck disable=SC2034
 : "${TESTS_ROOT:=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)}"
 : "${REPO_ROOT:=$(CDPATH= cd -- "${TESTS_ROOT}/.." && pwd)}"
-: "${SCRIPT:=${REPO_ROOT}/src/cli-template}"
-: "${APP_NAME:=cli-template}"
+: "${SCRIPT:=${REPO_ROOT}/src/sudoer-cli}"
+: "${APP_NAME:=sudoer-cli}"
 : "${PASS:=0}"
 : "${FAIL:=0}"
 : "${SKIP:=0}"

@@ -1,4 +1,4 @@
-# Tests — cli-template
+# Tests — sudoer-cli
 
 ## Run
 
@@ -16,8 +16,9 @@ Exit **0** when all assertions pass; **1** on failure; **2** if ship unit missin
 |------|--------|-------------|
 | `run.sh` | Entrypoint | — |
 | `helpers.sh` | Asserts + isolated HOME | — |
-| `test_cli.sh` | CLI surface, Type N empty argv, offline reject, trimmed-verb reject | **TP-CLI-*** |
+| `test_cli.sh` | CLI surface, Type N, trimmed verbs, routed convert, TTY/temps static | **TP-CLI-01..14**, **TP-ELEV-07**, **TP-TMP-01** |
 | `test_local_lifecycle.sh` | install / uninstall / where-is-me | **TP-LC-*** |
+| `test_domain_sr.sh` | Convert, JSON samples, queues, submit, Type 1 gate | **TP-SR-01..13**, **TP-SR-PRIV-01** |
 
 ## Isolation
 
@@ -27,7 +28,7 @@ Exit **0** when all assertions pass; **1** on failure; **2** if ship unit missin
 
 ## Ship unit under test
 
-`src/cli-template`
+`src/sudoer-cli`
 
 ## Maps
 

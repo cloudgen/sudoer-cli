@@ -6,7 +6,7 @@
 
 ## 1. Purpose
 
-This requirement is the **project Single Source of Truth** for **shell CLI storage resolution** of cli-template: volatile scratch and app-scoped cache path selection, per-user isolation, central resolver ownership, `app_main` wire, and about diagnostics.
+This requirement is the **project Single Source of Truth** for **shell CLI storage resolution** of sudoer-cli: volatile scratch and app-scoped cache path selection, per-user isolation, central resolver ownership, `app_main` wire, and about diagnostics.
 
 Used for **install staging** (`mktemp` under the isolated root). Not a durable backup deposit.
 
@@ -51,8 +51,8 @@ First match that is available and writable:
 
 | Item | Live value |
 |------|------------|
-| **Product / binary** | `cli-template` |
-| **Resolver** | `util_resolve_storage` in `src/cli-template` |
+| **Product / binary** | `sudoer-cli` |
+| **Resolver** | `util_resolve_storage` in `src/sudoer-cli`; leaves via `util_mktemp` (temp-file-system REQ) |
 | **Call sites** | `app_main`, `app_about`, install staging |
 | **Not used for** | Durable `/var/backup` (not a product path) |
 
@@ -79,7 +79,7 @@ First match that is available and writable:
 
 1. Remove `${APP_NAME}` / `${USERNAME}` isolation.  
 2. Replace the fallback chain with a shared world-writable dump.  
-3. Scatter hard-coded `/tmp/cli-template` roots outside the resolver.  
+3. Scatter hard-coded `/tmp/sudoer-cli` roots outside the resolver.  
 4. Leave the resolver dead with no call sites while claiming storage is product law.  
 5. Echo a tier path without creating it.  
 6. Treat `/var/backup` as a product storage path.
@@ -106,6 +106,7 @@ First match that is available and writable:
 | `requirement-project-folder` | Path classes |
 | `requirement-shell-cli-interface` | About fields |
 | `requirement-shell-local-self-management` | Install staging |
+| `requirement-shell-temp-file-system` | Unique `mktemp` leaves under this root |
 | `docs/requirements/index.md` | Registry |
 
 ---
