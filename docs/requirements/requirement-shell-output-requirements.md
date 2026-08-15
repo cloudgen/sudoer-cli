@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-output-requirements.md  
-**Status**: Active (Version 1.1.0)  
+**Status**: Active (Version 1.1.1)  
 **Area**: shell  
 **Key**: `requirement-shell-output-requirements`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -59,7 +59,7 @@ This origin owns the `out_*` family. Domain verbs **MUST** use the same `out_*` 
 
 Rules:
 
-1. Fatal paths use `out_die` / `out_json_error`.  
+1. Fatal paths use `out_die` / `out_json_error`. Operator-facing fatals **MUST** say what failed in plain words and, when a next action exists, print a **`Next:`** line with a pasteable command. Do **not** emit only `Type 1` / `euid 0` / `authorization failed`.  
 2. JSON mode: no colors, banners, or progress mixed into stdout JSON.  
 3. Capture pattern: `sudoer-cli --json <cmd> 2>err.log`.  
 4. **No secrets** on either channel (tokens, passwords, private keys, full private key material).
@@ -80,7 +80,7 @@ Rules:
 | **Product** | `sudoer-cli` |
 | **Ship unit** | `src/sudoer-cli` |
 | **Human prefixes** | `[INFO]`, `[OK]`, `[WARN]`, `[ERROR]` (or equivalent consistent set) |
-| **Domain messages** | None (Type 0 only) |
+| **Domain messages** | Convert / submit / list / show / Type 1 fatals use the same `out_*` family. Fatals say what failed and print a **`Next:`** line when a next action exists |
 | **Bootstrap role** | This product is hop 0; `out_*` is this origin’s family |
 
 ### 2.6 Why This Requirement Exists (CIAO)
@@ -143,6 +143,7 @@ Rules:
 | 2026-08-03 | Active | Output SSOT for folder-backup |
 | 2026-08-13 | Active | Retarget to cli-template; drop domain message law |
 | 2026-08-14 | Active 1.1.0 | Colors consume `TTY`; do not re-test `[ -t 1 ]` in `out_*` |
+| 2026-08-14 | Active 1.1.1 | Implementation Notes: domain messages live; fatals use `Next:` |
 
 ---
 

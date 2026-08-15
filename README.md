@@ -1,11 +1,11 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.1.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.6.0-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
 
-POSIX `/bin/sh` CLI specialized from **cli-template**. Type 0 lifecycle (`install`, `uninstall`, `where-is-me`, `version`, `about`, `help`) is live. Type 0 domain (file-based JSON approval: convert / submit / list / show) is **routed**. Type 1 names (`setup`, `approve`, `reject`, `interactive`) are routed and **fail closed** without euid 0. Live `useradd` and dest install to `/etc` are a **Gap**.
+POSIX `/bin/sh` CLI specialized from **cli-template**. Type 0 lifecycle (`install`, `uninstall`, `where-is-me`, `version`, `about`, `help`) is live. Type 0 domain (file-based JSON approval: convert / submit / list / show) is **routed**. Type 1 **`setup` / `remove-lpu`** create and teardown `sudoer-adm` (any host admin: `sudo sudoer-cli setup` — password sudo OK; not `sudo -n`; not only `sudoer-adm`). Approve / `interactive` stay F6 (or a real root session). The review loop is **live** (TTY; `--json` fails closed).
 
 Install **location** is still **both**:
 - **local** → `~/.local/bin/sudoer-cli` (normal user)
@@ -22,7 +22,7 @@ The *channel* is local-only (no online `curl|sh`). Local vs global here means wh
 - **CIAO / CIAO-Lite** defensive design (Protection Zones, `out_*` output SSOT)
 - **File-based JSON approval**: normal users drop self-scoped request JSON into inbound; `sudoer-adm` verifies that JSON and moves the file. Folder = state; JSON = the checkable grant.
 - **Type 0 domain (routed)**: `sudoers-to-json` / `json-to-sudoers`, `add` / `update` / `remove-sudoer-request`, `list-approving` / `list-approved` / `list-rejected`, `show`
-- **Type 1 (routed, fail closed without euid 0)**: `setup`, `approve`, `reject`, `interactive`. Live `useradd` / dest write to `/etc` is a **Gap**
+- **Type 1 (routed, fail closed without euid 0)**: `setup` / `remove-lpu` = any admin outer `sudo` (password OK) — live `useradd`, home `/etc/sudoer-adm`, F6 `/etc/sudoers.d/sudoer-adm`. `approve` copies/overwrites/removes `/etc/sudoers.d/{{service}}-{{username}}`. Never writes `/etc/passwd` or `/etc/sudoers`. Review-loop body is a **Gap**
 
 ## Quick Installation
 
@@ -38,12 +38,17 @@ sh src/sudoer-cli install --force
 sudoer-cli version
 ```
 
-**Global (multi-user hosts / future production F6):**
+**Global (multi-user hosts / production F6):**
 
 ```sh
 sudo sh src/sudoer-cli install
 # or: sudoer-cli install --global   # needs write access to /usr/local/bin
 # Managed binary mode is always 0755 so every user can run the shell ship unit.
+
+# Create sudoer-adm + F6 + login hook (any host admin; password sudo OK).
+# Also works from the checkout: sudo src/sudoer-cli setup
+# (setup installs the global binary if it is missing).
+sudo sudoer-cli setup
 ```
 
 This product is **local-only** for its install channel (no default `SCRIPT_URL` online install). Global vs local here means install *location*, not an online channel.
@@ -117,4 +122,7 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
-2026-08-14 — version **1.1.0** (dest convention `{{service-name}}-{{username}}`; Type 0 domain routed).
+2026-08-15 — version **1.6.0** (`interactive` loop live; about lists queue paths; TP-SR-INT / TP-SR-Q in DTV).
+2026-08-15 — version **1.5.1** (inbound 3773 + submit 0640; approve archives snapshot; F7 removes `/var/sudoer-cli` children).
+2026-08-15 — version **1.5.0** (public queues `/var/sudoer-cli/sudoer-request`; F4 views under live LPU home).
+2026-08-14 — version **1.4.1** (`setup` runs `useradd` as root without a second `sudo`; home `/etc/sudoer-adm`).

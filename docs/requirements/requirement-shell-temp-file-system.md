@@ -40,7 +40,7 @@ This requirement is the **project Single Source of Truth** for **scratch file le
 | Consumer | Family | Rule |
 |----------|--------|------|
 | Install stage | install staging | already `mktemp` under storage root |
-| `visudo -cf` private copy | convert / approve | `mktemp`; never in-place `/etc` |
+| `visudo -cf` private copy | convert / approve | `mktemp`; never in-place `/etc/passwd` or `/etc/sudoers.d` |
 | Convert encode/parse/infer/decode scratch | convert | `util_mktemp`; never `sr-*.$$` |
 | Approve private body | Type 1 | `mktemp` |
 | Admin script / draft emit | print helpers | `mktemp` (not a fixed basename under `/tmp`) |

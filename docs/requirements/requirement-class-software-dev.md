@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-class-software-dev.md  
-**Status**: Active (Version 1.4.0 – sudoer-cli class law + residual stack)  
+**Status**: Active (Version 1.5.0 – sudoer-cli class law + residual stack)  
 **Area**: class  
 **Key**: `requirement-class-software-dev`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -21,7 +21,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 3. **MUST NOT** register an Active `requirement-class-server-maintenance.md` while class is software-development.  
 4. **MUST** retain portable harness knowledge; specialized product knowledge lives in this and peer `requirement-*.md` files.  
 5. **MUST** apply software-development SSOT/gate posture when claimed (identity, ship unit, precommit when git is used — as applicable).  
-5a. When git is used on a **multi-vault host**, **MUST** treat forge push identity as **product repository-user SSOT** (Config `REPO_USER` / project-repository owner), not ambient default SSH face: agents **MUST** run precommit / SSH-profile gates (pre-git report; vault bind via activate or one-shot identity for push). Host vault basenames are **not** product law — portable process lives in harness skills (`skill-commit-check`, `skill-ssh-user-profile`).  
+5a. When git is used on a **multi-vault host**, **MUST** treat forge push identity as **product repository-user SSOT** (Config `REPO_USER` / project-repository owner), not ambient default SSH face: agents **MUST** run precommit / SSH-profile gates (pre-git report; vault bind via activate or one-shot identity for push). Host vault basenames are **not** product law.  
 6. **MUST NOT** invent hollow product docs solely to look specialized; collect real values or defer explicitly.
 
 ### 2.1 Residual collection principle (SSOT hygiene)
@@ -85,7 +85,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | **Architectures supported** | any arch with POSIX sh and the external tools the script invokes |
 | **Git surface** | used when product is published |
 | **Ship unit / install** | yes — `src/sudoer-cli` → `${USER_BIN}/sudoer-cli` (default `~/.local/bin/sudoer-cli`); **local-only** install (no online channel) |
-| **Product version SSOT** | `VERSION="1.0.0"` hard-assign in `src/sudoer-cli` |
+| **Product version SSOT** | `VERSION="1.6.0"` hard-assign in `src/sudoer-cli` |
 | **Bootstrap origin** | Historical **cli-template**. This product is **sudoer-cli**. No live parent ship unit. |
 
 **Residual ownership table:**
@@ -97,7 +97,8 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | Package/build tool + lockfile | **this file** | none / not used |
 | Bootstrap lineage / keep-trim | `requirement-bootstrap-chain` | sudoer-cli specialized from cli-template |
 | Privilege / LPU / Type map | `requirement-three-layer-privilege-model` · `requirement-least-privilege-user` | Do not duplicate |
-| Domain sudoers-approval | `requirement-domain-sudoer-approval` | File-based JSON approval; Type 0 routed; Type 1 dest Gap |
+| What is blocked vs must stay open | `requirement-privilege-prevention-set` | Closed prevention catalog; do not invent walls |
+| Domain sudoers-approval | `requirement-domain-sudoer-approval` | File-based JSON approval; Type 0 routed; Type 1 `setup` / `interactive` live |
 | Project layout / ship path | `requirement-project-folder` | `src/` + bin targets |
 | Type 0 CLI surface / flags / dispatch | `requirement-shell-cli-interface` | Do not duplicate |
 | Empty argv Type N help | `requirement-shell-cli-zero-arguments` | Local-only |
@@ -176,6 +177,10 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | `requirement-shell-idempotency` | Re-run safety |
 | `requirement-shell-interactive-vs-noninteractive` | Mode policy |
 | `requirement-shell-modular-function-design` | Prefixes / single-file modularity |
+| `requirement-three-layer-privilege-model` | Type map + Tables A/B/C |
+| `requirement-least-privilege-user` | F1–F7 |
+| `requirement-privilege-prevention-set` | Closed catalog of what is blocked vs must stay open |
+| `requirement-domain-sudoer-approval` | File-based JSON approval |
 | `docs/requirements/index.md` | Registry SSOT |
 
 ---
@@ -189,9 +194,10 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | 2026-08-13 | Active 1.2.0 | Bootstrap origin = selfmanaged; folder-backup hop retired (no longer maintain bootstrap from it) |
 | 2026-08-13 | Active 1.3.0 | This product is hop 0; selfmanaged is not origin |
 | 2026-08-13 | Active 1.4.0 | Specialize to sudoer-cli; point residual at privilege + domain REQs |
+| 2026-08-14 | Active 1.5.0 | Residual: prevention-set owner; VERSION 1.2.3; `setup` live; `interactive` loop Gap |
 
 ---
 
-**Last Updated**: 2026-08-13  
+**Last Updated**: 2026-08-14  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

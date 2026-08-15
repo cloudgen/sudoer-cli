@@ -21,16 +21,17 @@
 # - requirement-shell-interactive-vs-noninteractive.md
 # - requirement-three-layer-privilege-model.md
 # - requirement-least-privilege-user.md
+# - requirement-privilege-prevention-set.md
 # - requirement-domain-sudoer-approval.md
 #
-# Type 0 lifecycle is live. Domain verbs (convert, submit, list, show, print-sudoers,
-# Type 1 setup/approve/reject) are routed. Help lists live domain Type 0 rows.
+# Type 0 lifecycle is live. Domain verbs (convert, submit, list, show, print-sudoers)
+# and Type 1 setup/remove-lpu/approve/reject/interactive are routed.
 #
 # Philosophy: CIAO (Caution • Intentional • Anti-fragile • Over-engineered)
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
 # APP NAME: hard-assign APP_NAME="sudoer-cli"
-# VERSION: hard-assign VERSION="1.1.0"
+# VERSION: hard-assign VERSION="1.6.0"
 #
 # =============================================================================
 
@@ -45,9 +46,9 @@ APP_NAME="sudoer-cli"
 : "${APP_NAME:=sudoer-cli}"
 : "${APP_DESC:=Least-privilege sudoers-request approval CLI (Type 0 lifecycle; domain target law)}"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
-: "${DESCRIPTION:=POSIX /bin/sh CLI: lifecycle plus sudoers-request convert/submit/list/show. Type 1 setup/approve/reject require euid 0.}"
+: "${DESCRIPTION:=POSIX /bin/sh CLI: lifecycle plus sudoers-request convert/submit/list/show. Type 1 setup creates sudoer-adm; approve/reject require euid 0.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.1.0"
+VERSION="1.6.0"
 : "${VERSION:=1.0.0}"
 # Repository identity SSOT (git host owner/repo for project-repository alignment).
 # Install remains local-only: SCRIPT_URL stays empty (no online curl|sh channel).
@@ -267,13 +268,37 @@ out_error()   { out_text "out_error"   "$*"; }
 out_die() { util_scratch_cleanup 2>/dev/null || true; out_json_error "$*"; out_text out_error "$*"; exit 1; }
 
 # Domain fatal with machine error code (requirement-domain-sudoer-approval).
+# $1 human what-failed  $2 code  $3 optional pasteable next command (no "sudo -n")
 sr_die() {
     _sr_msg="${1-}"
     _sr_code="${2:-unknown}"
+    _sr_next="${3-}"
+    _sr_json="${_sr_msg}"
+    if [ -n "${_sr_next}" ]; then
+        _sr_json="${_sr_msg} Next: ${_sr_next}"
+    fi
     util_scratch_cleanup 2>/dev/null || true
-    out_json_error "${_sr_msg}" "${_sr_code}"
+    out_json_error "${_sr_json}" "${_sr_code}"
     out_text out_error "${_sr_msg}"
+    if [ -n "${_sr_next}" ]; then
+        out_text out_error "Next: ${_sr_next}"
+    fi
     exit 1
+}
+
+# Path the operator can paste after sudo (global binary, else this checkout).
+sr_operator_cmd() {
+    _gb="${GLOBAL_BIN:-/usr/local/bin}/${APP_NAME}"
+    if [ -x "${_gb}" ]; then
+        printf '%s' "${_gb}"
+        return 0
+    fi
+    _run=$(util_resolve_running_path)
+    if [ -n "${_run}" ] && [ -f "${_run}" ]; then
+        printf '%s' "${_run}"
+        return 0
+    fi
+    printf '%s' "${APP_NAME}"
 }
 
 # =============================================================================
@@ -1464,7 +1489,7 @@ app_version() {
 }
 
 # =============================================================================
-# app_about() - Diagnostics (local-only; Type 0; no domain fields)
+# app_about() - Diagnostics (Type 0 + resolved queue paths)
 # =============================================================================
 #
 # ALIGNMENT:
@@ -2059,20 +2084,41 @@ sr_print_sudoers_install_script() {
     fi
 }
 
+sr_default_public_queue_root() {
+    : "${APP_NAME:=sudoer-cli}"
+    printf '/var/%s' "${APP_NAME}"
+}
+
+# Live F3 = passwd home of LPU_USER. Create default stays in lpu_defaults.
+lpu_resolve_home() {
+    lpu_defaults
+    _pw=$(getent passwd "${LPU_USER}" 2>/dev/null || true)
+    if [ -n "${_pw}" ]; then
+        _h=$(printf '%s' "${_pw}" | cut -d: -f6)
+        if [ -n "${_h}" ]; then
+            LPU_HOME="${_h}"
+        fi
+    fi
+}
+
 sr_resolve_queues() {
     : "${SUDOER_CLI_ALLOW_TEST_ROOTS:=0}"
-    : "${LPU_HOME:=/home/sudoer-adm}"
+    : "${APP_NAME:=sudoer-cli}"
+    lpu_defaults
+    lpu_resolve_home
     _root="${SR_QUEUE_ROOT:-${SUDOER_CLI_QUEUE_ROOT-}}"
     if [ -n "${_root}" ]; then
         sr_abs_path "${_root}" || sr_die "queue root must be absolute" "invalid_name"
-        SUDOER_QUEUE_REQUEST="${_root}/sudoer-approving"
-        SUDOER_QUEUE_APPROVED="${_root}/sudoer-approved"
-        SUDOER_QUEUE_REJECTED="${_root}/sudoer-rejected"
+        SUDOER_PUBLIC_QUEUE_ROOT="${_root}"
     else
-        SUDOER_QUEUE_REQUEST="${LPU_HOME}/sudoer-approving"
-        SUDOER_QUEUE_APPROVED="${LPU_HOME}/sudoer-approved"
-        SUDOER_QUEUE_REJECTED="${LPU_HOME}/sudoer-rejected"
+        SUDOER_PUBLIC_QUEUE_ROOT=$(sr_default_public_queue_root)
     fi
+    SUDOER_QUEUE_REQUEST="${SUDOER_PUBLIC_QUEUE_ROOT}/sudoer-request"
+    SUDOER_QUEUE_APPROVED="${SUDOER_PUBLIC_QUEUE_ROOT}/sudoer-approved"
+    SUDOER_QUEUE_REJECTED="${SUDOER_PUBLIC_QUEUE_ROOT}/sudoer-rejected"
+    SUDOER_QUEUE_REQUEST_VIEW="${LPU_HOME}/sudoer-request"
+    SUDOER_QUEUE_APPROVED_VIEW="${LPU_HOME}/sudoer-approved"
+    SUDOER_QUEUE_REJECTED_VIEW="${LPU_HOME}/sudoer-rejected"
     [ -n "${SR_REQUEST_DIR:-${SUDOER_CLI_REQUEST_DIR-}}" ] && \
         SUDOER_QUEUE_REQUEST="${SR_REQUEST_DIR:-${SUDOER_CLI_REQUEST_DIR}}"
     [ -n "${SR_APPROVED_DIR:-${SUDOER_CLI_APPROVED_DIR-}}" ] && \
@@ -2081,14 +2127,112 @@ sr_resolve_queues() {
         SUDOER_QUEUE_REJECTED="${SR_REJECTED_DIR:-${SUDOER_CLI_REJECTED_DIR}}"
     for _q in "${SUDOER_QUEUE_REQUEST}" "${SUDOER_QUEUE_APPROVED}" "${SUDOER_QUEUE_REJECTED}"; do
         sr_abs_path "${_q}" || sr_die "queue path must be absolute: ${_q}" "invalid_name"
-        [ -L "${_q}" ] && sr_die "queue last component must not be a symlink: ${_q}" "invalid_name"
+        if [ -L "${_q}" ]; then
+            sr_die "queue last component must not be a symlink: ${_q}" "invalid_name"
+        fi
     done
     if [ "${SUDOER_QUEUE_REQUEST}" = "${SUDOER_QUEUE_APPROVED}" ] || \
        [ "${SUDOER_QUEUE_REQUEST}" = "${SUDOER_QUEUE_REJECTED}" ] || \
        [ "${SUDOER_QUEUE_APPROVED}" = "${SUDOER_QUEUE_REJECTED}" ]; then
         sr_die "queue directories must be distinct" "invalid_name"
     fi
-    export SUDOER_QUEUE_REQUEST SUDOER_QUEUE_APPROVED SUDOER_QUEUE_REJECTED
+    export SUDOER_PUBLIC_QUEUE_ROOT \
+        SUDOER_QUEUE_REQUEST SUDOER_QUEUE_APPROVED SUDOER_QUEUE_REJECTED \
+        SUDOER_QUEUE_REQUEST_VIEW SUDOER_QUEUE_APPROVED_VIEW SUDOER_QUEUE_REJECTED_VIEW
+}
+
+# Type 0 submit uses the public real dir. Type 1 approve/reject/interactive
+# uses ${LPU_HOME}/… views (symlinks) unless a queue override is in force.
+sr_queue_override_set() {
+    if [ -n "${SR_QUEUE_ROOT:-${SUDOER_CLI_QUEUE_ROOT-}}" ]; then
+        return 0
+    fi
+    if [ -n "${SR_REQUEST_DIR:-${SUDOER_CLI_REQUEST_DIR-}}" ]; then
+        return 0
+    fi
+    if [ -n "${SR_APPROVED_DIR:-${SUDOER_CLI_APPROVED_DIR-}}" ]; then
+        return 0
+    fi
+    if [ -n "${SR_REJECTED_DIR:-${SUDOER_CLI_REJECTED_DIR-}}" ]; then
+        return 0
+    fi
+    return 1
+}
+
+sr_approver_dir() {
+    _which="$1"
+    if sr_queue_override_set; then
+        case "${_which}" in
+            request)  printf '%s' "${SUDOER_QUEUE_REQUEST}" ;;
+            approved) printf '%s' "${SUDOER_QUEUE_APPROVED}" ;;
+            rejected) printf '%s' "${SUDOER_QUEUE_REJECTED}" ;;
+            *) sr_die "bad approver dir" "invalid_name" ;;
+        esac
+        return 0
+    fi
+    case "${_which}" in
+        request)  printf '%s' "${SUDOER_QUEUE_REQUEST_VIEW}" ;;
+        approved) printf '%s' "${SUDOER_QUEUE_APPROVED_VIEW}" ;;
+        rejected) printf '%s' "${SUDOER_QUEUE_REJECTED_VIEW}" ;;
+        *) sr_die "bad approver dir" "invalid_name" ;;
+    esac
+}
+
+sr_require_approver_views() {
+    if sr_queue_override_set; then
+        return 0
+    fi
+    _cmd=$(sr_operator_cmd)
+    for _v in "${SUDOER_QUEUE_REQUEST_VIEW}" "${SUDOER_QUEUE_APPROVED_VIEW}" "${SUDOER_QUEUE_REJECTED_VIEW}"; do
+        if [ ! -L "${_v}" ]; then
+            sr_die "approver queue view is missing (run setup): ${_v}" "not_found" \
+                "sudo ${_cmd} setup"
+        fi
+    done
+}
+
+sr_chown_request_to_lpu() {
+    lpu_defaults
+    _rf="$1"
+    if [ ! -f "${_rf}" ]; then
+        sr_die "cannot chown missing request ${_rf}" "not_found"
+    fi
+    if [ -L "${_rf}" ]; then
+        sr_die "not a regular file" "not_regular"
+    fi
+    if ! chown "${LPU_USER}:${LPU_USER}" "${_rf}"; then
+        sr_die "cannot chown ${_rf} to ${LPU_USER}:${LPU_USER}" "authz"
+    fi
+    chmod 0640 "${_rf}" || true
+}
+
+sr_request_owner() {
+    stat -c '%U' "$1" 2>/dev/null
+}
+
+sr_restrict_submitted_file() {
+    chmod 0640 "$1" || true
+}
+
+# Snapshot inbound to a private file, then place that snapshot in the
+# archive dir and unlink the inbound name (do not mv a replaceable path).
+sr_archive_validated() {
+    lpu_defaults
+    _snap="$1"
+    _adir="$2"
+    _aid="$3"
+    _inb="$4"
+    if ! cp "${_snap}" "${_adir}/${_aid}"; then
+        rm -f "${_snap}"
+        sr_die "cannot archive ${_aid}" "authz"
+    fi
+    if ! chown "${LPU_USER}:${LPU_USER}" "${_adir}/${_aid}"; then
+        rm -f "${_snap}"
+        sr_die "cannot chown archived ${_aid} to ${LPU_USER}:${LPU_USER}" "authz"
+    fi
+    chmod 0640 "${_adir}/${_aid}" || true
+    rm -f "${_inb}"
+    rm -f "${_snap}"
 }
 
 sr_require_queues() {
@@ -2098,7 +2242,9 @@ sr_require_queues() {
             if [ "${SUDOER_CLI_ALLOW_TEST_ROOTS}" = "1" ]; then
                 mkdir -p "${_q}" || sr_die "cannot create ${_q}" "invalid_name"
             else
-                sr_die "queue missing: ${_q}" "not_found"
+                _cmd=$(sr_operator_cmd)
+                sr_die "queue directory does not exist: ${_q}. Create the LPU first." "not_found" \
+                    "sudo ${_cmd} setup"
             fi
         fi
     done
@@ -2140,9 +2286,52 @@ sr_sidecar_has() {
     grep -qx "$1" "${_sp}" 2>/dev/null
 }
 
+sr_sudoers_d_dir() {
+    printf '%s' "${SUDOERS_D:-/etc/sudoers.d}"
+}
+
+sr_grant_root() {
+    printf '%s' "${SUDOER_CLI_GRANT_ROOT:-${GRANT_ROOT:-/etc}}"
+}
+
+sr_user_tree() {
+    # $1 username → /etc/{{username}} (LPU home / queues; not live sudo dest)
+    printf '%s/%s' "$(sr_grant_root)" "$1"
+}
+
 sr_dest_basename() {
-    # $1 username $2 service → {{service}}-{{username}} (project-sudoers-file order)
+    # $1 username $2 service → {{service}}-{{username}}
     printf '%s-%s' "$2" "$1"
+}
+
+sr_grant_dest() {
+    # $1 username $2 service → /etc/sudoers.d/{{service}}-{{username}}
+    printf '%s/%s' "$(sr_sudoers_d_dir)" "$(sr_dest_basename "$1" "$2")"
+}
+
+# Never write /etc/passwd or /etc/sudoers. Product exception: Type 1 may
+# copy / overwrite / remove product-owned names under /etc/sudoers.d/.
+sr_forbid_passwd_or_main_sudoers() {
+    _fp="$1"
+    case "${_fp}" in
+        /etc/passwd|/etc/group|/etc/shadow|/etc/gshadow|/etc/sudoers)
+            sr_die "refusing to write ${_fp} (use useradd/userdel; sudoers dest is /etc/sudoers.d/<product-name>)." "authz"
+            ;;
+    esac
+}
+
+sr_require_product_sudoers_d() {
+    # $1 path — allow F6 ({{LPU_USER}}) or grant ({{service}}-{{username}}); refuse foreign.
+    lpu_defaults
+    _fp="$1"
+    _dir=$(sr_sudoers_d_dir)
+    _base=$(basename "${_fp}")
+    case "${_fp}" in
+        "${_dir}"/"${LPU_USER}") return 0 ;;
+        "${_dir}"/*-remove) sr_die "refusing dest ${_fp} (never install a *-remove name)." "authz" ;;
+        "${_dir}"/*-*) return 0 ;;
+    esac
+    sr_die "refusing ${_fp} (not a product sudoers.d name; only copy/overwrite/remove F6 or {{service}}-{{user}})." "authz"
 }
 
 sr_detect_kind() {
@@ -2173,8 +2362,9 @@ sr_submit() {
             _js=$(sr_json_encode_request "${_purpose}" "${_me}" "${SR_SERVICE}" "remove" "")
             _id=$(sr_alloc_request_id "${_me}" "${SR_SERVICE}" "remove")
             printf '%s\n' "${_js}" >"${SUDOER_QUEUE_REQUEST}/${_id}"
+            sr_restrict_submitted_file "${SUDOER_QUEUE_REQUEST}/${_id}"
             sr_sidecar_add "${_id}"
-            _dest=$(sr_dest_basename "${_me}" "${SR_SERVICE}")
+            _dest=$(sr_grant_dest "${_me}" "${SR_SERVICE}")
             if [ "${JSON}" -eq 1 ]; then
                 out_json "success" "submitted" "request_id" "${_id}" "dest" "${_dest}" "action" "remove"
             else
@@ -2207,8 +2397,9 @@ sr_submit() {
     fi
     _id=$(sr_alloc_request_id "${_me}" "${_svc}" "${_act}")
     printf '%s\n' "${_js}" >"${SUDOER_QUEUE_REQUEST}/${_id}"
+    sr_restrict_submitted_file "${SUDOER_QUEUE_REQUEST}/${_id}"
     sr_sidecar_add "${_id}"
-    _dest=$(sr_dest_basename "${_me}" "${_svc}")
+    _dest=$(sr_grant_dest "${_me}" "${_svc}")
     if [ "${JSON}" -eq 1 ]; then
         out_json "success" "submitted" "request_id" "${_id}" "dest" "${_dest}" "action" "${_act}"
     else
@@ -2247,6 +2438,11 @@ sr_list() {
                 printf '%s\n' "${_bn}"
                 continue
             fi
+            sr_parse_request_id "${_bn}"
+            _ow=$(sr_request_owner "${_f}")
+            if [ "${_ow}" != "${SR_ID_USER}" ]; then
+                printf '%s\n' "${_bn}"
+            fi
         done
         return 0
     fi
@@ -2280,33 +2476,62 @@ sr_show() {
     cat "${_path}"
 }
 
-sr_require_type1() {
+# Bootstrap Type 1 (setup / remove-lpu): any host admin who is already euid 0.
+# Mix model: password sudo OK (human or in-tool). sudo -n is not suggested.
+# First-time create cannot require sudoer-adm or sudo -n — F6 does not exist yet.
+sr_require_type1_bootstrap() {
     if [ "$(id -u)" -ne 0 ]; then
-        sr_die "Type 1 requires euid 0" "authz"
+        _who=$(id -un 2>/dev/null || echo "this user")
+        _cmd=$(sr_operator_cmd)
+        sr_die "setup must run as root. You are ${_who} (not root)." "authz" \
+            "sudo ${_cmd} setup"
+    fi
+}
+
+# Day-to-day Type 1 (approve / reject / interactive): F6 or a real root login.
+# After F6 exists, the login hook may use sudo -n (NOPASSWD). That is not bootstrap.
+sr_require_type1() {
+    _cmd=$(sr_operator_cmd)
+    _who=$(id -un 2>/dev/null || echo "this user")
+    if [ "$(id -u)" -ne 0 ]; then
+        sr_die "approve/reject/interactive must run as root. You are ${_who}." "authz" \
+            "first time: sudo ${_cmd} setup   then login as sudoer-adm, or a root login"
     fi
     _su="${SUDO_USER-}"
     _un=$(id -un)
     if [ -n "${_su}" ] && [ "${_su}" != "sudoer-adm" ]; then
-        sr_die "Type 1 authorization failed" "authz"
+        sr_die "approve/reject/interactive is not for ${_su}. Only sudoer-adm (after setup) or a root login." "authz" \
+            "sudo ${_cmd} setup     (any host admin)   then login as sudoer-adm"
     fi
     if [ -z "${_su}" ] && [ "${_un}" != "root" ]; then
-        sr_die "Type 1 authorization failed" "authz"
+        sr_die "approve/reject/interactive is not for ${_un}. Only sudoer-adm (after setup) or a root login." "authz" \
+            "sudo ${_cmd} setup     (any host admin)   then login as sudoer-adm"
     fi
 }
 
 sr_approve() {
     sr_require_type1
     sr_require_queues
+    sr_require_approver_views
     _id="${SR_OPERAND-}"
     [ -n "${_id}" ] || sr_die "approve requires request-id" "not_found"
-    _path="${SUDOER_QUEUE_REQUEST}/${_id}"
-    [ -f "${_path}" ] || sr_die "not in approving: ${_id}" "not_found"
+    _in=$(sr_approver_dir request)
+    _ok=$(sr_approver_dir approved)
+    _path="${_in}/${_id}"
+    [ -f "${_path}" ] || sr_die "not in request queue: ${_id}" "not_found"
     [ -L "${_path}" ] && sr_die "not a regular file" "not_regular"
+    sr_parse_request_id "${_id}"
+    _ow=$(sr_request_owner "${_path}")
+    if [ "${_ow}" != "${SR_ID_USER}" ]; then
+        sr_die "owner ${_ow} != subject ${SR_ID_USER}" "owner_mismatch"
+    fi
     _priv=$(mktemp "${TMPDIR:-/tmp}/sr-apr.XXXXXX")
-    cp "${_path}" "${_priv}"
+    if ! cp "${_path}" "${_priv}"; then
+        rm -f "${_priv}"
+        sr_die "cannot snapshot ${_id}" "authz"
+    fi
     _body=$(cat "${_priv}")
     sr_json_decode_to_fields "${_body}"
-    sr_parse_request_id "${_id}"
     _user="${SR_ID_USER}"
     _svc="${SR_ID_SVC}"
     _act="${SR_ID_ACT}"
@@ -2319,19 +2544,19 @@ sr_approve() {
     if [ -n "${SR_D_ACT}" ] && [ "${SR_D_ACT}" != "${_act}" ]; then
         sr_die "action mismatch" "field_mismatch"
     fi
-    _dest_dir="${SUDOERS_D:-/etc/sudoers.d}"
-    _dest="${_dest_dir}/$(sr_dest_basename "${_user}" "${_svc}")"
+    _dest=$(sr_grant_dest "${_user}" "${_svc}")
+    sr_forbid_passwd_or_main_sudoers "${_dest}"
+    sr_require_product_sudoers_d "${_dest}"
+    _dest_dir=$(sr_sudoers_d_dir)
     if [ "${_act}" = "remove" ]; then
         if [ -f "${_dest}" ]; then
-            mkdir -p /etc/sudoers.bak 2>/dev/null || true
-            [ "${SUDOER_CLI_ALLOW_TEST_ROOTS}" = "1" ] || mkdir -p /etc/sudoers.bak 2>/dev/null || true
-            if [ "${SUDOER_CLI_ALLOW_TEST_ROOTS}" = "1" ]; then
+            if [ "${SUDOER_CLI_ALLOW_TEST_ROOTS:-0}" = "1" ]; then
                 _bak="${_dest_dir}/.bak"
-                mkdir -p "${_bak}"
-                mv "${_dest}" "${_bak}/$(basename "${_dest}").bak" 2>/dev/null || rm -f "${_dest}"
             else
-                mv "${_dest}" "/etc/sudoers.bak/$(basename "${_dest}").bak" 2>/dev/null || rm -f "${_dest}"
+                _bak="/etc/sudoers.bak"
             fi
+            mkdir -p "${_bak}"
+            mv "${_dest}" "${_bak}/$(basename "${_dest}").bak" 2>/dev/null || rm -f "${_dest}"
         fi
     else
         _txt=$(sr_render_sudoers "${SR_D_PURPOSE}" "${_user}" "${_act}" "${SR_D_CMDS}")
@@ -2339,10 +2564,9 @@ sr_approve() {
         mkdir -p "${_dest_dir}"
         printf '%s\n' "${_txt}" >"${_dest}"
     fi
-    mv "${_path}" "${SUDOER_QUEUE_APPROVED}/${_id}"
-    rm -f "${_priv}"
+    sr_archive_validated "${_priv}" "${_ok}" "${_id}" "${_path}"
     if [ "${JSON}" -eq 1 ]; then
-        out_json "success" "approved" "request_id" "${_id}" "dest" "$(basename "${_dest}")"
+        out_json "success" "approved" "request_id" "${_id}" "dest" "${_dest}"
     else
         out_success "approved ${_id}"
     fi
@@ -2351,11 +2575,25 @@ sr_approve() {
 sr_reject() {
     sr_require_type1
     sr_require_queues
+    sr_require_approver_views
     _id="${SR_OPERAND-}"
     [ -n "${_id}" ] || sr_die "reject requires request-id" "not_found"
-    _path="${SUDOER_QUEUE_REQUEST}/${_id}"
-    [ -f "${_path}" ] || sr_die "not in approving: ${_id}" "not_found"
-    mv "${_path}" "${SUDOER_QUEUE_REJECTED}/${_id}"
+    _in=$(sr_approver_dir request)
+    _no=$(sr_approver_dir rejected)
+    _path="${_in}/${_id}"
+    [ -f "${_path}" ] || sr_die "not in request queue: ${_id}" "not_found"
+    [ -L "${_path}" ] && sr_die "not a regular file" "not_regular"
+    sr_parse_request_id "${_id}"
+    _ow=$(sr_request_owner "${_path}")
+    if [ "${_ow}" != "${SR_ID_USER}" ]; then
+        sr_die "owner ${_ow} != subject ${SR_ID_USER}" "owner_mismatch"
+    fi
+    _priv=$(mktemp "${TMPDIR:-/tmp}/sr-rej.XXXXXX")
+    if ! cp "${_path}" "${_priv}"; then
+        rm -f "${_priv}"
+        sr_die "cannot snapshot ${_id}" "authz"
+    fi
+    sr_archive_validated "${_priv}" "${_no}" "${_id}" "${_path}"
     if [ "${JSON}" -eq 1 ]; then
         out_json "success" "rejected" "request_id" "${_id}"
     else
@@ -2364,22 +2602,487 @@ sr_reject() {
 }
 
 sr_interactive() {
+    : "${TTY:=0}"
+    : "${JSON:=0}"
+    : "${QUIET:=0}"
+    : "${FORCE:=0}"
+    if [ "${JSON}" -eq 1 ] || [ "${TTY}" -ne 1 ]; then
+        sr_die "interactive needs a TTY (not --json)." "confirm_required"
+    fi
+    if [ "${QUIET}" -eq 1 ]; then
+        sr_die "interactive needs a TTY without --quiet." "confirm_required"
+    fi
     sr_require_type1
-    sr_die "interactive requires a TTY review loop (use approve/reject non-interactively)" "confirm_required"
+    sr_require_queues
+    sr_require_approver_views
+    _in=$(sr_approver_dir request)
+    _ids=$(mktemp "${TMPDIR:-/tmp}/sr-int.XXXXXX")
+    for _f in "${_in}"/sudoer-*.json; do
+        [ -f "${_f}" ] || continue
+        if [ -L "${_f}" ]; then
+            continue
+        fi
+        _bn=$(basename "${_f}")
+        case "${_bn}" in
+            sudoer-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-*.json)
+                printf '%s\n' "${_bn}" >>"${_ids}"
+                ;;
+        esac
+    done
+    if [ ! -s "${_ids}" ]; then
+        rm -f "${_ids}"
+        out_info "no pending requests"
+        return 0
+    fi
+    _sorted=$(mktemp "${TMPDIR:-/tmp}/sr-int.XXXXXX")
+    sort "${_ids}" >"${_sorted}"
+    rm -f "${_ids}"
+    while IFS= read -r _bn; do
+        [ -n "${_bn}" ] || continue
+        out_info "Request ${_bn}"
+        SR_OPERAND="${_bn}"
+        sr_show
+        if prompt_yes_no "Approve ${_bn}"; then
+            if ! ( SR_OPERAND="${_bn}"; sr_approve ); then
+                out_error "approve failed for ${_bn}; continuing"
+            fi
+        elif prompt_yes_no "Reject ${_bn}"; then
+            if ! ( SR_OPERAND="${_bn}"; sr_reject ); then
+                out_error "reject failed for ${_bn}; continuing"
+            fi
+        elif prompt_yes_no "Quit review (leave remaining inbound)"; then
+            rm -f "${_sorted}"
+            out_info "quit; remaining requests stay inbound"
+            return 0
+        else
+            out_info "skipped ${_bn}"
+        fi
+    done <"${_sorted}"
+    rm -f "${_sorted}"
+}
+
+# LPU identity SSOT (requirement-least-privilege-user.md F1–F7).
+lpu_defaults() {
+    : "${LPU_USER:=sudoer-adm}"
+    : "${LPU_UID:=1776}"
+    : "${LPU_GID:=1776}"
+    : "${LPU_SHELL:=/bin/bash}"
+    : "${LPU_HOME:=/etc/sudoer-adm}"
+    : "${LPU_HOOK_BEGIN:=# BEGIN sudoer-cli login hook}"
+    : "${LPU_HOOK_END:=# END sudoer-cli login hook}"
+}
+
+lpu_find_bin() {
+    if command -v "$1" >/dev/null 2>&1; then
+        command -v "$1"
+        return 0
+    fi
+    if [ -x "/usr/sbin/$1" ]; then
+        printf '%s' "/usr/sbin/$1"
+        return 0
+    fi
+    return 1
+}
+
+# Mix model: account tools run as `sudo <tool>` (password OK). Never `sudo -n`.
+# After `sudo {{APP}} setup` we are already euid 0 — do not wrap again
+# (nested sudo asks for a password and blocks useradd).
+# useradd/userdel MUST NOT appear in F6 / print-sudoers (FORB-07).
+lpu_sudo() {
+    if [ "$(id -u)" -eq 0 ]; then
+        "$@"
+        return $?
+    fi
+    if ! command -v sudo >/dev/null 2>&1; then
+        _cmd=$(sr_operator_cmd)
+        sr_die "need root to run: $*" "authz" "sudo ${_cmd} setup"
+    fi
+    sudo "$@"
+}
+
+lpu_collision_check() {
+    lpu_defaults
+    _pw=$(getent passwd "${LPU_UID}" 2>/dev/null || true)
+    if [ -n "${_pw}" ]; then
+        _n=$(printf '%s' "${_pw}" | cut -d: -f1)
+        _h=$(printf '%s' "${_pw}" | cut -d: -f6)
+        if [ "${_n}" != "${LPU_USER}" ]; then
+            sr_die "cannot create ${LPU_USER}: UID ${LPU_UID} is already account ${_n}." "authz" \
+                "getent passwd ${LPU_UID}    (will not steal that UID)"
+        fi
+        if [ "${_h}" != "${LPU_HOME}" ]; then
+            sr_die "cannot create ${LPU_USER}: UID ${LPU_UID} home is ${_h}, expected ${LPU_HOME}." "authz" \
+                "getent passwd ${LPU_UID}"
+        fi
+    fi
+    _pw=$(getent passwd "${LPU_USER}" 2>/dev/null || true)
+    if [ -n "${_pw}" ]; then
+        _u=$(printf '%s' "${_pw}" | cut -d: -f3)
+        _g=$(printf '%s' "${_pw}" | cut -d: -f4)
+        _h=$(printf '%s' "${_pw}" | cut -d: -f6)
+        if [ "${_u}" != "${LPU_UID}" ] || [ "${_g}" != "${LPU_GID}" ]; then
+            sr_die "${LPU_USER} already exists as ${_u}:${_g}, expected ${LPU_UID}:${LPU_GID}. Refusing to rewrite a live identity." "authz" \
+                "id ${LPU_USER}"
+        fi
+        if [ "${_h}" != "${LPU_HOME}" ]; then
+            sr_die "${LPU_USER} home is ${_h}, expected ${LPU_HOME}. Refusing to move a live home." "authz" \
+                "getent passwd ${LPU_USER}"
+        fi
+    fi
+    _gr=$(getent group "${LPU_GID}" 2>/dev/null || true)
+    if [ -n "${_gr}" ]; then
+        _n=$(printf '%s' "${_gr}" | cut -d: -f1)
+        if [ "${_n}" != "${LPU_USER}" ]; then
+            sr_die "cannot create group ${LPU_USER}: GID ${LPU_GID} is already ${_n}." "authz" \
+                "getent group ${LPU_GID}"
+        fi
+    fi
+    _gr=$(getent group "${LPU_USER}" 2>/dev/null || true)
+    if [ -n "${_gr}" ]; then
+        _g=$(printf '%s' "${_gr}" | cut -d: -f3)
+        if [ "${_g}" != "${LPU_GID}" ]; then
+            sr_die "group ${LPU_USER} exists as gid ${_g}, expected ${LPU_GID}. Refusing to rewrite it." "authz" \
+                "getent group ${LPU_USER}"
+        fi
+    fi
+}
+
+lpu_ensure_global_bin() {
+    _gb="${GLOBAL_BIN:-/usr/local/bin}"
+    LPU_GLOBAL_BIN="${_gb}/${APP_NAME}"
+    if [ -x "${LPU_GLOBAL_BIN}" ]; then
+        return 0
+    fi
+    _src=$(util_resolve_running_path)
+    if [ -z "${_src}" ] || [ ! -f "${_src}" ]; then
+        _run=$(util_resolve_running_path)
+        _hint="sudo sh ${_run:-<path-to-src/${APP_NAME}>} install"
+        sr_die "production F6 needs ${LPU_GLOBAL_BIN}, and it is missing. Cannot resolve this ship unit to copy there." "authz" \
+            "${_hint}"
+    fi
+    mkdir -p "${_gb}" || sr_die "cannot create ${_gb}" "authz"
+    _stage=$(mktemp "${TMPDIR:-/tmp}/${APP_NAME}.lpu.XXXXXX") || sr_die "mktemp failed" "authz"
+    if ! cp "${_src}" "${_stage}"; then
+        rm -f "${_stage}"
+        sr_die "cannot stage global binary" "authz"
+    fi
+    chmod 0755 "${_stage}" || true
+    if ! mv -f "${_stage}" "${LPU_GLOBAL_BIN}"; then
+        rm -f "${_stage}"
+        sr_die "cannot install ${LPU_GLOBAL_BIN}" "authz"
+    fi
+    chmod 0755 "${LPU_GLOBAL_BIN}" || true
+    if [ ! -x "${LPU_GLOBAL_BIN}" ]; then
+        sr_die "installed ${LPU_GLOBAL_BIN} is not executable" "authz"
+    fi
+    out_info "Installed global binary ${LPU_GLOBAL_BIN} (required for F6)"
+}
+
+lpu_f6_text() {
+    lpu_defaults
+    _gb="${GLOBAL_BIN:-/usr/local/bin}"
+    printf '# %s F6 Table A — production global binary\n%s ALL=(root) NOPASSWD: %s/%s\n' \
+        "${APP_NAME}" "${LPU_USER}" "${_gb}" "${APP_NAME}"
+}
+
+lpu_f6_path() {
+    lpu_defaults
+    printf '%s/%s' "$(sr_sudoers_d_dir)" "${LPU_USER}"
+}
+
+lpu_install_f6() {
+    lpu_defaults
+    _txt=$(lpu_f6_text)
+    sr_visudo_text "${_txt}"
+    _dest=$(lpu_f6_path)
+    sr_forbid_passwd_or_main_sudoers "${_dest}"
+    sr_require_product_sudoers_d "${_dest}"
+    _dir=$(sr_sudoers_d_dir)
+    mkdir -p "${_dir}" || sr_die "cannot create ${_dir}" "authz"
+    if [ -f "${_dest}" ]; then
+        if [ "${SUDOER_CLI_ALLOW_TEST_ROOTS:-0}" = "1" ]; then
+            _bak="${_dir}/.bak"
+        else
+            _bak="/etc/sudoers.bak"
+        fi
+        mkdir -p "${_bak}" 2>/dev/null || true
+        cp "${_dest}" "${_bak}/${LPU_USER}.bak" 2>/dev/null || true
+    fi
+    _tmp=$(mktemp "${TMPDIR:-/tmp}/${APP_NAME}.f6.XXXXXX") || sr_die "mktemp failed" "visudo_fail"
+    printf '%s\n' "${_txt}" >"${_tmp}"
+    if [ "${SUDOER_CLI_ALLOW_TEST_ROOTS:-0}" = "1" ]; then
+        install -m 0440 "${_tmp}" "${_dest}" || { rm -f "${_tmp}"; sr_die "cannot install F6 ${_dest}" "authz"; }
+    else
+        install -m 0440 -o root -g root "${_tmp}" "${_dest}" || { rm -f "${_tmp}"; sr_die "cannot install F6 ${_dest}" "authz"; }
+    fi
+    rm -f "${_tmp}"
+}
+
+lpu_link_home_queue() {
+    _link="$1"
+    _target="$2"
+    if [ -L "${_link}" ]; then
+        if ! ln -sfn "${_target}" "${_link}"; then
+            sr_die "cannot refresh queue symlink ${_link}" "authz"
+        fi
+        return 0
+    fi
+    if [ -d "${_link}" ]; then
+        if ! cp -a "${_link}/." "${_target}/"; then
+            sr_die "cannot migrate ${_link} to ${_target}" "authz"
+        fi
+        rm -rf "${_link}"
+    fi
+    if [ -e "${_link}" ]; then
+        sr_die "cannot place queue symlink ${_link}" "authz"
+    fi
+    if ! ln -sfn "${_target}" "${_link}"; then
+        sr_die "cannot create queue symlink ${_link}" "authz"
+    fi
+}
+
+lpu_mkdir_f5() {
+    lpu_defaults
+    lpu_resolve_home
+    sr_resolve_queues
+    _pub="${SUDOER_PUBLIC_QUEUE_ROOT}"
+    mkdir -p "${_pub}/sudoer-request" "${_pub}/sudoer-approved" "${_pub}/sudoer-rejected" \
+        || sr_die "cannot create public queues under ${_pub}" "authz"
+    chmod 0755 "${_pub}" || sr_die "cannot chmod public queue root" "authz"
+    chmod 3773 "${_pub}/sudoer-request" || sr_die "cannot chmod request queue" "authz"
+    chmod 0700 "${_pub}/sudoer-approved" || sr_die "cannot chmod approved queue" "authz"
+    chmod 0700 "${_pub}/sudoer-rejected" || sr_die "cannot chmod rejected queue" "authz"
+    if [ -d "${LPU_HOME}/sudoer-approving" ] && [ ! -L "${LPU_HOME}/sudoer-approving" ]; then
+        if ! cp -a "${LPU_HOME}/sudoer-approving/." "${_pub}/sudoer-request/"; then
+            sr_die "cannot migrate old inbound queue" "authz"
+        fi
+        rm -rf "${LPU_HOME}/sudoer-approving"
+    fi
+    lpu_link_home_queue "${LPU_HOME}/sudoer-request" "${_pub}/sudoer-request"
+    lpu_link_home_queue "${LPU_HOME}/sudoer-approved" "${_pub}/sudoer-approved"
+    lpu_link_home_queue "${LPU_HOME}/sudoer-rejected" "${_pub}/sudoer-rejected"
+    if getent passwd "${LPU_USER}" >/dev/null 2>&1; then
+        if ! chown "${LPU_USER}:${LPU_USER}" "${LPU_HOME}" \
+            "${_pub}" "${_pub}/sudoer-request" "${_pub}/sudoer-approved" "${_pub}/sudoer-rejected"; then
+            sr_die "cannot chown LPU home/queues" "authz"
+        fi
+        chmod 0751 "${LPU_HOME}" || true
+    fi
+}
+
+lpu_hook_text() {
+    lpu_defaults
+    _bin="${GLOBAL_BIN:-/usr/local/bin}/${APP_NAME}"
+    printf '%s\n' "${LPU_HOOK_BEGIN}"
+    printf '%s\n' "if [ -z \"\${SUDOER_CLI_HOOK_RAN-}\" ] \\"
+    printf '%s\n' "  && [ -n \"\${PS1-}\" ] \\"
+    printf '%s\n' "  && [ -t 0 ] && [ -t 1 ] \\"   # lpu-hook-rc (not CLI TTY SSOT)
+    printf '%s\n' "  && case \$- in *i*) true ;; *) false ;; esac \\"
+    printf '%s\n' "  && [ \"\$(id -un)\" = \"${LPU_USER}\" ] \\"
+    printf '%s\n' "  && [ -z \"\${SSH_ORIGINAL_COMMAND-}\" ]; then"
+    printf '%s\n' "  SUDOER_CLI_HOOK_RAN=1"
+    printf '%s\n' "  export SUDOER_CLI_HOOK_RAN"
+    printf '%s\n' "  sudo -n ${_bin} interactive \\"   # lpu-hook-rc (specified F6 -n)
+    printf '%s\n' "    || printf '%s\\n' \"${APP_NAME}: interactive hook skipped\" >&2"
+    printf '%s\n' "fi"
+    printf '%s\n' "${LPU_HOOK_END}"
+}
+
+lpu_hook_strip() {
+    lpu_defaults
+    _hf="$1"
+    [ -f "${_hf}" ] || return 0
+    _ht=$(mktemp "${TMPDIR:-/tmp}/${APP_NAME}.hook.XXXXXX") || sr_die "mktemp failed" "authz"
+    awk -v b="${LPU_HOOK_BEGIN}" -v e="${LPU_HOOK_END}" '
+        $0 == b { skip=1; next }
+        $0 == e { skip=0; next }
+        skip { next }
+        { print }
+    ' "${_hf}" >"${_ht}" || { rm -f "${_ht}"; sr_die "cannot rewrite ${_hf}" "authz"; }
+    mv -f "${_ht}" "${_hf}"
+}
+
+lpu_hook_apply() {
+    lpu_defaults
+    _hf="$1"
+    if [ ! -f "${_hf}" ]; then
+        : >"${_hf}" || sr_die "cannot create ${_hf}" "authz"
+    fi
+    lpu_hook_strip "${_hf}"
+    printf '\n%s\n' "$(lpu_hook_text)" >>"${_hf}" || sr_die "cannot write hook ${_hf}" "authz"
+    if getent passwd "${LPU_USER}" >/dev/null 2>&1; then
+        chown "${LPU_USER}:${LPU_USER}" "${_hf}" 2>/dev/null || true
+    fi
+}
+
+lpu_profile_sources_bashrc() {
+    [ -f "$1" ] || return 1
+    grep -q '\.bashrc' "$1" 2>/dev/null
+}
+
+lpu_install_hook() {
+    lpu_defaults
+    lpu_hook_apply "${LPU_HOME}/.bashrc"
+    _pr="${LPU_HOME}/.profile"
+    if [ -f "${_pr}" ]; then
+        if lpu_profile_sources_bashrc "${_pr}"; then
+            lpu_hook_strip "${_pr}"
+        else
+            lpu_hook_apply "${_pr}"
+        fi
+    fi
+}
+
+lpu_create_account() {
+    lpu_defaults
+    _groupadd=$(lpu_find_bin groupadd) || sr_die "groupadd is not installed (need /usr/sbin/groupadd)." "authz" \
+        "which groupadd || ls /usr/sbin/groupadd"
+    _useradd=$(lpu_find_bin useradd) || sr_die "useradd is not installed (need /usr/sbin/useradd)." "authz" \
+        "which useradd || ls /usr/sbin/useradd"
+    mkdir -p "${LPU_HOME}" || sr_die "cannot create home ${LPU_HOME}." "authz" \
+        "ls -ld $(dirname "${LPU_HOME}")"
+    if ! getent group "${LPU_USER}" >/dev/null 2>&1; then
+        lpu_sudo "${_groupadd}" -g "${LPU_GID}" "${LPU_USER}" || sr_die "groupadd ${LPU_USER} (gid ${LPU_GID}) failed." "authz" \
+            "getent group ${LPU_GID}; getent group ${LPU_USER}"
+    fi
+    if ! getent passwd "${LPU_USER}" >/dev/null 2>&1; then
+        # -M: we already created ${LPU_HOME} (under /etc). -m + HOME=/home can refuse that path.
+        lpu_sudo "${_useradd}" -u "${LPU_UID}" -g "${LPU_GID}" -d "${LPU_HOME}" -s "${LPU_SHELL}" -M "${LPU_USER}" \
+            || sr_die "useradd ${LPU_USER} (uid ${LPU_UID}) failed." "authz" \
+            "getent passwd ${LPU_UID}; getent passwd ${LPU_USER}"
+    fi
+    chmod 0751 "${LPU_HOME}" || true
+    chown "${LPU_USER}:${LPU_USER}" "${LPU_HOME}" || sr_die "cannot chown ${LPU_HOME} to ${LPU_USER}." "authz" \
+        "ls -ld ${LPU_HOME}; id ${LPU_USER}"
+}
+
+lpu_archive_queues() {
+    lpu_defaults
+    sr_resolve_queues
+    _day=$(date +%Y%m%d)
+    _base="/var/backups/${APP_NAME}"
+    if [ "${SUDOER_CLI_ALLOW_TEST_ROOTS:-0}" = "1" ]; then
+        _base="${LPU_HOME}/.lpu-archive"
+    fi
+    _n=1
+    while [ -e "${_base}/${_day}-${_n}" ]; do
+        _n=$((_n + 1))
+    done
+    _arch="${_base}/${_day}-${_n}"
+    mkdir -p "${_arch}" || sr_die "cannot create archive ${_arch}" "authz"
+    for _q in "${SUDOER_QUEUE_REQUEST}" "${SUDOER_QUEUE_APPROVED}" "${SUDOER_QUEUE_REJECTED}"; do
+        if [ -d "${_q}" ]; then
+            cp -a "${_q}" "${_arch}/" || sr_die "cannot archive ${_q}" "authz"
+        fi
+    done
+    printf '%s' "${_arch}"
+}
+
+# Remove only the three known public queue children, then rmdir the root if empty.
+lpu_remove_public_queues() {
+    lpu_defaults
+    lpu_resolve_home
+    sr_resolve_queues
+    _pub="${SUDOER_PUBLIC_QUEUE_ROOT}"
+    [ -n "${_pub}" ] || return 0
+    for _n in sudoer-request sudoer-approved sudoer-rejected; do
+        _p="${_pub}/${_n}"
+        if [ -e "${_p}" ] || [ -L "${_p}" ]; then
+            rm -rf "${_p}"
+        fi
+    done
+    if [ -d "${_pub}" ]; then
+        rmdir "${_pub}" 2>/dev/null || true
+    fi
 }
 
 lpu_setup() {
-    sr_require_type1
+    sr_require_type1_bootstrap
     if [ "${SR_UNINSTALL:-0}" -eq 1 ]; then
         lpu_remove
         return 0
     fi
-    sr_die "live useradd setup is not enabled in this environment" "authz"
+    lpu_defaults
+    lpu_collision_check
+    LPU_GLOBAL_BIN="${GLOBAL_BIN:-/usr/local/bin}/${APP_NAME}"
+    lpu_ensure_global_bin
+    lpu_create_account
+    lpu_mkdir_f5
+    lpu_install_f6
+    lpu_install_hook
+    if [ "${JSON}" -eq 1 ]; then
+        out_json "success" "lpu ready" \
+            "user" "${LPU_USER}" \
+            "uid" "${LPU_UID}" \
+            "home" "${LPU_HOME}" \
+            "f6" "$(lpu_f6_path)" \
+            "binary" "${LPU_GLOBAL_BIN}"
+    else
+        out_success "LPU ${LPU_USER} ready (uid ${LPU_UID}, home ${LPU_HOME})"
+        out_info "F6 $(lpu_f6_path)"
+        out_info "Global binary ${LPU_GLOBAL_BIN}"
+    fi
 }
 
 lpu_remove() {
-    sr_require_type1
-    sr_die "live userdel teardown is not enabled in this environment" "authz"
+    sr_require_type1_bootstrap
+    lpu_defaults
+    lpu_resolve_home
+    if [ "${FORCE:-0}" -eq 0 ]; then
+        if [ "${JSON}" -eq 1 ] || [ "${QUIET}" -eq 1 ] || [ "${TTY}" -eq 0 ]; then
+            _cmd=$(sr_operator_cmd)
+            sr_die "remove-lpu needs a yes/no on a TTY (this run is non-interactive)." "confirm_required" \
+                "sudo ${_cmd} remove-lpu --force"
+        fi
+        if ! prompt_yes_no "Remove LPU ${LPU_USER}? Live grants stay."; then
+            out_info "remove-lpu cancelled"
+            return 0
+        fi
+    fi
+    out_warn "Live service-user grants stay (no --purge-grants in v1)"
+    if [ -f "${LPU_HOME}/.bashrc" ]; then
+        lpu_hook_strip "${LPU_HOME}/.bashrc"
+    fi
+    if [ -f "${LPU_HOME}/.profile" ]; then
+        lpu_hook_strip "${LPU_HOME}/.profile"
+    fi
+    _arch=""
+    if [ "${SR_PURGE_QUEUES:-0}" -ne 1 ]; then
+        _arch=$(lpu_archive_queues)
+    fi
+    lpu_remove_public_queues
+    _dest=$(lpu_f6_path)
+    sr_forbid_passwd_or_main_sudoers "${_dest}"
+    sr_require_product_sudoers_d "${_dest}"
+    if [ -f "${_dest}" ]; then
+        if [ "${SUDOER_CLI_ALLOW_TEST_ROOTS:-0}" = "1" ]; then
+            _bak="$(dirname "${_dest}")/.bak"
+        else
+            _bak="/etc/sudoers.bak"
+        fi
+        mkdir -p "${_bak}" 2>/dev/null || true
+        mv "${_dest}" "${_bak}/${LPU_USER}.bak" 2>/dev/null || rm -f "${_dest}"
+    fi
+    if getent passwd "${LPU_USER}" >/dev/null 2>&1; then
+        _userdel=$(lpu_find_bin userdel) || sr_die "userdel is not installed (need /usr/sbin/userdel)." "authz" \
+            "which userdel || ls /usr/sbin/userdel"
+        lpu_sudo "${_userdel}" -r "${LPU_USER}" || sr_die "sudo userdel -r ${LPU_USER} failed. Account may still exist." "authz" \
+            "id ${LPU_USER}; getent passwd ${LPU_USER}"
+    fi
+    if getent group "${LPU_USER}" >/dev/null 2>&1; then
+        _groupdel=$(lpu_find_bin groupdel) || true
+        if [ -n "${_groupdel}" ]; then
+            lpu_sudo "${_groupdel}" "${LPU_USER}" 2>/dev/null || true
+        fi
+    fi
+    if [ "${JSON}" -eq 1 ]; then
+        out_json "success" "lpu removed" "user" "${LPU_USER}" "archive" "${_arch}"
+    else
+        out_success "Removed LPU ${LPU_USER}"
+        if [ -n "${_arch}" ]; then
+            out_info "Queued archive: ${_arch}"
+        fi
+    fi
 }
 
 # =============================================================================
@@ -2411,13 +3114,13 @@ app_help() {
     out_plain "  uninstall            Remove managed binary (confirm or --force)"
     out_plain "  where-is-me          Show running and install paths"
     out_plain "  version              Show local version"
-    out_plain "  about                Show diagnostics (Type 0 only; no domain fields)"
+    out_plain "  about                Show diagnostics (Type 0 + resolved queue paths)"
     out_plain "  help                 Show this help"
     out_empty_line
     out_info "Sudoers requests (Type 0):"
     out_plain "  sudoers-to-json      Convert sudoers fragment to request JSON"
     out_plain "  json-to-sudoers      Convert request JSON to sudoers fragment"
-    out_plain "  print-sudoers        Emit F6 Table A draft (never writes /etc)"
+    out_plain "  print-sudoers        Emit F6 Table A draft (Type 0; never writes /etc/passwd or /etc/sudoers)"
     out_plain "  print-sudoers-install-script  Emit admin install script"
     out_plain "  add-sudoer-request   Queue an add request (JSON or sudoers)"
     out_plain "  update-sudoer-request  Queue an update request"
@@ -2425,10 +3128,13 @@ app_help() {
     out_plain "  list-approving|list-approved|list-rejected"
     out_plain "  show <request-id.json>   Show a known request"
     out_empty_line
-    out_info "Approver (Type 1 — euid 0):"
-    out_plain "  setup / remove-lpu   LPU create/teardown"
-    out_plain "  approve|reject <id>  Install dest or archive reject"
-    out_plain "  interactive          TTY review (not empty argv)"
+    out_info "Bootstrap (Type 1 — any host admin, outer sudo; password OK):"
+    out_plain "  setup / remove-lpu   Create/teardown LPU (sudoer-adm). Run: sudo ${APP_NAME} setup"
+    out_plain "                       Not sudo -n. Not limited to sudoer-adm."
+    out_empty_line
+    out_info "Approver (Type 1 — after F6; sudoer-adm or real root):"
+    out_plain "  approve|reject <id>  Copy/overwrite/remove dest in /etc/sudoers.d (product names only)"
+    out_plain "  interactive          TTY review loop (not empty argv). Hook may sudo -n after F6."
     out_empty_line
     out_info "Global Options:"
     out_plain "  --quiet, -q          Suppress info/success (errors still shown)"
@@ -2441,15 +3147,17 @@ app_help() {
     out_plain "  --purpose TEXT       Purpose when missing from input"
     out_plain "  --service NAME       Service pin / required on remove"
     out_plain "  --out PATH           Write convert payload (absolute)"
-    out_plain "  --queue-root DIR     Test/override all three queues"
+    out_plain "  --queue-root DIR     Test/override public trio (DIR/sudoer-request|approved|rejected)"
+    out_plain "  Type 0 submit dest   /var/${APP_NAME}/sudoer-request (unless --queue-root)"
     out_empty_line
     out_info "Environment:"
     out_plain "  USER_BIN / GLOBAL_BIN  install destinations"
     out_plain "  REPO_USER / REPO_NAME  repository identity (not an install channel)"
     out_empty_line
     out_info "Examples:"
-    out_plain "  ${APP_NAME} install"
-    out_plain "  sudo ${APP_NAME} install          # global (multi-user hosts)"
+    out_plain "  ${APP_NAME} install               # any user → ~/.local/bin"
+    out_plain "  sudo ${APP_NAME} install          # any admin → /usr/local/bin (password sudo OK)"
+    out_plain "  sudo ${APP_NAME} setup            # any admin bootstrap (password sudo OK; not -n)"
     out_plain "  ${APP_NAME} version"
     out_plain "  ${APP_NAME} about"
     out_plain "  ${APP_NAME} --json about"
@@ -2495,6 +3203,7 @@ app_main() {
     : "${SR_OPERAND:=}"
     : "${SR_ORPHANS:=0}"
     : "${SR_UNINSTALL:=0}"
+    : "${SR_PURGE_QUEUES:=0}"
     : "${COMMAND_SET:=0}"
 
     USERNAME=$(id -un 2>/dev/null || echo "${USERNAME}")

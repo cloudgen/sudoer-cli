@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-local-self-management.md  
-**Status**: Active (Version 1.3.0)  
+**Status**: Active (Version 1.4.0)  
 **Area**: shell  
 **Key**: `requirement-shell-local-self-management`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -82,7 +82,7 @@ This product ships as a **POSIX shell script** (interpreted). Execution by any n
 | Variable | Role | Default / note |
 |----------|------|----------------|
 | `APP_NAME` | Binary basename SSOT | hard-assign `sudoer-cli` |
-| `VERSION` | Local version SSOT | hard-assign `1.0.0` |
+| `VERSION` | Local version SSOT | hard-assign `1.6.0` |
 | `GLOBAL_BIN` | System-wide bin | `/usr/local/bin` |
 | `USER_BIN` | Per-user bin | `${HOME}/.local/bin` |
 | `FORCE` | Replace / skip confirm | `0` |
@@ -178,9 +178,11 @@ This product ships as a **POSIX shell script** (interpreted). Execution by any n
 |------|--------|------|
 | 2026-08-03 | Active | Local-only lifecycle for folder-backup |
 | 2026-08-09 | Active 1.2.0 | §2.3.1 mode **0755** multi-user; ban `chmod +x`→`0711` trap; AC-6..8; TP-LC-09/10 |
+| 2026-08-13 | Active 1.4.0 | Index already 1.4.0 (0755 + multi-user). Header catch-up. |
+| 2026-08-14 | Active 1.4.0 | Implementation Notes `VERSION` aligned to ship unit **1.2.3** |
 
 ---
 
-**Last Updated**: 2026-08-09  
+**Last Updated**: 2026-08-14  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

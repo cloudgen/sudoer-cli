@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-bootstrap-chain.md  
-**Status**: Active (Version 5.0.0)  
+**Status**: Active (Version 5.1.0)  
 **Area**: architecture  
 **Key**: `requirement-bootstrap-chain`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -31,7 +31,7 @@ Declare the **bootstrap chain** for this product: this workspace is **sudoer-cli
 | **Historical origin (A)** | `cli-template` — Type 0 template; archived in git; **no** live `src/cli-template` after specialize |
 | **Immediate origin** | cli-template (historical). **No** live parent tree. |
 | **This product (B / leaf)** | `sudoer-cli` |
-| **Specialize mode** | Same Type 0 architecture as A + sudoers-approval domain (Type 0 routed; Type 1 Gap) |
+| **Specialize mode** | Same Type 0 architecture as A + sudoers-approval domain (Type 0 routed; Type 1 `setup` / `interactive` live) |
 | **This ship unit** | `src/sudoer-cli` |
 | **This channel ownership** | **None** — local-only install by design |
 | **This domain** | File-based JSON sudoer approval — see `requirement-domain-sudoer-approval` |
@@ -54,7 +54,7 @@ These are **this product’s** structural contracts. Descendants inherit them. T
 | Local lifecycle | **Present** — `install` / `uninstall` / `where-is-me` |
 | Empty argv | **Type N** help (not Type O install-ensure) |
 | Backup / restore | **Absent** |
-| Sudoers-approval domain | Type 0 **routed**; Type 1 host mutation **Gap** — `requirement-domain-sudoer-approval` |
+| Sudoers-approval domain | Type 0 **routed**; Type 1 `setup` / `interactive` **live** — `requirement-domain-sudoer-approval` |
 
 ### 2.4 Surface matrix (normative for this product)
 
@@ -68,7 +68,7 @@ These are **this product’s** structural contracts. Descendants inherit them. T
 | Online channel | **Absent** | Not install source; not help/about product UX |
 | Type O empty argv | **Absent** | Empty argv = Type N help |
 | Domain backup + restore | **Absent** | Not this product’s domain |
-| Sudoers print / setup / submit / approve | **Target law** | Domain SSOT; not listed in help until routed |
+| Sudoers print / setup / submit / approve / interactive | **Live** (Type 0 convert/submit; Type 1 `setup` / `interactive`; dest `/etc/sudoers.d/{{service}}-{{user}}` on authorized `approve`) | `requirement-domain-sudoer-approval` |
 | Local `install` / `uninstall` / `where-is-me` | **Keep** | Local self-managed package |
 | Domain / out Protection Zones | **Keep spirit** | Do not simplify `out_*` |
 
@@ -166,9 +166,10 @@ These are **this product’s** structural contracts. Descendants inherit them. T
 | 2026-08-13 | Active 3.0.0 | Retired live hop folder-backup; briefly named selfmanaged → cli-template |
 | 2026-08-13 | Active 4.0.0 | **This product is hop 0.** No live parent. selfmanaged and folder-backup are not origins. |
 | 2026-08-13 | Active 5.0.0 | Specialize A→B: this product is **sudoer-cli**; cli-template is historical origin. |
+| 2026-08-14 | Active 5.1.0 | Type 1 `setup` live; dest install on authorized `approve`; `interactive` loop Gap |
 
 ---
 
-**Last Updated**: 2026-08-13  
+**Last Updated**: 2026-08-14  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

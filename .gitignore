@@ -83,6 +83,7 @@ __pycache__/
 .ruff_cache/
 
 # --- Shell / local run debris ---
+nohup.out
 *.YYYYMMDD-*.bak
 
 # --- Harness transfer safety backups (H1/H2; not payload) ---

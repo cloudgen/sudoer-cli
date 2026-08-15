@@ -1,12 +1,12 @@
 **file**: docs/requirements/requirement-project-folder.md  
-**Status**: Active (Version 3.0.0)  
+**Status**: Active (Version 3.1.0)  
 **Area**: architecture  
 **Key**: `requirement-project-folder`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
 
 ## 1. Purpose
 
-Define **project folder structure** and path ownership for the sudoer-cli CLI: source layout, install locations, and scratch/cache. Host paths (`/etc/sudoers.d`, LPU home) are **not** project-folder layout. This product has **no** durable host backup deposit.
+Define **project folder structure** and path ownership for the sudoer-cli CLI: source layout, install locations, and scratch/cache. Host paths (`/etc/{{username}}/`, LPU home) are **not** project-folder layout. This product has **no** durable host backup deposit.
 
 ---
 
@@ -89,7 +89,7 @@ Rules:
 
 1. Move the ship unit out of `src/` without updating this requirement and install paths.  
 2. Make online channel paths required for install.  
-3. Grant the product unrestricted write under `/var` or `/etc` outside product-owned sudoers/LPU/backup paths.  
+3. Write `/etc/passwd` or `/etc/sudoers.d`, or grant unrestricted write under `/var` outside `/var/backups/{{APP_NAME}}/`. Product dest is `/etc/{{username}}/`.  
 4. Reintroduce a durable backup deposit as if it were still product law.  
 5. Rename protected temp isolation away from per-user roots.
 

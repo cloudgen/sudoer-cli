@@ -144,6 +144,7 @@ run_test_cli() {
     assert_not_contains "TP-CLI-14 sudoers-to-json not unknown" "$_err" "Unknown command"
 
     # TP-ELEV-07: only top-level measure + sr_read_input data-source may use [ -t 0/1 ]
+    # Specified exception: the login-hook *snippet* (rc policy, not CLI TTY SSOT).
     _t_hits=$(grep -n '\[ -t [01] \]' "${SCRIPT}" | grep -v '^[[:space:]]*#' || true)
     _t_bad=0
     while IFS= read -r _tl; do
@@ -151,6 +152,7 @@ run_test_cli() {
         case "${_tl}" in
             *"[ -t 0 ] && [ -t 1 ] && TTY=1"*) ;;
             *"sr_read_input"*|*"if [ -t 0 ]; then"*) ;;
+            *lpu-hook-rc*) ;;
             *) _t_bad=1 ;;
         esac
     done <<EOF
@@ -161,6 +163,52 @@ EOF
     else
         t_fail "TP-ELEV-07 unexpected [ -t ] policy retest"
     fi
+
+    # TP-ELEV-08: sudo escalation check (T1-BOOTSTRAP-N + T1-N-POLLUTE)
+    # Default: do not invoke sudo -n. Mention it only where law specifies (F6 hook).
+    _sudo_n_exec=0
+    while IFS= read -r _sl; do
+        [ -n "${_sl}" ] || continue
+        case "${_sl}" in
+            *'#'*) continue ;;
+            *out_plain*|*out_info*|*out_die*|*out_warn*|*sr_die*) continue ;;
+            *lpu-hook-rc*) continue ;;
+            *) _sudo_n_exec=1 ;;
+        esac
+    done <<EOF
+$(grep -n 'sudo -n' "${SCRIPT}" || true)
+EOF
+    if [ "${_sudo_n_exec}" -eq 0 ]; then
+        t_pass "TP-ELEV-08 no sudo -n command invocation"
+    else
+        t_fail "TP-ELEV-08 ship unit must not invoke sudo -n (avoid -n unless specified)"
+    fi
+    _help=$(sh "${SCRIPT}" help 2>/dev/null)
+    assert_contains "TP-ELEV-08 help sudo setup" "${_help}" "sudo ${APP_NAME} setup"
+    assert_not_contains "TP-ELEV-08 help not sudo -n setup" "${_help}" "sudo -n ${APP_NAME} setup"
+    assert_not_contains "TP-ELEV-08 help not sudo -n install" "${_help}" "sudo -n ${APP_NAME} install"
+    assert_contains "TP-ELEV-08 help password sudo OK" "${_help}" "password sudo OK"
+    case "${_help}" in
+        *'sudo -n'*)
+            case "${_help}" in
+                *[Ff]6*|*[Hh]ook*)
+                    t_pass "TP-ELEV-08 help sudo -n only with specified F6/hook"
+                    ;;
+                *)
+                    t_fail "TP-ELEV-08 help mentions sudo -n without F6/hook (T1-N-POLLUTE)"
+                    ;;
+            esac
+            ;;
+        *)
+            t_pass "TP-ELEV-08 help has no sudo -n (default avoid)"
+            ;;
+    esac
+    _err=$(sh "${SCRIPT}" setup 2>&1 >/dev/null)
+    assert_contains "TP-ELEV-08 setup refuse tells sudo (not -n)" "${_err}" "sudo "
+    assert_contains "TP-ELEV-08 setup refuse Next" "${_err}" "Next:"
+    assert_contains "TP-ELEV-08 setup refuse names setup" "${_err}" "setup"
+    assert_not_contains "TP-ELEV-08 setup refuse not sudo -n" "${_err}" "sudo -n"
+    assert_not_contains "TP-ELEV-08 setup refuse no euid" "${_err}" "euid"
 
     # TP-TMP-01: no predictable sr-*.$$ scratch paths
     if grep -E 'sr-[A-Za-z0-9_.]+\$\$|/tmp/sr-' "${SCRIPT}" >/dev/null 2>&1; then

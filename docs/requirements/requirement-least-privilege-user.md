@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-least-privilege-user.md  
-**Status**: Active (Version 1.3.0)  
+**Status**: Active (Version 1.10.0)  
 **Area**: architecture  
 **Key**: `requirement-least-privilege-user`  
 **id**: RQ-LEAST-PRIVILEGE-USER  
@@ -7,7 +7,7 @@
 
 ## 1. Purpose
 
-This requirement is the **project Single Source of Truth** for the dedicated **least-privilege-approver** account: identity, home vs affected folders, sudoers pairing, create, and remove. That account is the **approver** in the file-based JSON approval machine owned by `requirement-domain-sudoer-approval.md`. Elev Tables A/B/C live in `requirement-three-layer-privilege-model.md`.
+This requirement is the **project Single Source of Truth** for the dedicated **least-privilege-approver** account: identity, home vs affected folders, sudoers pairing, create, and remove. That account is the **approver** in the file-based JSON approval machine owned by `requirement-domain-sudoer-approval.md`. Elev Tables A/B/C live in `requirement-three-layer-privilege-model.md`. What create/teardown **blocks** vs what must stay open after elev is owned by `requirement-privilege-prevention-set.md`.
 
 ---
 
@@ -16,7 +16,7 @@ This requirement is the **project Single Source of Truth** for the dedicated **l
 ### 2.1 Role
 
 1. The product **MUST** document exactly one LPU leaf for approval: a dedicated non-root account whose extra power is **invoking the global product binary via NOPASSWD**.  
-2. That account is a **least-privilege-approver**, **not** a Type 2 execution context. Day-to-day `/etc/sudoers.d` writes happen because F6 re-enters the CLI as root.  
+2. That account is a **least-privilege-approver**, **not** a Type 2 execution context. Day-to-day dest writes under `/etc/sudoers.d/` (product-owned names only) happen because F6 re-enters the CLI as root. **MUST NOT** write `/etc/passwd` or `/etc/sudoers`. Type 1 **MAY** copy, overwrite, and remove F6 `/etc/sudoers.d/sudoer-adm`.  
 3. Hierarchy: system-user → least-privilege-user → least-privilege-approver → this leaf (`sudoer-adm`).  
 4. Every least-privilege-approver leaf **MUST** name **at least one** approval subject (the content family it may authorize). This leaf’s subject is the **sudoers grant text** (sudoer-file; queued as JSON). A leaf with no named subject is incomplete.
 
@@ -29,8 +29,8 @@ Every product LPU leaf **MUST** declare:
 | **F1 UID / F2 GID** | Fixed numeric pair **or** explicit distro-assigned. Collision on create **MUST** fail closed. |
 | **Shell** | Default `/bin/bash` unless this file overrides. |
 | **F3 System-user home** | Absolute path; selection reason `override` / `preferred-/etc` / `fallback-/home`. Bare home is **not** an affected folder. |
-| **F4 Symlink map** | Table of link → target, or explicit **none**. |
-| **F5 Affected folders** | Paths **excluding** bare home. Subtrees under home **MAY** appear. |
+| **F4 Symlink map** | Table of link → target. This product: LPU-home queue **views** → public `/var/{{APP_NAME}}/` real dirs. |
+| **F5 Affected folders** | Paths **excluding** bare home. Public `/var/{{APP_NAME}}/` + three queue children. |
 | **F6 Sudoers file** | Installed path, mode/owner, Cmnd ⊆ Table A. |
 | **F7 Remove steps** | Ordered product teardown. Type 0 `uninstall` of the CLI is **not** F7. |
 
@@ -42,8 +42,9 @@ When creating a new LPU, resolve F3 as: override (if set) → `/etc/{{LPU_USER}}
 
 | Artifact | Create (Type 1 `setup`) | Remove (Type 1 `setup --uninstall` / `remove-lpu`) |
 |----------|-------------------------|-----------------------------------------------------|
-| Account + home | `useradd` with F1–F3 | After archive: `userdel -r` |
-| Queue subtrees | mkdir + modes in F5 | archived then removed with home |
+| Account + home | `sudo useradd` with F1–F3 (not a sudoers Cmnd) | After archive: `sudo userdel -r` |
+| Public queues | mkdir `/var/{{APP_NAME}}/` + three children; modes in F5 | archived (unless `--purge-queues`) then the three children **removed** and the public root `rmdir` if empty |
+| Home queue views | F4 symlinks under live LPU home | removed with `userdel -r` |
 | F6 fragment | visudo + `install -m 0440` | backup then remove fragment |
 | Login hook | idempotent marker in LPU rc files | strip whichever files contain the marker |
 | Live `{{service}}-{{user}}` grants | not created here | **left in place** (no `--purge-grants` in v1) |
@@ -58,16 +59,16 @@ F7 v1 default **MUST** be: warn live grants stay → reverse hook → archive qu
 | UID | `1776` | F1 |
 | GID | `1776` | F2 |
 | Shell | `/bin/bash` | identity |
-| System-user home | `/home/sudoer-adm` | F3 |
-| Home selection | **override** (operator-ordered; not `/etc/sudoer-adm`) | F3 |
-| Symlinks | **none** | F4 |
-| Affected | `/home/sudoer-adm/sudoer-approving` mode **3773** (sticky+setgid, owner `sudoer-adm:sudoer-adm`); `/home/sudoer-adm/sudoer-approved` **0751**; `/home/sudoer-adm/sudoer-rejected` **0751** | F5 |
-| Sudoers file | `/etc/sudoers.d/sudoer-adm` mode 0440 `root:root` | F6 |
+| System-user home | `/etc/sudoer-adm` | F3 |
+| Home selection | **preferred-/etc** (not `/home/sudoer-adm`) | F3 |
+| Symlinks (F4) | Live LPU home (passwd field 6; create default `/etc/sudoer-adm`) → public real dirs: `${LPU_HOME}/sudoer-request` → `/var/{{APP_NAME}}/sudoer-request`; `${LPU_HOME}/sudoer-approved` → `/var/{{APP_NAME}}/sudoer-approved`; `${LPU_HOME}/sudoer-rejected` → `/var/{{APP_NAME}}/sudoer-rejected` | F4 |
+| Affected (F5) | `/var/{{APP_NAME}}` mode **0755** owner `sudoer-adm:sudoer-adm`; `/var/{{APP_NAME}}/sudoer-request` **3773** (sticky+setgid, other `-wx` no other-r); `/var/{{APP_NAME}}/sudoer-approved` **0700**; `/var/{{APP_NAME}}/sudoer-rejected` **0700** | F5 |
+| Sudoers file | `/etc/sudoers.d/sudoer-adm` mode 0440 `root:root` (Type 1 copy/overwrite/remove exception) | F6 |
 | Approval subject | sudoers grant text (sudoer-file; queued as JSON) — **at least one required** | LPA leaf |
-| Login hook | `/home/sudoer-adm/.bashrc` (default); marker `# BEGIN sudoer-cli login hook`; env `SUDOER_CLI_HOOK_RAN`; command `sudo -n /usr/local/bin/sudoer-cli interactive` | F5 rc / domain SSOT |
-| Remove | `sudo sudoer-cli setup --uninstall` (or `remove-lpu`) | F7 |
+| Login hook | `${LPU_HOME}/.bashrc` (create default home `/etc/sudoer-adm`); marker `# BEGIN sudoer-cli login hook`; env `SUDOER_CLI_HOOK_RAN`; command `sudo -n /usr/local/bin/sudoer-cli interactive` | F5 rc / domain SSOT |
+| Remove | `sudo sudoer-cli setup --uninstall` (or `remove-lpu`) — any host admin, password sudo OK | F7 |
 
-**Routing status:** `setup` / `remove-lpu` **are routed** and **fail closed** without euid 0. Live `useradd`/`userdel` **and hook install** are a **Gap**. Probe with `id sudoer-adm` before claiming the account exists. A TTY login as `sudoer-adm` **cannot** enter approval until F6 + hook + `sr_interactive` loop are live.
+**Routing status:** `setup` / `remove-lpu` **are live** (useradd / F6 / hook / userdel) and **fail closed** without euid 0. Bootstrap is **any** host admin already root (`sudo sudoer-cli setup`); **not** `sudo -n`; **not** limited to `sudoer-adm` (that account is what setup creates). Probe with `id sudoer-adm` before claiming the account exists. A TTY login as `sudoer-adm` **cannot** enter approval until the `sr_interactive` loop is live (F6 + hook are installed by `setup`). The hook’s `sudo -n` is **post-F6 only**.
 
 Snippet text, guards, and the review loop are owned by `requirement-domain-sudoer-approval.md`. This file owns **where** the hook is installed (this LPU’s rc only).
 
@@ -96,13 +97,18 @@ Snippet text, guards, and the review loop are owned by `requirement-domain-sudoe
 
 1. Claim F1–F7 complete while any field is hollow.  
 2. List bare home inside F5.  
-3. Default a new home to `/home/{{LPU_USER}}` when `/etc/{{LPU_USER}}` is free **and** no override exists.  
+3. Default a new home to `/home/{{LPU_USER}}` when `/etc/{{LPU_USER}}` is the product F3 (this product: `/etc/sudoer-adm`).  
 4. Treat Type 0 `uninstall` as F7.  
 5. Document F7 as mass-revoke of live `{{service}}-{{user}}` grants in v1.  
 6. Implement `nologin` as the portable default shell.  
-7. Claim a TTY login as `sudoer-adm` can approve while hook install / F6 / review loop are still Gaps.  
+7. Claim a TTY login as `sudoer-adm` can approve while the review loop is still a Gap.  
 8. Install the review hook in any account other than this LPU.  
-9. Claim a least-privilege-approver leaf complete with **zero** named approval subjects.
+9. Claim a least-privilege-approver leaf complete with **zero** named approval subjects.  
+10. Require the operator to be `sudoer-adm` (or to use `sudo -n`) in order to run first-time `setup`.  
+11. Invent a Gap, env flag, or “not enabled” wall on live `useradd` after euid 0. Create is a §2.4 job, not a second privilege class (`requirement-privilege-prevention-set.md`).  
+12. Put the inbound dropbox only under LPU home, or keep F4 as **none**. Type 0 submit is **`/var/{{APP_NAME}}/sudoer-request`**.  
+13. Hardcode `/etc/sudoer-adm` as the **queue** path. Queue views use **live LPU home** (passwd field 6).  
+14. Skip **chown** of a request file to `sudoer-adm:sudoer-adm` on Type 1 approve/reject (external sudo). Moved files **MUST** stay that owner.
 
 **Violating this rule is a critical least-privilege documentation / identity regression.**
 
@@ -114,10 +120,11 @@ Snippet text, guards, and the review loop are owned by `requirement-domain-sudoe
 |----------|------|
 | `docs/requirements/index.md` | Registry SSOT |
 | `docs/requirements/requirement-three-layer-privilege-model.md` | Elev Tables A/B/C + F6 Cmnd |
+| `docs/requirements/requirement-privilege-prevention-set.md` | Closed catalog of what create/teardown blocks vs must stay open |
 | `docs/requirements/requirement-domain-sudoer-approval.md` | File-based JSON approval (roles / submit / verify) |
 | `docs/requirements/requirement-shell-cli-interface.md` | Type map on the dispatcher |
 | `./sudoer-cli` | Ship unit |
 
-**Last Updated**: 2026-08-14  
+**Last Updated**: 2026-08-15  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).
