@@ -15,14 +15,14 @@
 | requirement-shell-output-requirements | Central `out_*` output SSOT; colors consume `TTY`; operator fatals include `Next:` | shell | Active (1.1.1) | `requirement-shell-output-requirements.md` | 2026-08-14 |
 | requirement-shell-modular-function-design | Single-file modular prefixes; domain `sr_` / `lpu_` reserved; `prompt_*` consume `TTY` | shell | Active (3.1.0) | `requirement-shell-modular-function-design.md` | 2026-08-14 |
 | requirement-shell-idempotency | Re-run safety for install / uninstall (setup heal is target law) | shell | Active (1.2.0) | `requirement-shell-idempotency.md` | 2026-08-13 |
-| requirement-shell-interactive-vs-noninteractive | Interactive vs non-interactive / confirm policy; TTY measured outside functions; Type 1 `interactive` + hook | shell | Active (1.2.0) | `requirement-shell-interactive-vs-noninteractive.md` | 2026-08-14 |
+| requirement-shell-interactive-vs-noninteractive | Interactive vs non-interactive / confirm policy; TTY measured outside functions; Type 1 `interactive` + hook; loop must not steal stdin | shell | Active (1.3.0) | `requirement-shell-interactive-vs-noninteractive.md` | 2026-08-15 |
 | requirement-shell-prompt | `prompt_*` helper bodies; consume `TTY`; worked samples | shell | Active (1.0.0) | `requirement-shell-prompt.md` | 2026-08-14 |
 | requirement-shell-cli-storage | Scratch/cache resolve; visudo copies under resolver + pid | shell | Active (1.1.0) | `requirement-shell-cli-storage.md` | 2026-08-13 |
 | requirement-shell-temp-file-system | Scratch **leaves**: `mktemp`; no `$$` paths; cleanup | shell | Active (1.0.0) | `requirement-shell-temp-file-system.md` | 2026-08-14 |
 | requirement-three-layer-privilege-model | Type 0/1 map; F6 `/etc/sudoers.d/sudoer-adm`; public queues `/var/{{APP_NAME}}/` 3773 inbound | architecture | Active (1.11.0) | `requirement-three-layer-privilege-model.md` | 2026-08-15 |
 | requirement-least-privilege-user | sudoer-adm F1–F7; home create `/etc/sudoer-adm`; F5 `/var/{{APP_NAME}}/` 3773 + F4 views | architecture | Active (1.10.0) | `requirement-least-privilege-user.md` | 2026-08-15 |
 | requirement-privilege-prevention-set | Closed catalog; OPEN-SUDOERS-D-EX; public `/var/{{APP_NAME}}/` is bound dest | architecture | Active (1.3.0) | `requirement-privilege-prevention-set.md` | 2026-08-15 |
-| requirement-domain-sudoer-approval | **Domain SSOT** — submit `/var/{{APP_NAME}}/sudoer-request` (3773); dest `/etc/sudoers.d/{{service}}-{{user}}`; `interactive` **live** | domain | Active (2.13.0) | `requirement-domain-sudoer-approval.md` | 2026-08-15 |
+| requirement-domain-sudoer-approval | **Domain SSOT** — submit `/var/{{APP_NAME}}/sudoer-request` (3773); dest `/etc/sudoers.d/{{service}}-{{user}}`; `interactive` **live** (ids not on stdin) | domain | Active (2.14.0) | `requirement-domain-sudoer-approval.md` | 2026-08-15 |
 
 ## Intentionally absent
 

@@ -2,14 +2,14 @@
 
 Authoritative specialized product law for **sudoer-cli** lives here.
 
-**Current state (2026-08-15):** Specialized **software-development** product. Historical origin **cli-template**. Domain SSOT is Active **2.13.0** (file-based JSON approval; dest `/etc/sudoers.d/{{service}}-{{user}}`; Type 1 `setup` / `interactive` live). Prevention catalog is Active **1.3.0**. Registry is populated — see `index.md`.
+**Current state (2026-08-15):** Specialized **software-development** product. Historical origin **cli-template**. Domain SSOT is Active **2.14.0** (file-based JSON approval; dest `/etc/sudoers.d/{{service}}-{{user}}`; Type 1 `setup` / `interactive` live; id walk not on stdin). Prevention catalog is Active **1.3.0**. Registry is populated — see `index.md`.
 
 ## Product identity (summary)
 
 | Field | Value |
 |-------|--------|
 | Product / `APP_NAME` | `sudoer-cli` |
-| Version SSOT | `1.6.0` (ship unit hard-assign) |
+| Version SSOT | `1.6.1` (ship unit hard-assign) |
 | Ship unit | `src/sudoer-cli` |
 | Default install | `~/.local/bin/sudoer-cli` (global `/usr/local/bin/sudoer-cli` for production F6) |
 | Install mode | **Local-only** |

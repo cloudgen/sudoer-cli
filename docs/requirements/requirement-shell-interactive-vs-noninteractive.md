@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-interactive-vs-noninteractive.md  
-**Status**: Active (Version 1.2.0)  
+**Status**: Active (Version 1.3.0)  
 **Area**: shell  
 **Key**: `requirement-shell-interactive-vs-noninteractive`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -49,7 +49,7 @@ Rules:
 |--------|-------------|-----------------|
 | `uninstall` | Confirm unless `--force` | **Fail closed** without `--force` (`confirm_required`) |
 | `install` | May inform; no required confirm for first install | Proceed without hang |
-| `interactive` (Type 1) | Review loop when `TTY=1` and authz holds (domain SSOT) | **Fail closed** `confirm_required` — no hang. `--json` same. `--force` does **not** auto-approve |
+| `interactive` (Type 1) | Review loop when `TTY=1` and authz holds (domain SSOT). Id walk **MUST NOT** redirect stdin over `prompt_yes_no` | **Fail closed** `confirm_required` — no hang. `--json` same. `--force` does **not** auto-approve |
 | Login hook (LPU `.bashrc`) | May launch `sudo -n … interactive` once | **Skip** (`scp` / `SSH_ORIGINAL_COMMAND` / no TTY / no `PS1`). `sudo -n` failure is a warning; login continues |
 | Missing required operand | Clear error | Clear error; non-zero exit |
 
@@ -90,7 +90,8 @@ Rules:
 4. Treat non-interactive as license to skip required validation.  
 5. Re-test live `[ -t 0 ]` / `[ -t 1 ]` **inside functions** as the interactive-policy gate (`prompt_*`, `app_about`, color, “can we prompt?”). Measure outside functions; helpers consume `TTY`.  
 6. Let the login hook hang `scp` / CI, or `exit` the login shell when `sudo -n` fails.  
-7. Treat a TTY login as license to turn empty argv into `interactive`.
+7. Treat a TTY login as license to turn empty argv into `interactive`.  
+8. Walk `interactive` ids with a stdin redirect (`done <file` / here-doc) so `prompt_yes_no` hits EOF and auto-skips.
 
 **Violating this rule is a critical interaction-mode regression.**
 
@@ -105,6 +106,7 @@ Rules:
 | AC-3 | Lifecycle commands never hang waiting for optional confirm by default |
 | AC-4 | Interactive capability is measured **outside functions**; `prompt_*` / `out_*` / `app_about` consume `TTY` (no live `[ -t` policy gate) |
 | AC-5 | `interactive` without `TTY=1` fails closed; hook skips non-interactive login |
+| AC-6 | When `TTY=1`, `sr_interactive` **MUST** leave fd 0 for `prompt_yes_no` (walk ids on another fd). Auto-skip from EOF on the id file is forbidden |
 
 ---
 
@@ -129,7 +131,8 @@ Rules:
 |-------|--------|-------|
 | TP-LC-05 | Uninstall JSON without force fails closed | `tests/test_local_lifecycle.sh` |
 | TP-ELEV-07 | Static: `prompt_*` / `app_about` consume `TTY` | `tests/test_cli.sh` |
-| TP-SR-INT-02 | `interactive` non-TTY / `--json` fail closed | `tests/test_domain_sr.sh` (todo) |
+| TP-SR-INT-02 | `interactive` non-TTY / `--json` fail closed | `tests/test_domain_sr.sh` |
+| TP-SR-INT-05 | Review loop does not steal stdin from `prompt_yes_no` | `tests/test_domain_sr.sh` |
 
 ---
 
@@ -140,9 +143,10 @@ Rules:
 | 2026-08-03 | Active 1.0.0 | Interactive vs non-interactive for folder-backup |
 | 2026-08-14 | Active 1.1.0 | TTY measured outside functions; helpers consume `TTY` (no-retest) |
 | 2026-08-14 | Active 1.2.0 | Matrix: Type 1 `interactive` + login hook; no-hang / no empty-argv hijack |
+| 2026-08-15 | Active 1.3.0 | AC-6: `TTY=1` loop must not steal stdin; **TP-SR-INT-05** |
 
 ---
 
-**Last Updated**: 2026-08-14  
+**Last Updated**: 2026-08-15  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

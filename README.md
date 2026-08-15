@@ -1,6 +1,6 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.6.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.6.1-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
@@ -122,7 +122,7 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
-2026-08-15 — version **1.6.0** (`interactive` loop live; about lists queue paths; TP-SR-INT / TP-SR-Q in DTV).
+2026-08-15 — version **1.6.1** (`interactive` keeps stdin for prompts; 1.6.0 loop live; about lists queue paths; TP-SR-INT / TP-SR-Q in DTV).
 2026-08-15 — version **1.5.1** (inbound 3773 + submit 0640; approve archives snapshot; F7 removes `/var/sudoer-cli` children).
 2026-08-15 — version **1.5.0** (public queues `/var/sudoer-cli/sudoer-request`; F4 views under live LPU home).
 2026-08-14 — version **1.4.1** (`setup` runs `useradd` as root without a second `sudo`; home `/etc/sudoer-adm`).

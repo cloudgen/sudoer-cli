@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.6.1] - 2026-08-15
+
+### Fixed
+
+- `interactive` no longer redirects the review loop over stdin. `prompt_yes_no` can wait on the TTY, so login as `sudoer-adm` (`source ~/.bashrc` / hook) can answer approve / reject / quit instead of auto-skipping.
+- Incident **INC-20260815-001**; domain **2.14.0**; interactive REQ **1.3.0** AC-6; **TP-SR-INT-05**.
+
 ## [1.6.0] - 2026-08-15
 
 ### Added

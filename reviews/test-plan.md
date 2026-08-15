@@ -3,9 +3,9 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.6.0  
+**Product VERSION:** 1.6.1  
 **Last plan update:** 2026-08-15  
-**Last suite run:** PASS=213 FAIL=0 SKIP=1 (2026-08-15; TP-SR-INT-04 live empty inbound needs Type 1)  
+**Last suite run:** PASS=221 FAIL=0 SKIP=2 (2026-08-15; TP-SR-INT-04/05 live pending-id needs Type 1)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)
@@ -96,6 +96,7 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-INT-02 | `interactive` `--json` / `TTY=0` → `confirm_required`, no hang | `tests/test_domain_sr.sh` | domain · interactive | **have** |
 | TP-SR-INT-03 | Hook snippet skips non-interactive / `SSH_ORIGINAL_COMMAND`; no `exit` | `tests/test_domain_sr.sh` | domain | **have** |
 | TP-SR-INT-04 | Empty inbound `interactive` exits 0 (live as root; static otherwise) | `tests/test_domain_sr.sh` | domain | **have** |
+| TP-SR-INT-05 | `interactive` loop reads ids on fd 3 so `prompt_yes_no` keeps stdin | `tests/test_domain_sr.sh` | domain · prompt | **have** |
 | TP-SR-Q-01 | Public `/var` queues + 3773/0700/0755 | `tests/test_domain_sr.sh` | domain · LPU | **have** |
 | TP-SR-Q-02 | Submit 0640; approve snapshot archive; owner check | `tests/test_domain_sr.sh` | domain | **have** |
 | TP-SR-Q-03 | F7 removes public `/var/{{APP_NAME}}/` children | `tests/test_domain_sr.sh` | domain · LPU | **have** |

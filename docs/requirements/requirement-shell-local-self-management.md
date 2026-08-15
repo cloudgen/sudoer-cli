@@ -82,7 +82,7 @@ This product ships as a **POSIX shell script** (interpreted). Execution by any n
 | Variable | Role | Default / note |
 |----------|------|----------------|
 | `APP_NAME` | Binary basename SSOT | hard-assign `sudoer-cli` |
-| `VERSION` | Local version SSOT | hard-assign `1.6.0` |
+| `VERSION` | Local version SSOT | hard-assign `1.6.1` |
 | `GLOBAL_BIN` | System-wide bin | `/usr/local/bin` |
 | `USER_BIN` | Per-user bin | `${HOME}/.local/bin` |
 | `FORCE` | Replace / skip confirm | `0` |

@@ -1,12 +1,12 @@
 # What to review — sudoer-cli
 
 **Living checklist** (review plan). Product: **sudoer-cli** (Type 0 live; **Type 0 domain convert/submit/list/show routed**; Type 1 `setup` / `interactive` live).  
-**Class:** software-development · **one** Active domain SSOT (`requirement-domain-sudoer-approval` **2.13.0**) · **local-only** install channel.  
+**Class:** software-development · **one** Active domain SSOT (`requirement-domain-sudoer-approval` **2.14.0**) · **local-only** install channel.  
 **Always load first:** `reviews/lessons.md`  
-**Latest report:** `reviews/reports/2026-08-15-requirement-coverage.md` (sufficient-check)
+**Latest report:** `reviews/reports/2026-08-15-interactive-stdin-steal.md` (stdin-steal; prior: requirement-coverage)
 
 **Last plan update:** 2026-08-15  
-**Ship unit VERSION:** 1.6.0  
+**Ship unit VERSION:** 1.6.1  
 **Suite baseline:** see `reviews/test-plan.md`
 
 ---
@@ -15,8 +15,8 @@
 
 | # | Check | Notes |
 |---|--------|--------|
-| P1 | Read `docs/requirements/index.md` | Class + shell + three-layer + LPU + **prevention-set 1.3.0** + **domain 2.13.0** |
-| P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.6.0**) |
+| P1 | Read `docs/requirements/index.md` | Class + shell + three-layer + LPU + **prevention-set 1.3.0** + **domain 2.14.0** |
+| P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.6.1**) |
 | P3 | Load `reviews/lessons.md` and re-check open L-* that still apply | Skip L-SUDOERS / restore lessons as parent-only |
 | P4 | Run `./tests/run.sh` | Record PASS/FAIL/SKIP in report |
 | P5 | Confirm install **channel** still local-only | No SCRIPT_URL product UX |
@@ -61,6 +61,7 @@
 | R5 | Password-sudo / package elev TP-ELEV-01..05 | **n/a** (not claimed) |
 | R6 | About queue fields vs TP-CLI-06 / domain pillar 4 | **closed** (about JSON `queue_request` / approved / rejected; TP-CLI-06) |
 | R7 | Domain §2.0 presents file-based JSON approval (roles, submit-when, JSON verify) | **have** (domain 2.2.0+) |
-| R8 | Type 1 authz + hook snippet + interactive loop; dest `/etc/sudoers.d/{{service}}-{{user}}`; setup/hook/loop live | **have** (domain 2.13.0; TP-SR-PRIV-03; TP-SR-INT-01/02/04) |
+| R8 | Type 1 authz + hook snippet + interactive loop; dest `/etc/sudoers.d/{{service}}-{{user}}`; setup/hook/loop live | **have** (domain 2.14.0; TP-SR-PRIV-03; TP-SR-INT-01/02/04/05) |
 | R9 | Sudo escalation check: avoid `-n` unless specified; any-admin outer `sudo`; approve stays F6 | **have** TP-ELEV-08 + TP-SR-PRIV-02 |
 | R10 | Prevention set: only published rows block; elev is approval; no Gap/`LIVE_LPU`/live-command whitelist | **have** law (prevention-set 1.0.0); TP-PREV-01/02 |
+| R11 | `interactive` id walk does not steal stdin from `prompt_yes_no` | **have** (1.6.1; TP-SR-INT-05; INC-20260815-001) |

@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-domain-sudoer-approval.md  
-**Status**: Active (Version 2.13.0) — file-based JSON approval; Type 0 submit `/var/{{APP_NAME}}/sudoer-request` (3773); Type 1 dest `/etc/sudoers.d/{{service}}-{{user}}`; `interactive` loop **live**  
+**Status**: Active (Version 2.14.0) — file-based JSON approval; Type 0 submit `/var/{{APP_NAME}}/sudoer-request` (3773); Type 1 dest `/etc/sudoers.d/{{service}}-{{user}}`; `interactive` loop **live** (ids not on stdin)  
 **Area**: domain  
 **Key**: `requirement-domain-sudoer-approval`  
 **id**: RQ-DOMAIN-SUDOER-APPROVAL  
@@ -334,7 +334,7 @@ fi
 
 1. Use the same Type 1 authorization as `approve` / `reject`.  
 2. **Consume** `TTY` / `JSON` / `QUIET` (no live `[ -t` inside the handler as the policy gate). If `TTY` is not `1`, or `JSON=1`, **fail closed** `confirm_required` — no hang.  
-3. Prompt only through `prompt_*`. **MUST NOT** ad-hoc `read`. `--force` **MUST NOT** auto-approve.  
+3. Prompt only through `prompt_*`. **MUST NOT** ad-hoc `read`. `--force` **MUST NOT** auto-approve. The id walk **MUST NOT** redirect stdin over those prompts (`prompt_yes_no` reads fd 0). Walk ids on another fd.  
 4. Resolve queues once. Type 1 **MAY** readdir inbound. Consider only regular, non-symlink files whose basename matches the request grammar.  
 5. Empty inbound → human note (or JSON success) and exit **0**. Do not hang.  
 6. For each pending id (basename sort): show purpose + body (same contract as `show`); prompt **approve** / **reject** / **skip** / **quit**.  
@@ -425,7 +425,8 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 17. Hang login or `scp` from the hook (`sudo` without `-n`, or `exit` on hook failure).  
 18. Hook `~/.local/bin/sudoer-cli` or any non-Table-A binary as the review launcher.  
 19. Ship `interactive` without consuming `TTY` (prompt or hang when `TTY` is not 1).  
-20. Invent a second lock after password `sudo` / root login, a live-command whitelist the user did not publish, or a Gap stub on live `setup` (`requirement-privilege-prevention-set.md`).
+20. Invent a second lock after password `sudo` / root login, a live-command whitelist the user did not publish, or a Gap stub on live `setup` (`requirement-privilege-prevention-set.md`).  
+21. Walk inbound ids with `while read … done <file` (or any stdin redirect) so `prompt_yes_no` hits EOF and auto-skips.
 
 **Violating this rule is a critical domain-SSOT / privilege regression.**
 
@@ -475,6 +476,7 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | **TP-SR-INT-01** | `tests/test_domain_sr.sh` | have | `interactive` without euid 0 → `authz` |
 | **TP-SR-INT-02** | `tests/test_domain_sr.sh` | have | `--json` / `TTY=0` → `confirm_required`, no hang |
 | **TP-SR-INT-04** | `tests/test_domain_sr.sh` | have | Empty inbound `interactive` exits 0 (live as root; static otherwise) |
+| **TP-SR-INT-05** | `tests/test_domain_sr.sh` | have | Review loop reads ids on fd 3; `prompt_yes_no` keeps stdin |
 | **TP-SR-Q-01** | `tests/test_domain_sr.sh` | have | Public `/var/{{APP_NAME}}/` + `sudoer-request` + 3773/0700/0755 |
 | **TP-SR-Q-02** | `tests/test_domain_sr.sh` | have | Submit `0640`; approve archives snapshot; owner check |
 | **TP-SR-Q-03** | `tests/test_domain_sr.sh` | have | F7 `lpu_remove_public_queues` |
@@ -502,6 +504,7 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | 2026-08-15 | Active 2.11.0 | Public queues `/var/{{APP_NAME}}/sudoer-request` (0777) + 0700 archives; F4 views under live LPU home; Type 1 chown to LPU on move |
 | 2026-08-15 | Active 2.12.0 | Inbound **3773** + submit `0640`; approve archives snapshot not path; owner==subject before chown; F7 removes `/var/{{APP_NAME}}/` children |
 | 2026-08-15 | Active 2.13.0 | `sr_interactive` loop live; TP-SR-INT-01/02/04 + TP-SR-Q-* in DTV |
+| 2026-08-15 | Active 2.14.0 | Id walk must not steal stdin from `prompt_yes_no`; protection rule 21; **TP-SR-INT-05** |
 
 ---
 

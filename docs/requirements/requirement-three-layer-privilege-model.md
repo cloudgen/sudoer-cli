@@ -96,7 +96,7 @@ The CLI invokes these as **internal jobs**. Account create/teardown **MUST** be 
 | **F6 path** | `/etc/sudoers.d/sudoer-adm` |
 | **Table A line** | `sudoer-adm ALL=(root) NOPASSWD: /usr/local/bin/sudoer-cli` |
 | **Type 2** | Not used |
-| **Routing status** | Type 1 `setup`/`remove-lpu` live (useradd/userdel, F6, hook). Approve dest write when authorized. `interactive` loop body not enabled. |
+| **Routing status** | Type 1 `setup`/`remove-lpu` live (useradd/userdel, F6, hook). Approve dest write when authorized. `interactive` loop live (ids not on stdin). |
 | **Test roots** | Fake `SUDOER_CLI_GRANT_ROOT` only when `SUDOER_CLI_ALLOW_TEST_ROOTS=1` |
 | **Elev model** | **EM-HYB** mix — password `sudo` OK (outer or in-tool); `-n` not suggested; F6 NOPASSWD after grant exists |
 | **User-grant dest** | `/etc/sudoers.d/{{service}}-{{username}}` (domain SSOT; Type 1 copy/overwrite/remove exception) |

@@ -259,13 +259,65 @@ EOF
     assert_not_contains "TP-SR-INT-04 loop is not a stub" "${_int}" "not implemented yet"
     assert_contains "TP-SR-INT-04 empty inbound note" "${_int}" "no pending requests"
     assert_contains "TP-SR-INT-04 uses prompt_yes_no" "${_int}" "prompt_yes_no"
+    assert_not_contains "TP-SR-INT-05 loop is not a heredoc" "${_int}" 'done <<'
+    assert_contains "TP-SR-INT-05 loop reads ids on fd 3" "${_int}" '3<"${_sorted}"'
+    assert_contains "TP-SR-INT-05 read from fd 3" "${_int}" 'read -r _bn <&3'
+    _int_stripped=$(printf '%s\n' "${_int}" | sed 's/3<"${_sorted}"//g')
+    case "${_int_stripped}" in
+        *'<"${_sorted}"'*|*'< "${_sorted}"'*)
+            t_fail "TP-SR-INT-05 leftover fd-0 redirect of _sorted"
+            ;;
+        *)
+            t_pass "TP-SR-INT-05 no leftover fd-0 redirect of _sorted"
+            ;;
+    esac
+    _pyn=$(sed -n '/^prompt_yes_no()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-INT-05 prompt_yes_no reads fd 0" "${_pyn}" 'read -r answer'
+    assert_not_contains "TP-SR-INT-05 prompt_yes_no not a second family" "${_pyn}" "prompt_confirm"
+    _tf=$(mktemp "${CI_HOME}/sr-int-class.XXXXXX")
+    printf '%s\n' "only-id" >"${_tf}"
+    _steal=$(
+        printf 'n\nn\ny\n' | {
+            while IFS= read -r _id; do
+                read -r _a1 || true
+                read -r _a2 || true
+                read -r _a3 || true
+                printf '%s|%s|%s' "${_a1}" "${_a2}" "${_a3}"
+            done <"${_tf}"
+        }
+    )
+    assert_eq "TP-SR-INT-05 class steal is empty answers" "||" "${_steal}"
+    _keep=$(
+        printf 'n\nn\ny\n' | {
+            while IFS= read -r _id <&3; do
+                read -r _a1 || true
+                read -r _a2 || true
+                read -r _a3 || true
+                printf '%s|%s|%s' "${_a1}" "${_a2}" "${_a3}"
+            done 3<"${_tf}"
+        }
+    )
+    assert_eq "TP-SR-INT-05 class fd3 consumes answers" "n|n|y" "${_keep}"
+    rm -f "${_tf}"
     if [ "$(id -u)" -eq 0 ]; then
         _eq="${CI_HOME}/emptyq"
         mkdir -p "${_eq}/sudoer-request" "${_eq}/sudoer-approved" "${_eq}/sudoer-rejected"
         HOME="${CI_HOME}" TTY=1 SUDOER_CLI_ALLOW_TEST_ROOTS=1 sh "${SCRIPT}" --queue-root "${_eq}" interactive >/dev/null 2>&1
         assert_eq "TP-SR-INT-04 empty inbound exit 0" 0 "$?"
+        _pq="${CI_HOME}/pendingq"
+        mkdir -p "${_pq}/sudoer-request" "${_pq}/sudoer-approved" "${_pq}/sudoer-rejected"
+        _rid="sudoer-20260815-webservice-${_u}-add-1.json"
+        printf '%s\n' '{"schema_version":1,"purpose":"int-05 quit","username":"'"${_u}"'","service":"webservice","action":"add","commands":[]}' \
+            >"${_pq}/sudoer-request/${_rid}"
+        _err=$(printf 'n\nn\ny\n' | HOME="${CI_HOME}" TTY=1 SUDOER_CLI_ALLOW_TEST_ROOTS=1 \
+            sh "${SCRIPT}" --queue-root "${_pq}" interactive 2>&1)
+        assert_eq "TP-SR-INT-05 live quit exit 0" 0 "$?"
+        assert_contains "TP-SR-INT-05 live quit note" "${_err}" "quit; remaining requests stay inbound"
+        assert_not_contains "TP-SR-INT-05 live not skipped" "${_err}" "skipped"
+        assert_file_exists "TP-SR-INT-05 live left inbound" "${_pq}/sudoer-request/${_rid}"
     else
         t_skip "TP-SR-INT-04 empty inbound live needs Type 1"
+        t_skip "TP-SR-INT-05 live quit needs Type 1"
     fi
 
     # TP-SR-06 dest name never *-remove
