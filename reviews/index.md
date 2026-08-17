@@ -2,6 +2,7 @@
 
 | Date | Report | Scope | Verdict | Suite |
 |------|--------|-------|---------|-------|
+| 2026-08-17 | `reports/2026-08-17-requirement-coverage.md` | C-full-product coverage + folder-backup requirement alignment | **Sufficient with Gaps** (pretty JSON + honesty Issues 1–2 closed; sibling command-identity open) | PASS=244 FAIL=0 SKIP=2 |
 | 2026-08-15 | `reports/2026-08-15-interactive-stdin-steal.md` | `interactive` id walk stole stdin; 1.6.1 fd 3 | **Partial** (P1/P2 in-tree fixed; **SR-HOST-02** / pretty-print open) | see suite |
 | 2026-08-15 | `reports/2026-08-15-requirement-coverage.md` | Requirement sufficient check (C-full-product) | **Sufficient with Gaps** | PASS=203 |
 | 2026-08-15 | `reports/2026-08-15-queue-layout-design.md` | Public `/var` queues + F4 views; 1.5.1 remediations 1–4 | **Partial** (P1/P2 queue items fixed; **SR-HOST-01** still open) | see suite |

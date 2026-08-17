@@ -2,7 +2,7 @@
 
 **Product:** sudoer-cli (POSIX `/bin/sh` local self-managed CLI — Type 0 lifecycle **and** Type 0 domain convert/submit live; Type 1 `setup` / `interactive` live)  
 **Workspace state:** Specialized product law (left genesis); **software-development** class; historical origin **cli-template** (no live parent ship unit). Online / Type O **absent**.  
-**Updated:** 2026-08-15
+**Updated:** 2026-08-17
 
 | ID / key | Title | Area | Status | Path | Updated |
 |----------|-------|------|--------|------|---------|
@@ -22,7 +22,7 @@
 | requirement-three-layer-privilege-model | Type 0/1 map; F6 `/etc/sudoers.d/sudoer-adm`; public queues `/var/{{APP_NAME}}/` 3773 inbound | architecture | Active (1.11.0) | `requirement-three-layer-privilege-model.md` | 2026-08-15 |
 | requirement-least-privilege-user | sudoer-adm F1–F7; home create `/etc/sudoer-adm`; F5 `/var/{{APP_NAME}}/` 3773 + F4 views | architecture | Active (1.10.0) | `requirement-least-privilege-user.md` | 2026-08-15 |
 | requirement-privilege-prevention-set | Closed catalog; OPEN-SUDOERS-D-EX; public `/var/{{APP_NAME}}/` is bound dest | architecture | Active (1.3.0) | `requirement-privilege-prevention-set.md` | 2026-08-15 |
-| requirement-domain-sudoer-approval | **Domain SSOT** — submit `/var/{{APP_NAME}}/sudoer-request` (3773); dest `/etc/sudoers.d/{{service}}-{{user}}`; `interactive` **live** (ids not on stdin) | domain | Active (2.14.0) | `requirement-domain-sudoer-approval.md` | 2026-08-15 |
+| requirement-domain-sudoer-approval | **Domain SSOT** — submit `/var/{{APP_NAME}}/sudoer-request` (3773); dest `/etc/sudoers.d/{{service}}-{{user}}`; `interactive` **live**; pretty JSON `commands[]` fidelity | domain | Active (2.15.0) | `requirement-domain-sudoer-approval.md` | 2026-08-17 |
 
 ## Intentionally absent
 

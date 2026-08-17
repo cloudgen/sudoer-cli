@@ -31,7 +31,7 @@
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
 # APP NAME: hard-assign APP_NAME="sudoer-cli"
-# VERSION: hard-assign VERSION="1.6.1"
+# VERSION: hard-assign VERSION="1.6.2"
 #
 # =============================================================================
 
@@ -48,7 +48,7 @@ APP_NAME="sudoer-cli"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
 : "${DESCRIPTION:=POSIX /bin/sh CLI: lifecycle plus sudoers-request convert/submit/list/show. Type 1 setup creates sudoer-adm; approve/reject require euid 0.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.6.1"
+VERSION="1.6.2"
 : "${VERSION:=1.0.0}"
 # Repository identity SSOT (git host owner/repo for project-repository alignment).
 # Install remains local-only: SCRIPT_URL stays empty (no online curl|sh channel).
@@ -1658,7 +1658,14 @@ sr_visudo_text() {
     printf '%s\n' "${_vt}" >"${_vf}"
     if ! visudo -cf "${_vf}" >/dev/null 2>&1; then
         rm -f "${_vf}"
-        sr_die "visudo -cf failed" "visudo_fail"
+        _cmd=$(sr_operator_cmd)
+        if [ -n "${SR_FILE-}" ]; then
+            _next="${_cmd} json-to-sudoers --file ${SR_FILE}"
+        else
+            _next="${_cmd} help"
+        fi
+        sr_die "The sudoers text failed host validation. Do not approve this grant. Fix the spec and convert again." "visudo_fail" \
+            "${_next}"
     fi
     rm -f "${_vf}"
 }
@@ -1853,23 +1860,30 @@ sr_service_infer() {
         fi
         if [ -n "${_hit}" ] && [ "${_hit}" != "${_fam}" ]; then
             rm -f "${_tf}"
-            sr_die "mixed service families" "unknown_service"
+            _cmd=$(sr_operator_cmd)
+            sr_die "This grant mixes commands from more than one service. Use one service per request." "unknown_service" \
+                "${_cmd} sudoers-to-json --file <one-service.sudoers> --action add --purpose '...'"
         fi
         _hit="${_fam}"
     done <"${_tf}"
     rm -f "${_tf}"
+    _cmd=$(sr_operator_cmd)
     if [ -n "${_hit}" ] && [ "${_unclass}" -eq 1 ]; then
-        sr_die "mixed service families" "unknown_service"
+        sr_die "This grant mixes commands from more than one service. Use one service per request." "unknown_service" \
+            "${_cmd} sudoers-to-json --file <one-service.sudoers> --action add --purpose '...'"
     fi
     if [ -n "${_si_force}" ]; then
-        sr_valid_service_name "${_si_force}" || sr_die "invalid service name: ${_si_force}" "unknown_service"
+        sr_valid_service_name "${_si_force}" || sr_die "Service name '${_si_force}' is not allowed. Use lowercase letters, digits, and hyphens (for example folder-backup)." "unknown_service" \
+            "${_cmd} sudoers-to-json --file <fragment.sudoers> --action add --purpose '...' --service folder-backup"
         if [ -n "${_hit}" ] && [ "${_si_force}" != "${_hit}" ]; then
-            sr_die "service override does not match Cmnds" "unknown_service"
+            sr_die "The --service name does not match the commands in this file." "unknown_service" \
+                "${_cmd} sudoers-to-json --file <fragment.sudoers> --action add --purpose '...'"
         fi
         SR_INFERRED="${_si_force}"
         return 0
     fi
-    [ -n "${_hit}" ] || sr_die "cannot infer service" "unknown_service"
+    [ -n "${_hit}" ] || sr_die "Cannot tell which service these commands belong to. Name the product with --service (for example folder-backup)." "unknown_service" \
+        "${_cmd} sudoers-to-json --file <fragment.sudoers> --action add --purpose '...' --service folder-backup"
     SR_INFERRED="${_hit}"
 }
 
@@ -1960,7 +1974,9 @@ sr_json_decode_to_fields() {
     if [ "${SR_D_HAS_CMDS}" -eq 1 ]; then
         _block=$(printf '%s' "${_jd}" | tr '\n' ' ' | sed -n 's/.*"commands"[[:space:]]*:[[:space:]]*\[\(.*\)\].*/\1/p')
         _cf=$(util_mktemp)
-        printf '%s\n' "${_block}" | sed 's/},{/}\n{/g' >"${_cf}"
+        # Pretty or compact: split objects on "}" + optional space + "," + optional space + "{".
+        # Token "},{" alone drops indented / spaced arrays (INC-20260817-001).
+        printf '%s' "${_block}" | sed 's/}[[:space:]]*,[[:space:]]*{/}\n{/g' >"${_cf}"
         while IFS= read -r _obj || [ -n "${_obj}" ]; do
             [ -n "${_obj}" ] || continue
             _p=$(sr_json_get_str "${_obj}" "path")
@@ -1972,11 +1988,26 @@ sr_json_decode_to_fields() {
             esac
             _args=""
             _ab=$(printf '%s' "${_obj}" | sed -n 's/.*"args"[[:space:]]*:[[:space:]]*\[\([^]]*\)\].*/\1/p')
-            _ab=$(printf '%s' "${_ab}" | tr ',' ' ' | tr -d '"')
+            _ab=$(printf '%s' "${_ab}" | tr ',' ' ' | tr -d '"' | awk '{$1=$1; print}')
             SR_D_CMDS="${SR_D_CMDS}${_r}|${_t}|${_p}|${_ab}
 "
         done <"${_cf}"
         rm -f "${_cf}"
+        _n_path=$(printf '%s' "${_block}" | awk 'BEGIN{n=0} {n+=gsub(/"path"/,"")} END{print n+0}')
+        _n_cmd=0
+        if [ -n "${SR_D_CMDS}" ]; then
+            _n_cmd=$(printf '%s' "${SR_D_CMDS}" | awk 'NF{c++} END{print c+0}')
+        fi
+        if [ "${_n_path}" -gt 0 ] && [ "${_n_cmd}" -ne "${_n_path}" ]; then
+            _cmd=$(sr_operator_cmd)
+            if [ -n "${SR_FILE-}" ]; then
+                _next="${_cmd} json-to-sudoers --file ${SR_FILE}"
+            else
+                _next="${_cmd} json-to-sudoers --file <request.json>"
+            fi
+            sr_die "This request JSON is incomplete: it lists ${_n_path} commands but only ${_n_cmd} could be read. Do not approve it. Pretty or compact JSON are both OK — fix the file and convert or submit again." "invalid_json" \
+                "${_next}"
+        fi
     fi
 }
 

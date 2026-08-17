@@ -11,8 +11,8 @@ Public product review surface (peer of `tests/`).
 | `index.md` | Report index |
 | `reports/` | Dated review run reports |
 
-**Ship unit:** `src/sudoer-cli` (**VERSION 1.6.1**)  
+**Ship unit:** `src/sudoer-cli` (**VERSION 1.6.2**)  
 **Suite:** `./tests/run.sh`  
 **Last suite baseline:** see `test-plan.md`
 
-**Review focus:** Type 0 local lifecycle **and** routed Type 0 domain convert/submit/list/show. Type 1 `setup` / `interactive` live (static **TP-SR-PRIV-03** / **TP-SR-INT-05**; no host `useradd` in CI). Latest report: `reports/2026-08-15-interactive-stdin-steal.md`.
+**Review focus:** Type 0 local lifecycle **and** routed Type 0 domain convert/submit/list/show. Type 1 `setup` / `interactive` live (static **TP-SR-PRIV-03** / **TP-SR-INT-05**; no host `useradd` in CI). Latest report: `reports/2026-08-17-requirement-coverage.md`.

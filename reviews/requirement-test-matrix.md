@@ -1,7 +1,7 @@
 # Requirement ↔ test matrix — sudoer-cli
 
-**Updated:** 2026-08-15  
-**Product VERSION:** 1.6.1  
+**Updated:** 2026-08-17  
+**Product VERSION:** 1.6.2  
 **Suite:** `tests/run.sh`
 
 | Requirement key | Area | TP families | Coverage notes |
@@ -22,7 +22,7 @@
 | requirement-three-layer-privilege-model | architecture | TP-SR-03, TP-SR-PRIV-01, **TP-SR-PRIV-02**, **TP-SR-PRIV-03**, **TP-ELEV-08** | Table A ≠ user grant; Type 1 gate; live setup body; sudo escalation check |
 | requirement-least-privilege-user | architecture | TP-SR-PRIV-01, **TP-SR-PRIV-02**, **TP-SR-PRIV-03** | F1–F7; setup any admin; live setup body (static) |
 | requirement-privilege-prevention-set | architecture | **TP-PREV-01**, **TP-PREV-02**, TP-SR-PRIV-01..03, TP-ELEV-08, TP-SR-05/06, TP-CLI-07, TP-LC-05/06 | Closed block vs must-remain-open; no invented walls |
-| requirement-domain-sudoer-approval | domain | **TP-SR-01..13**, **TP-SR-PRIV-01..03**, **TP-CLI-14**, **TP-SR-INT-01..05**, **TP-SR-Q-01..03** | Type 0 convert/submit **have**; setup live (static); interactive loop **have**; public queues **have** |
+| requirement-domain-sudoer-approval | domain | **TP-SR-01..16**, **TP-SR-PRIV-01..03**, **TP-CLI-14**, **TP-SR-INT-01..05**, **TP-SR-Q-01..03** | Type 0 convert/submit **have**; pretty `commands[]` fidelity **14/15/16**; setup live (static); interactive loop **have**; public queues **have** |
 
 **Absent by design (no TP Core):** online-install, remote self-management, automatic channel checksum, folder-archive backup/restore.
 

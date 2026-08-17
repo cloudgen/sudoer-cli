@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.6.2] - 2026-08-17
+
+### Fixed
+
+- JSON `commands[]` decode now splits objects on `}` + optional space + `,` + `{`, not only the compact token `},{`. Pretty-printed grants (folder-backup dual) no longer collapse to the last `args`. Decode **fails closed** if `"path"` count ≠ decoded command count.
+- Convert/submit fatals for mixed service, unknown service, visudo reject, and incomplete `commands[]` decode now use plain words plus a pasteable **`Next:`** (do not approve; fix the file and convert again). Machine `code` values are unchanged.
+- README explains file-based JSON approval in operator language (folders are state; JSON is the request).
+- Incident **INC-20260817-001**; domain **2.15.0**; **TP-SR-14 / 15 / 16**.
+
 ## [1.6.1] - 2026-08-15
 
 ### Fixed

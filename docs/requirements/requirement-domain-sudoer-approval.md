@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-domain-sudoer-approval.md  
-**Status**: Active (Version 2.14.0) — file-based JSON approval; Type 0 submit `/var/{{APP_NAME}}/sudoer-request` (3773); Type 1 dest `/etc/sudoers.d/{{service}}-{{user}}`; `interactive` loop **live** (ids not on stdin)  
+**Status**: Active (Version 2.15.0) — file-based JSON approval; Type 0 submit `/var/{{APP_NAME}}/sudoer-request` (3773); Type 1 dest `/etc/sudoers.d/{{service}}-{{user}}`; `interactive` loop **live** (ids not on stdin); pretty JSON `commands[]` fidelity  
 **Area**: domain  
 **Key**: `requirement-domain-sudoer-approval`  
 **id**: RQ-DOMAIN-SUDOER-APPROVAL  
@@ -162,6 +162,8 @@ Unknown keys anywhere → `invalid_json`. Filename identity wins; body fields if
 
 `--json` CLI status (`out_json`) is **not** the request file.
 
+**Codec fidelity (sacred):** Pretty-printed and compact JSON are the same grant. `sr_json_decode_to_fields` / convert / submit re-encode **MUST** keep every `commands[]` object (`path`, `args`, `runas`, `tags`). A splitter that only matches the token `},{` is non-compliant (`}, {` and `},\n{` are legal). After decode, object count **MUST** equal input `"path"` count; mismatch → `invalid_json`. Silent last-`args`-wins is forbidden. `purpose` and `[OK] request_id=` are **not** completeness. Suites **MUST** include a pretty multi-command fixture, not only encoder output (INC-20260817-001).
+
 **Worked sample basename:** `sudoer-20260814-folder-backup-leolio-add-1.json`  
 **Worked dest:** `/etc/sudoers.d/folder-backup-leolio`
 
@@ -207,7 +209,7 @@ Unknown keys anywhere → `invalid_json`. Filename identity wins; body fields if
 
 #### Text dual (conversion)
 
-A sudoers text fragment is `# Purpose:` plus self-scoped spec lines (add/update) or comment-only (remove). `sudoers-to-json` / `json-to-sudoers` round-trip User + Cmnds. Extra comments/whitespace besides Purpose are not preserved.
+A sudoers text fragment is `# Purpose:` plus self-scoped spec lines (add/update) or comment-only (remove). `sudoers-to-json` / `json-to-sudoers` round-trip User + Cmnds. Extra comments/whitespace besides Purpose are not preserved. **JSON whitespace inside `commands[]` is not semantics** — pretty input **MUST** round-trip the same Cmnd set as compact input.
 
 Canonical rendered line:
 
@@ -426,7 +428,8 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 18. Hook `~/.local/bin/sudoer-cli` or any non-Table-A binary as the review launcher.  
 19. Ship `interactive` without consuming `TTY` (prompt or hang when `TTY` is not 1).  
 20. Invent a second lock after password `sudo` / root login, a live-command whitelist the user did not publish, or a Gap stub on live `setup` (`requirement-privilege-prevention-set.md`).  
-21. Walk inbound ids with `while read … done <file` (or any stdin redirect) so `prompt_yes_no` hits EOF and auto-skips.
+21. Walk inbound ids with `while read … done <file` (or any stdin redirect) so `prompt_yes_no` hits EOF and auto-skips.  
+22. Silently drop `commands[]` objects on decode/re-encode (pretty JSON last-`args` wins). Compact-only fixtures do **not** prove fidelity.
 
 **Violating this rule is a critical domain-SSOT / privilege regression.**
 
@@ -480,6 +483,9 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | **TP-SR-Q-01** | `tests/test_domain_sr.sh` | have | Public `/var/{{APP_NAME}}/` + `sudoer-request` + 3773/0700/0755 |
 | **TP-SR-Q-02** | `tests/test_domain_sr.sh` | have | Submit `0640`; approve archives snapshot; owner check |
 | **TP-SR-Q-03** | `tests/test_domain_sr.sh` | have | F7 `lpu_remove_public_queues` |
+| **TP-SR-14** | `tests/test_domain_sr.sh` | have | pretty add-sample JSON → all three Cmnd lines |
+| **TP-SR-15** | `tests/test_domain_sr.sh` | have | pretty add-sample submit inbound keeps all three `path`s |
+| **TP-SR-16** | `tests/test_domain_sr.sh` | have | pretty folder-backup `backup`+`restore` JSON keeps both verbs |
 
 **Matrix:** `reviews/requirement-test-matrix.md`  
 **Map:** `reviews/test-plan.md`
@@ -505,9 +511,10 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | 2026-08-15 | Active 2.12.0 | Inbound **3773** + submit `0640`; approve archives snapshot not path; owner==subject before chown; F7 removes `/var/{{APP_NAME}}/` children |
 | 2026-08-15 | Active 2.13.0 | `sr_interactive` loop live; TP-SR-INT-01/02/04 + TP-SR-Q-* in DTV |
 | 2026-08-15 | Active 2.14.0 | Id walk must not steal stdin from `prompt_yes_no`; protection rule 21; **TP-SR-INT-05** |
+| 2026-08-17 | Active 2.15.0 | Pretty `commands[]` fidelity; fail closed on object-count mismatch; **TP-SR-14/15/16**; INC-20260817-001 |
 
 ---
 
-**Last Updated**: 2026-08-15  
+**Last Updated**: 2026-08-17  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

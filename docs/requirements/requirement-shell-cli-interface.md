@@ -68,7 +68,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | **Primary executable** | `src/sudoer-cli` (POSIX `/bin/sh`, single-file ship unit) |
 | **Dispatcher** | `app_main` |
 | **Output SSOT** | `out_text` + wrappers (`out_info`, `out_success`, `out_warn`, `out_error`, `out_die`, `out_plain`, `out_json`, …) |
-| **Version SSOT** | `VERSION="1.6.1"` hard-assign in ship unit |
+| **Version SSOT** | `VERSION="1.6.2"` hard-assign in ship unit |
 | **Install paths** | Global: `GLOBAL_BIN` default `/usr/local/bin`; User: `USER_BIN` default `${HOME}/.local/bin` |
 | **Primary install story** | User bin: `~/.local/bin/sudoer-cli`; global `/usr/local/bin/sudoer-cli` for production F6 |
 | **Online channel env** | **Not product UX** (trimmed) |
@@ -111,7 +111,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 - Domain: `backup`, `restore`  
 - Parent leftovers: `backup`, `restore`, `remove-project-sudoers`  
 - Type 2 app runtime euid under sudoer-adm  
-- `sr_interactive` review-loop body (live)  
+- Live host `useradd` in non-root CI (setup body is proven statically)  
 
 ### 2.6 Why This Requirement Exists (Direct CIAO Alignment)
 
@@ -129,7 +129,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 ## 3. Design Principles (CIAO / CIAO-Lite)
 
 - **Caution**: Fail closed on unknown verbs, including trimmed parent verbs.  
-- **Intentional**: Lifecycle Type 0 plus domain Type 0; Type 1 setup live; review loop still Gap.  
+- **Intentional**: Lifecycle Type 0 plus domain Type 0; Type 1 setup live; review loop live.  
 - **Anti-fragile**: Same dispatcher contract as parent.  
 - **Over-protect**: Do not reintroduce parent `backup` / `restore`.
 

@@ -1,6 +1,6 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.6.1-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.6.2-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
@@ -13,6 +13,32 @@ Install **location** is still **both**:
 
 The *channel* is local-only (no online `curl|sh`). Local vs global here means where the binary is placed, not an online vs offline download.
 
+## How file-based JSON approval works
+
+There is **no ticket database**. **Folders are the state. A JSON file is the request.**
+
+```text
+you convert / submit
+        ↓
+/var/sudoer-cli/sudoer-request/     waiting (inbound)
+        ↓  sudoer-adm moves the file
+   ┌────┴────┐
+   ↓         ↓
+approved   rejected
+   ↓
+/etc/sudoers.d/<service>-<you>     live grant (on accept only)
+```
+
+1. **You ask only for yourself.** Convert a sudoers fragment to JSON (`sudoers-to-json`), or submit JSON you already have (`add-sudoer-request`). This CLI names the file and puts it in inbound `/var/sudoer-cli/sudoer-request/`. You cannot submit a grant for a colleague.
+
+2. **An approver checks that file.** The dedicated account `sudoer-adm` (or a real root session) reads the JSON again. If it is valid, they **move** it to `/var/sudoer-cli/sudoer-approved/` or `/var/sudoer-cli/sudoer-rejected/`. Moving the file *is* the decision.
+
+3. **Approve can install the grant.** On accept, the live dest is `/etc/sudoers.d/<service>-<your-login>` (for example `folder-backup-alice`). This CLI never writes `/etc/passwd` or the main `/etc/sudoers` file.
+
+4. **Pretty or compact JSON is the same grant.** Every command in `commands[]` must survive convert and submit. If the request looks incomplete, **do not approve it** — fix the file and convert or submit again.
+
+5. **First-time setup is not the same as approve.** Any host admin runs `sudo sudoer-cli setup` (a password is OK). After that, `sudoer-adm` can review inbound requests (login hook or `interactive`). Empty `sudoer-cli` with no arguments still shows help.
+
 ## Features
 
 - **Self-management**: `install`, `uninstall`, `where-is-me`, `version`, `about`, `help` (local **and** global place/remove)
@@ -22,7 +48,7 @@ The *channel* is local-only (no online `curl|sh`). Local vs global here means wh
 - **CIAO / CIAO-Lite** defensive design (Protection Zones, `out_*` output SSOT)
 - **File-based JSON approval**: normal users drop self-scoped request JSON into inbound; `sudoer-adm` verifies that JSON and moves the file. Folder = state; JSON = the checkable grant.
 - **Type 0 domain (routed)**: `sudoers-to-json` / `json-to-sudoers`, `add` / `update` / `remove-sudoer-request`, `list-approving` / `list-approved` / `list-rejected`, `show`
-- **Type 1 (routed, fail closed without euid 0)**: `setup` / `remove-lpu` = any admin outer `sudo` (password OK) — live `useradd`, home `/etc/sudoer-adm`, F6 `/etc/sudoers.d/sudoer-adm`. `approve` copies/overwrites/removes `/etc/sudoers.d/{{service}}-{{username}}`. Never writes `/etc/passwd` or `/etc/sudoers`. Review-loop body is a **Gap**
+- **Type 1 (routed, fail closed without euid 0)**: `setup` / `remove-lpu` = any admin outer `sudo` (password OK) — live `useradd`, home `/etc/sudoer-adm`, F6 `/etc/sudoers.d/sudoer-adm`. `approve` copies/overwrites/removes `/etc/sudoers.d/{{service}}-{{username}}`. Never writes `/etc/passwd` or `/etc/sudoers`. Review loop (`interactive`) is **live** (TTY; `--json` fails closed)
 
 ## Quick Installation
 
@@ -93,6 +119,16 @@ sh src/sudoer-cli install
 # Global install (system bin)
 sudo sh src/sudoer-cli install
 
+# Convert a sudoers fragment to request JSON (does not queue)
+sudoer-cli sudoers-to-json --file draft.sudoers --action add --purpose "Allow backup and restore"
+
+# Queue the request for yourself
+sudoer-cli add-sudoer-request --file request.json
+
+# Approver (after setup): list inbound, then review on a TTY
+sudoer-cli list-approving
+sudo sudoer-cli interactive
+
 # Diagnostics
 sudoer-cli about
 sudoer-cli --json version
@@ -122,6 +158,7 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
+2026-08-17 — version **1.6.2** (pretty `commands[]` fidelity; operator-readable convert/submit errors; README explains file-based JSON approval).
 2026-08-15 — version **1.6.1** (`interactive` keeps stdin for prompts; 1.6.0 loop live; about lists queue paths; TP-SR-INT / TP-SR-Q in DTV).
 2026-08-15 — version **1.5.1** (inbound 3773 + submit 0640; approve archives snapshot; F7 removes `/var/sudoer-cli` children).
 2026-08-15 — version **1.5.0** (public queues `/var/sudoer-cli/sudoer-request`; F4 views under live LPU home).

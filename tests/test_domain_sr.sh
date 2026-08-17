@@ -23,6 +23,67 @@ _sr_sample_json() {
 EOF
 }
 
+# Pretty-printed (newlines/spaces between objects). INC-20260817-001: },{ splitter drops these.
+_sr_sample_json_pretty() {
+    _u=$(id -un)
+    cat <<EOF
+{
+  "schema_version": 1,
+  "purpose": "Allow this user to reload nginx and read the nginx unit journal.",
+  "username": "${_u}",
+  "service": "webservice",
+  "action": "add",
+  "commands": [
+    {
+      "runas": "root",
+      "tags": ["NOPASSWD"],
+      "path": "/bin/systemctl",
+      "args": ["reload", "nginx"]
+    },
+    {
+      "runas": "root",
+      "tags": ["NOPASSWD"],
+      "path": "/usr/bin/journalctl",
+      "args": ["-u", "nginx"]
+    },
+    {
+      "runas": "root",
+      "tags": ["NOPASSWD"],
+      "path": "/usr/sbin/nginx",
+      "args": ["-t"]
+    }
+  ]
+}
+EOF
+}
+
+_sr_sample_folder_backup_pretty() {
+    _u=$(id -un)
+    cat <<EOF
+{
+  "schema_version": 1,
+  "purpose": "Allow ${_u} to run folder-backup backup and restore as root.",
+  "username": "${_u}",
+  "service": "folder-backup",
+  "action": "add",
+  "commands": [
+    {
+      "runas": "root",
+      "tags": ["NOPASSWD"],
+      "path": "/usr/local/bin/folder-backup",
+      "args": ["backup"]
+    },
+    {
+      "runas": "root",
+      "tags": ["NOPASSWD"],
+      "path": "/usr/local/bin/folder-backup",
+      "args": ["restore"]
+    }
+  ]
+}
+EOF
+}
+
 run_test_domain_sr() {
     t_header "Domain sudoers-request (TP-SR)"
 
@@ -56,6 +117,23 @@ run_test_domain_sr() {
     _rj=$(cat "${CI_HOME}/round.json")
     assert_contains "TP-SR-09 round-trip webservice" "${_rj}" '"service":"webservice"'
 
+    # TP-SR-14 pretty add-sample JSON → all three Cmnd lines
+    _sr_sample_json_pretty >"${CI_HOME}/add-pretty.json"
+    HOME="${CI_HOME}" sh "${SCRIPT}" json-to-sudoers --file "${CI_HOME}/add-pretty.json" --out "${CI_HOME}/pretty-back.sudoers" >/dev/null 2>&1
+    assert_eq "TP-SR-14 pretty json-to-sudoers exit 0" 0 "$?"
+    _pback=$(cat "${CI_HOME}/pretty-back.sudoers")
+    assert_contains "TP-SR-14 pretty systemctl" "${_pback}" "/bin/systemctl reload nginx"
+    assert_contains "TP-SR-14 pretty journalctl" "${_pback}" "/usr/bin/journalctl -u nginx"
+    assert_contains "TP-SR-14 pretty nginx -t" "${_pback}" "/usr/sbin/nginx -t"
+
+    # TP-SR-16 pretty folder-backup backup+restore
+    _sr_sample_folder_backup_pretty >"${CI_HOME}/fb-pretty.json"
+    HOME="${CI_HOME}" sh "${SCRIPT}" json-to-sudoers --file "${CI_HOME}/fb-pretty.json" --out "${CI_HOME}/fb-pretty.sudoers" >/dev/null 2>&1
+    assert_eq "TP-SR-16 pretty folder-backup convert exit 0" 0 "$?"
+    _fbback=$(cat "${CI_HOME}/fb-pretty.sudoers")
+    assert_contains "TP-SR-16 pretty backup verb" "${_fbback}" "folder-backup backup"
+    assert_contains "TP-SR-16 pretty restore verb" "${_fbback}" "folder-backup restore"
+
     # TP-SR-08 remove purpose-only
     printf '%s\n' '{"purpose":"Revoke my webservice sudoers grant; I no longer operate nginx."}' >"${CI_HOME}/rm.json"
     HOME="${CI_HOME}" sh "${SCRIPT}" json-to-sudoers --file "${CI_HOME}/rm.json" --out "${CI_HOME}/rm.sudoers" >/dev/null 2>&1
@@ -73,7 +151,29 @@ ${_u} ALL=(root) NOPASSWD: /usr/bin/gitlab-ctl status
 EOF
     _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" sudoers-to-json --file "${CI_HOME}/mix.sudoers" --action add --out "${CI_HOME}/mix.json" 2>&1 >/dev/null)
     assert_eq "TP-SR-10 mixed exit 1" 1 "$?"
-    assert_contains "TP-SR-10 mixed families" "${_err}" "mixed service"
+    assert_contains "TP-SR-10 mixed families" "${_err}" "more than one service"
+    assert_contains "TP-SR-10 mixed Next" "${_err}" "Next:"
+    assert_contains "TP-SR-10 mixed no jargon-only" "${_err}" "one service per request"
+
+    # Infer fail: unclassified Cmnd — operator text + Next: --service
+    cat >"${CI_HOME}/unk.sudoers" <<EOF
+# Purpose: unknown tool
+${_u} ALL=(root) NOPASSWD: /bin/true
+EOF
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" sudoers-to-json --file "${CI_HOME}/unk.sudoers" --action add --out "${CI_HOME}/unk.json" 2>&1 >/dev/null)
+    assert_eq "TP-SR-10 infer exit 1" 1 "$?"
+    assert_contains "TP-SR-10 infer human" "${_err}" "Cannot tell which service"
+    assert_contains "TP-SR-10 infer Next" "${_err}" "Next:"
+    assert_contains "TP-SR-10 infer --service" "${_err}" "--service"
+
+    # Decode count mismatch: two "path" keys in one object — do not approve
+    printf '%s\n' '{"schema_version":1,"purpose":"broken","username":"'"${_u}"'","service":"webservice","action":"add","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/systemctl","args":["reload","nginx"],"path":"/usr/sbin/nginx"}]}' >"${CI_HOME}/dup-path.json"
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" json-to-sudoers --file "${CI_HOME}/dup-path.json" --out "${CI_HOME}/dup-path.out" 2>&1 >/dev/null)
+    assert_eq "TP-SR-10 decode-lost exit 1" 1 "$?"
+    assert_contains "TP-SR-10 decode-lost incomplete" "${_err}" "incomplete"
+    assert_contains "TP-SR-10 decode-lost do not approve" "${_err}" "Do not approve"
+    assert_contains "TP-SR-10 decode-lost Next" "${_err}" "Next:"
+    assert_not_contains "TP-SR-10 decode-lost no codec jargon" "${_err}" "lost objects"
 
     # TP-SR-11 remove extra fields
     printf '%s\n' '{"purpose":"x","commands":[{"path":"/bin/true","args":[],"runas":"root","tags":[]}]}' >"${CI_HOME}/badrm.json"
@@ -111,6 +211,18 @@ EOF
 
     _shown=$(HOME="${CI_HOME}" SUDOER_CLI_ALLOW_TEST_ROOTS=1 sh "${SCRIPT}" --queue-root "${_q}" show "${_rid}" 2>/dev/null)
     assert_contains "TP-SR-05 show purpose" "${_shown}" "Allow this user to reload nginx"
+
+    # TP-SR-15 pretty add-sample submit inbound keeps all three paths
+    _q15="${CI_HOME}/queues15"
+    mkdir -p "${_q15}/sudoer-request" "${_q15}/sudoer-approved" "${_q15}/sudoer-rejected"
+    _out15=$(HOME="${CI_HOME}" SUDOER_CLI_ALLOW_TEST_ROOTS=1 sh "${SCRIPT}" --json --queue-root "${_q15}" add-sudoer-request --file "${CI_HOME}/add-pretty.json" 2>/dev/null)
+    assert_eq "TP-SR-15 pretty submit exit 0" 0 "$?"
+    _rid15=$(printf '%s' "${_out15}" | sed -n 's/.*"request_id":"\([^"]*\)".*/\1/p')
+    assert_file_exists "TP-SR-15 pretty queued file" "${_q15}/sudoer-request/${_rid15}"
+    _ibody15=$(cat "${_q15}/sudoer-request/${_rid15}")
+    assert_contains "TP-SR-15 inbound systemctl" "${_ibody15}" "/bin/systemctl"
+    assert_contains "TP-SR-15 inbound journalctl" "${_ibody15}" "/usr/bin/journalctl"
+    assert_contains "TP-SR-15 inbound nginx" "${_ibody15}" "/usr/sbin/nginx"
 
     # TP-SR-04 per-dir override
     _err=$(HOME="${CI_HOME}" SUDOER_CLI_ALLOW_TEST_ROOTS=1 sh "${SCRIPT}" --request-dir /tmp/sr-req-rel list-approving 2>&1 >/dev/null)

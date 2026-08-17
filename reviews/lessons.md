@@ -26,6 +26,7 @@ Durable failure modes. **Always re-check on product review.**
 | L-ELEV-N-01 | Agents paste `sudo -n` from skills/molds as default elev (**knowledge pollution**) | Avoid `-n` unless specialized law specifies NOPASSWD/hook/ticket; **T1-N-POLLUTE**; mold §8.1.4 | open watch |
 | L-QUEUE-0777-01 | Inbound **0777** without sticky: world readdir + unlink/replace of others’ grant JSON; approve `mv` of path after `cp` | Inbound **3773**; submit `0640`; archive snapshot then unlink inbound; F7 removes `/var/{{APP_NAME}}/` children; **SR-SEC-01/02** | **closed** (1.5.1; TP-SR-Q-01..03) |
 | L-INT-STDIN-01 | `while read … done <id-list` stole stdin from `prompt_yes_no`; login hook printed all three (y/N) and skipped | Read the id list on fd 3; leave fd 0 for prompts; **TP-SR-INT-05** | **closed** (1.6.1) |
+| L-JSON-CMDS-01 | Pretty (or spaced) `commands[]` decode keeps last `args` only; submit re-encode hides the drop | Split objects without requiring `},{`; fail closed on count mismatch; pretty + compact multi-command suite; incident 20260817-001 | **closed** (1.6.2; TP-SR-14/15/16) |
 
 **Related-product only (do not re-apply as this origin’s law):** L-DEPOSIT-01, L-SUDOERS-01..05, L-OVERWRITE-01 stay on folder-backup. Type O empty-argv / online-channel lessons stay on products that own those surfaces. This product is hop 0.
 

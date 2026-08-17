@@ -3,9 +3,9 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.6.1  
-**Last plan update:** 2026-08-15  
-**Last suite run:** PASS=221 FAIL=0 SKIP=2 (2026-08-15; TP-SR-INT-04/05 live pending-id needs Type 1)  
+**Product VERSION:** 1.6.2  
+**Last plan update:** 2026-08-17  
+**Last suite run:** PASS=244 FAIL=0 SKIP=2 (2026-08-17; TP-SR-14/15/16 pretty JSON; TP-SR-INT-04/05 live pending-id needs Type 1)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)
@@ -25,7 +25,7 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | Trimmed parent verbs fail closed | have | TP-CLI-13 |
 | Local install / idempotent / uninstall / mode 0755 | have | TP-LC-01..10 |
 | Backup / restore | n/a | Absent by design (not a backup product) |
-| Domain sudoers-request (convert / submit / queues) | have | **TP-SR-01..13** + **TP-SR-PRIV-01..03** — `tests/test_domain_sr.sh` |
+| Domain sudoers-request (convert / submit / queues) | have | **TP-SR-01..16** + **TP-SR-PRIV-01..03** — `tests/test_domain_sr.sh` |
 | Privilege prevention set (closed block vs must-remain-open) | have | **TP-PREV-01..02** (aliases of PRIV-03 / SR-03) |
 | Routed convert known; junk still unknown | have | **TP-CLI-14** |
 | no-retest-tty (measure `[ -t` outside functions) | have | **TP-ELEV-07** |
@@ -89,6 +89,9 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-11 | Remove JSON with `commands` → `remove_extra_fields` | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-SR-12 | Relative `--queue-root` → `invalid_name` | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-SR-13 | `request_id` includes `sudoer-` prefix and `.json` | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
+| TP-SR-14 | pretty add-sample JSON → all three Cmnd lines | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval 2.15.0 | **have** |
+| TP-SR-15 | pretty add-sample submit inbound keeps all three `path`s | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval 2.15.0 | **have** |
+| TP-SR-16 | pretty folder-backup backup+restore keeps both verbs | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval 2.15.0 | **have** |
 | TP-SR-PRIV-01 | Type 1 verbs: non-root fail-closed, no `/etc` write | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval · three-layer | **have** |
 | TP-SR-PRIV-02 | Bootstrap `setup` is any euid 0 (not `sudo -n`, not `sudoer-adm`); approve keeps F6 | `tests/test_domain_sr.sh` | requirement-three-layer-privilege-model · domain | **have** |
 | TP-SR-PRIV-03 | Live setup body: useradd, collision, F6, hook (static; no host useradd in CI) | `tests/test_domain_sr.sh` | requirement-least-privilege-user · domain | **have** |
