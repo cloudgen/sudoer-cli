@@ -8,6 +8,28 @@
 
 This requirement is the **project Single Source of Truth** for how sudoer-cli behaves in **interactive** (human + TTY) versus **non-interactive** (automation, CI/CD, pipes, `--json` / often `--quiet`) environments.
 
+### 1.1 Human-facing
+
+**In one sentence:** Whether a human is at a terminal is measured once, outside helpers. The review loop must not steal stdin from the prompt.
+
+| Box | Meaning | Example |
+|-----|---------|---------|
+| You / this login | Confirm on a real terminal | `sudo sudoer-cli interactive` |
+| The other role | Automation with --json must not hang | `sudoer-cli --json version` |
+| Not this file | Prompt helper bodies | `requirement-shell-prompt` |
+
+| Includes | Excludes |
+|----------|----------|
+| TTY measured outside functions; helpers consume TTY; review loop does not steal stdin | Live `[ -t` inside `prompt_*`; empty argv as review |
+
+| Surface | What you open | What for |
+|---------|---------------|----------|
+| `src/sudoer-cli` | ship unit | TTY / prompt |
+
+| You do… | What it means | What you type |
+|---------|---------------|---------------|
+| Review on a TTY | The program already knows it is interactive. Prompts still need a terminal. Pipes must fail closed, not hang. | `sudo sudoer-cli interactive` |
+
 ---
 
 ## 2. Core Rules / Requirements (Mandatory)

@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01)
+# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..04, TP-SR-FENCE-*)
 # Primary REQ: requirement-domain-sudoer-approval.md
 # =============================================================================
 
@@ -212,6 +212,27 @@ EOF
     _shown=$(HOME="${CI_HOME}" SUDOER_CLI_ALLOW_TEST_ROOTS=1 sh "${SCRIPT}" --queue-root "${_q}" show "${_rid}" 2>/dev/null)
     assert_contains "TP-SR-05 show purpose" "${_shown}" "Allow this user to reload nginx"
 
+    # TP-SR-17 OPEN-BEHALF: JSON username B (hyphenated service+user) — dest uses B, not last-hyphen adm
+    printf '%s\n' '{"schema_version":1,"purpose":"DNS grant for colleague.","username":"dns-adm","service":"dns-cli","action":"add","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/usr/local/bin/dns-cli","args":["reload"]}]}' >"${CI_HOME}/behalf.json"
+    _outb=$(HOME="${CI_HOME}" SUDOER_CLI_ALLOW_TEST_ROOTS=1 sh "${SCRIPT}" --json --queue-root "${_q}" add-sudoer-request --file "${CI_HOME}/behalf.json" 2>/dev/null)
+    assert_eq "TP-SR-17 behalf submit exit 0" 0 "$?"
+    assert_contains "TP-SR-17 request_id uses B" "${_outb}" "dns-cli-dns-adm-add-"
+    assert_contains "TP-SR-17 dest uses JSON subject" "${_outb}" '"dest":"/etc/sudoers.d/dns-cli-dns-adm"'
+    assert_not_contains "TP-SR-17 dest is not last-hyphen adm" "${_outb}" "dns-cli-adm\""
+
+    # TP-SR-18 remove for B: JSON username survives encode
+    printf '%s\n' '{"purpose":"Revoke colleague DNS grant.","username":"dns-adm","service":"dns-cli","action":"remove"}' >"${CI_HOME}/rm-b.json"
+    _outrm=$(HOME="${CI_HOME}" SUDOER_CLI_ALLOW_TEST_ROOTS=1 sh "${SCRIPT}" --json --queue-root "${_q}" remove-sudoer-request --service dns-cli --file "${CI_HOME}/rm-b.json" 2>/dev/null)
+    assert_eq "TP-SR-18 remove-for-B exit 0" 0 "$?"
+    assert_contains "TP-SR-18 remove request_id uses B" "${_outrm}" "dns-cli-dns-adm-remove-"
+    assert_contains "TP-SR-18 remove dest uses B" "${_outrm}" '"dest":"/etc/sudoers.d/dns-cli-dns-adm"'
+    _ridrm=$(printf '%s' "${_outrm}" | sed -n 's/.*"request_id":"\([^"]*\)".*/\1/p')
+    assert_file_exists "TP-SR-18 remove queued" "${_q}/sudoer-request/${_ridrm}"
+    _rmbody=$(cat "${_q}/sudoer-request/${_ridrm}")
+    assert_contains "TP-SR-18 inbound keeps username B" "${_rmbody}" '"username":"dns-adm"'
+    assert_contains "TP-SR-18 inbound keeps service" "${_rmbody}" '"service":"dns-cli"'
+    assert_contains "TP-SR-18 inbound keeps action remove" "${_rmbody}" '"action":"remove"'
+
     # TP-SR-15 pretty add-sample submit inbound keeps all three paths
     _q15="${CI_HOME}/queues15"
     mkdir -p "${_q15}/sudoer-request" "${_q15}/sudoer-approved" "${_q15}/sudoer-rejected"
@@ -287,8 +308,8 @@ EOF
     case "${_apr}" in
         *sr_require_type1$'\n'*|*sr_require_type1\;*|*sr_require_type1*)
             case "${_apr}" in
-                *sr_require_type1_bootstrap*) t_fail "TP-SR-PRIV-02 approve must keep F6 gate" ;;
-                *) t_pass "TP-SR-PRIV-02 approve keeps F6/sr_require_type1" ;;
+                *sr_require_type1_bootstrap*) t_fail "TP-SR-PRIV-02 approve must keep euid-0 gate" ;;
+                *) t_pass "TP-SR-PRIV-02 approve keeps sr_require_type1 (euid 0)" ;;
             esac
             ;;
         *) t_fail "TP-SR-PRIV-02 approve must call sr_require_type1" ;;
@@ -297,6 +318,42 @@ EOF
     assert_contains "TP-SR-PRIV-02 help bootstrap sudo setup" "${_help}" "sudo ${APP_NAME} setup"
     assert_contains "TP-SR-PRIV-02 help password sudo OK" "${_help}" "password sudo OK"
     assert_contains "TP-SR-PRIV-02 help not limited to sudoer-adm" "${_help}" "Not limited to sudoer-adm"
+
+    # TP-SR-PRIV-04 / TP-PREV-03 / TP-ELEV-09: no second actor lock after elev
+    _t1=$(sed -n '/^sr_require_type1()/,/^}/p' "${SCRIPT}")
+    case "${_t1}" in
+        *'!= "sudoer-adm"'*|*"!= 'sudoer-adm'"*|*"Only sudoer-adm"*)
+            t_fail "TP-SR-PRIV-04 approve gate must not require SUDO_USER==sudoer-adm"
+            ;;
+        *) t_pass "TP-SR-PRIV-04 approve gate has no exclusive-LPU actor lock" ;;
+    esac
+    t_pass "TP-PREV-03 alias of TP-SR-PRIV-04"
+    t_pass "TP-ELEV-09 alias of TP-SR-PRIV-04"
+    assert_not_contains "TP-SR-PRIV-04 help not only-sudoer-adm approve" "${_help}" "after F6; sudoer-adm or real root"
+    assert_contains "TP-SR-PRIV-04 help password sudo may approve" "${_help}" "password sudo"
+    _setup_body=$(sed -n '/^lpu_setup()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-PRIV-04 setup helps submit" "${_setup_body}" "add-sudoer-request"
+    assert_contains "TP-SR-PRIV-04 setup Next names interactive" "${_setup_body}" "interactive"
+    _sub=$(sed -n '/^sr_submit()/,/^}/p' "${SCRIPT}")
+    assert_not_contains "TP-SR-PRIV-04 Type 0 submit never useradd" "${_sub}" "useradd"
+    case "${_t1}" in
+        *'_su='*|*'${SUDO_USER'*|*'SUDO_USER-'*)
+            t_fail "TP-SR-PRIV-04 sr_require_type1 must not read SUDO_USER after euid 0"
+            ;;
+        *) t_pass "TP-SR-PRIV-04 sr_require_type1 has no SUDO_USER actor check" ;;
+    esac
+    _prevf="${REPO_ROOT}/docs/requirements/requirement-privilege-prevention-set.md"
+    if [ -f "${_prevf}" ]; then
+        _prev=$(cat "${_prevf}")
+        assert_contains "TP-PREV-03 law OPEN-SUDOER-APPR" "${_prev}" "OPEN-SUDOER-APPR"
+        _block=$(sed -n '/^#### 2.2.1/,/^#### 2.2.2/p' "${_prevf}")
+        case "${_block}" in
+            *PREV-APPR-ACTOR*) t_fail "TP-PREV-03 §2.2.1 must not republish PREV-APPR-ACTOR as a block" ;;
+            *) t_pass "TP-PREV-03 §2.2.1 has no PREV-APPR-ACTOR block row" ;;
+        esac
+    else
+        t_fail "TP-PREV-03 prevention-set file missing"
+    fi
 
     # TP-SR-PRIV-03 live setup body (static: non-root CI does not useradd)
     _setup=$(sed -n '/^lpu_setup()/,/^}/p' "${SCRIPT}")
@@ -327,6 +384,56 @@ EOF
     assert_contains "TP-SR-INT-03 hook skips SSH_ORIGINAL_COMMAND" "${_hook}" "SSH_ORIGINAL_COMMAND"
     assert_contains "TP-SR-INT-03 hook requires PS1" "${_hook}" 'PS1-'
     assert_not_contains "TP-SR-INT-03 hook does not exit" "${_hook}" "exit"
+    _hookfn=$(sed -n '/^lpu_install_hook()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-HOOK-01 install_hook checks/creates .profile" "${_hookfn}" "lpu_ensure_profile"
+    _ens=$(sed -n '/^lpu_ensure_profile()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-HOOK-01 ensure tests .profile" "${_ens}" '.profile'
+    assert_contains "TP-SR-HOOK-01 ensure leaves existing file" "${_ens}" '[ -f "${_pr}" ]'
+    _own=$(sed -n '/^lpu_own_user_rc()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-HOOK-04 own_user_rc chowns LPU" "${_own}" 'chown "${LPU_USER}:${LPU_USER}"'
+    assert_contains "TP-SR-HOOK-04 own_user_rc fail-closed chown" "${_own}" 'sr_die "cannot chown'
+    assert_not_contains "TP-SR-HOOK-04 own_user_rc does not swallow chown" "${_own}" '|| true'
+    _apply=$(sed -n '/^lpu_hook_apply()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-HOOK-04 apply calls own_user_rc" "${_apply}" "lpu_own_user_rc"
+    assert_contains "TP-SR-HOOK-04 ensure calls own_user_rc" "${_ens}" "lpu_own_user_rc"
+    _ptxt=$(sed -n '/^lpu_profile_text()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-HOOK-03 profile text sources bashrc" "${_ptxt}" '. \"\${HOME}/.bashrc\"'
+    assert_contains "TP-SR-HOOK-03 profile text BEGIN marker" "${_ptxt}" "BEGIN sudoer-cli profile source-bashrc"
+
+    # Isolated heal (no host useradd): missing .profile is created; existing is not replaced.
+    _th=$(mktemp -d "${TMPDIR:-/tmp}/sudoer-cli.hook.XXXXXX")
+    _runner="${_th}/run-hook.sh"
+    {
+        printf '%s\n' 'sr_die() { printf "%s\n" "$*" >&2; exit 1; }'
+        printf '%s\n' 'getent() { return 1; }'
+        sed -n '/^lpu_defaults()/,/^}/p' "${SCRIPT}"
+        sed -n '/^lpu_own_user_rc()/,/^}/p' "${SCRIPT}"
+        sed -n '/^lpu_hook_text()/,/^}/p' "${SCRIPT}"
+        sed -n '/^lpu_hook_strip()/,/^}/p' "${SCRIPT}"
+        sed -n '/^lpu_hook_apply()/,/^}/p' "${SCRIPT}"
+        sed -n '/^lpu_profile_sources_bashrc()/,/^}/p' "${SCRIPT}"
+        sed -n '/^lpu_profile_text()/,/^}/p' "${SCRIPT}"
+        sed -n '/^lpu_ensure_profile()/,/^}/p' "${SCRIPT}"
+        sed -n '/^lpu_install_hook()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' "LPU_HOME='${_th}/home'"
+        printf '%s\n' "LPU_USER=sudoer-adm"
+        printf '%s\n' "APP_NAME=sudoer-cli"
+        printf '%s\n' "GLOBAL_BIN=/usr/local/bin"
+        printf '%s\n' 'mkdir -p "${LPU_HOME}"'
+        printf '%s\n' "lpu_install_hook"
+    } >"${_runner}"
+    sh "${_runner}"
+    assert_file_exists "TP-SR-HOOK-01 missing .profile created" "${_th}/home/.profile"
+    assert_file_exists "TP-SR-HOOK-01 .bashrc created" "${_th}/home/.bashrc"
+    _prf=$(cat "${_th}/home/.profile")
+    assert_contains "TP-SR-HOOK-03 created sources bashrc" "${_prf}" '. "${HOME}/.bashrc"'
+    assert_contains "TP-SR-HOOK-03 created BEGIN marker" "${_prf}" "# BEGIN sudoer-cli profile source-bashrc"
+    printf '%s\n' "# keep-me" >"${_th}/home/.profile"
+    sh "${_runner}"
+    _prf2=$(cat "${_th}/home/.profile")
+    assert_contains "TP-SR-HOOK-02 existing .profile body kept" "${_prf2}" "# keep-me"
+    assert_not_contains "TP-SR-HOOK-02 existing not replaced by create sample" "${_prf2}" "BEGIN sudoer-cli profile source-bashrc"
+    rm -rf "${_th}"
     _f6fn=$(sed -n '/^lpu_f6_text()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-PRIV-03 F6 Table A NOPASSWD" "${_f6fn}" "NOPASSWD:"
     assert_contains "TP-SR-PRIV-03 F6 global bin" "${_f6fn}" 'GLOBAL_BIN'
@@ -354,7 +461,14 @@ EOF
     _aprbody2=$(sed -n '/^sr_approve()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-Q-01 approve uses home view" "${_aprbody2}" "sr_approver_dir"
     assert_contains "TP-SR-Q-02 approve archives snapshot" "${_aprbody2}" "sr_archive_validated"
-    assert_contains "TP-SR-Q-02 approve owner check" "${_aprbody2}" "owner_mismatch"
+    assert_not_contains "TP-SR-Q-02 approve has no owner_mismatch wall" "${_aprbody2}" "owner_mismatch"
+    _rejbody=$(sed -n '/^sr_reject()/,/^}/p' "${SCRIPT}")
+    assert_not_contains "TP-SR-Q-02 reject has no owner_mismatch wall" "${_rejbody}" "owner_mismatch"
+    assert_not_contains "TP-SR-Q-02 reject has no self-scope wall" "${_rejbody}" "self_scope"
+    _subfn=$(sed -n '/^sr_submit()/,/^}/p' "${SCRIPT}")
+    assert_not_contains "TP-SR-Q-02 submit has no self-scope wall" "${_subfn}" "self-scope"
+    _j2s=$(sed -n '/^sr_json_to_sudoers()/,/^}/p' "${SCRIPT}")
+    assert_not_contains "TP-SR-Q-02 json-to-sudoers has no self-scope wall" "${_j2s}" "self-scope"
     assert_not_contains "TP-SR-Q-02 approve does not mv inbound path" "${_aprbody2}" 'mv "${_path}"'
     _archfn=$(sed -n '/^sr_archive_validated()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-Q-02 archive copies snapshot" "${_archfn}" 'cp "${_snap}"'
@@ -431,6 +545,58 @@ EOF
         t_skip "TP-SR-INT-04 empty inbound live needs Type 1"
         t_skip "TP-SR-INT-05 live quit needs Type 1"
     fi
+
+    # TP-SR-FENCE: dest Fence before yes/no; reject re-validates; action mismatch; subject mismatch is not a fence
+    _intfn=$(sed -n '/^sr_interactive()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-FENCE-01 interactive calls dest fence" "${_intfn}" "sr_dest_fence_or_die"
+    _aprfn=$(sed -n '/^sr_approve()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-FENCE-01 approve calls dest fence" "${_aprfn}" "sr_dest_fence_or_die"
+    _rejfn=$(sed -n '/^sr_reject()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-FENCE-01 reject calls dest fence" "${_rejfn}" "sr_dest_fence_or_die"
+    _int_fence_line=$(printf '%s\n' "${_intfn}" | grep -n 'sr_dest_fence_or_die' | head -n1 | cut -d: -f1)
+    _int_prompt_line=$(printf '%s\n' "${_intfn}" | grep -n 'prompt_yes_no "Approve' | head -n1 | cut -d: -f1)
+    if [ -n "${_int_fence_line}" ] && [ -n "${_int_prompt_line}" ] && [ "${_int_fence_line}" -lt "${_int_prompt_line}" ]; then
+        t_pass "TP-SR-FENCE-01 fence runs before Approve prompt"
+    else
+        t_fail "TP-SR-FENCE-01 fence must run before Approve prompt (fence=${_int_fence_line} prompt=${_int_prompt_line})"
+    fi
+
+    _tfence=$(mktemp -d "${TMPDIR:-/tmp}/sudoer-cli.fence.XXXXXX")
+    _frunner="${_tfence}/run-fence.sh"
+    {
+        printf '%s\n' 'sr_die() { printf "%s\n" "$1" >&2; printf "CODE:%s\n" "${2:-unknown}" >&2; [ -n "${3-}" ] && printf "Next: %s\n" "$3" >&2; exit 1; }'
+        printf '%s\n' 'sr_operator_cmd() { printf "%s" "sudoer-cli"; }'
+        printf '%s\n' 'util_mktemp() { mktemp "${TMPDIR:-/tmp}/sudoer-cli.XXXXXX"; }'
+        sed -n '/^sr_json_get_str()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_json_has_key()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_json_decode_to_fields()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_valid_service_name()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_split_service_user()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_parse_request_id()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_dest_fence_unknown_keys()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_dest_fence_or_die()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' "id=\"\$1\"; path=\"\$2\""
+        printf '%s\n' 'sr_dest_fence_or_die "${path}" "${id}"'
+        printf '%s\n' 'printf "FENCE_OK\n"'
+    } >"${_frunner}"
+    _fid="sudoer-20260819-webservice-alice-add-1.json"
+    printf '%s\n' 'not json at all' >"${_tfence}/bad.json"
+    _ferr=$(sh "${_frunner}" "${_fid}" "${_tfence}/bad.json" 2>&1)
+    assert_eq "TP-SR-FENCE-02 not-json exit 1" 1 "$?"
+    assert_contains "TP-SR-FENCE-02 not-json people words" "${_ferr}" "not a grant JSON object"
+    assert_contains "TP-SR-FENCE-02 not-json no yes/no" "${_ferr}" "Dest will not ask yes/no"
+    assert_contains "TP-SR-FENCE-02 not-json Next" "${_ferr}" "add-sudoer-request"
+    printf '%s\n' '{"schema_version":1,"purpose":"x","username":"alice","service":"webservice","action":"remove","commands":[]}' >"${_tfence}/act.json"
+    _ferr=$(sh "${_frunner}" "${_fid}" "${_tfence}/act.json" 2>&1)
+    assert_eq "TP-SR-FENCE-03 action mismatch exit 1" 1 "$?"
+    assert_contains "TP-SR-FENCE-03 action mismatch words" "${_ferr}" "name says add but the JSON action is remove"
+    assert_contains "TP-SR-FENCE-03 action code" "${_ferr}" "CODE:field_mismatch"
+    # Filename subject alice, JSON username bob — MUST NOT fence
+    printf '%s\n' '{"schema_version":1,"purpose":"grant for bob","username":"bob","service":"webservice","action":"add","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/true","args":[]}]}' >"${_tfence}/bob.json"
+    _ferr=$(sh "${_frunner}" "${_fid}" "${_tfence}/bob.json" 2>&1)
+    assert_eq "TP-SR-FENCE-04 subject mismatch is not a fence" 0 "$?"
+    assert_contains "TP-SR-FENCE-04 subject mismatch passes" "${_ferr}" "FENCE_OK"
+    rm -rf "${_tfence}"
 
     # TP-SR-06 dest name never *-remove
     _out=$(HOME="${CI_HOME}" SUDOER_CLI_ALLOW_TEST_ROOTS=1 sh "${SCRIPT}" --json --queue-root "${_q}" remove-sudoer-request --service webservice --purpose "Revoke my webservice sudoers grant; I no longer operate nginx." 2>/dev/null)

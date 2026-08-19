@@ -1,7 +1,7 @@
 # Requirement ↔ test matrix — sudoer-cli
 
-**Updated:** 2026-08-17  
-**Product VERSION:** 1.6.2  
+**Updated:** 2026-08-19 (1.8.1 dest Fence + OPEN-BEHALF)  
+**Product VERSION:** 1.8.1  
 **Suite:** `tests/run.sh`
 
 | Requirement key | Area | TP families | Coverage notes |
@@ -19,10 +19,12 @@
 | requirement-shell-prompt | shell | TP-LC-05 · **TP-ELEV-07** | `prompt_*` consume `TTY`; samples in REQ |
 | requirement-shell-temp-file-system | shell | **TP-TMP-01**, **TP-TMP-02**, TP-CLI-12, TP-LC-01 | `mktemp` leaves; no `$$` scratch |
 | requirement-shell-cli-storage | shell | TP-CLI-12 | Isolation |
-| requirement-three-layer-privilege-model | architecture | TP-SR-03, TP-SR-PRIV-01, **TP-SR-PRIV-02**, **TP-SR-PRIV-03**, **TP-ELEV-08** | Table A ≠ user grant; Type 1 gate; live setup body; sudo escalation check |
-| requirement-least-privilege-user | architecture | TP-SR-PRIV-01, **TP-SR-PRIV-02**, **TP-SR-PRIV-03** | F1–F7; setup any admin; live setup body (static) |
-| requirement-privilege-prevention-set | architecture | **TP-PREV-01**, **TP-PREV-02**, TP-SR-PRIV-01..03, TP-ELEV-08, TP-SR-05/06, TP-CLI-07, TP-LC-05/06 | Closed block vs must-remain-open; no invented walls |
-| requirement-domain-sudoer-approval | domain | **TP-SR-01..16**, **TP-SR-PRIV-01..03**, **TP-CLI-14**, **TP-SR-INT-01..05**, **TP-SR-Q-01..03** | Type 0 convert/submit **have**; pretty `commands[]` fidelity **14/15/16**; setup live (static); interactive loop **have**; public queues **have** |
+| requirement-three-layer-privilege-model | architecture | TP-SR-03, TP-SR-PRIV-01, **TP-SR-PRIV-02**, **TP-SR-PRIV-03**, **TP-SR-PRIV-04**, **TP-ELEV-08**, **TP-ELEV-09** | Table A ≠ user grant; Type 1 gate; live setup body; no exclusive-LPU approve lock |
+| requirement-least-privilege-user | architecture | TP-SR-PRIV-01, **TP-SR-PRIV-02**, **TP-SR-PRIV-03**, **TP-SR-PRIV-04**, **TP-SR-HOOK-01..04** | F1–F7; setup any admin; LSU never `useradd`; setup helps submit; hook checks/creates `~/.profile`; rc owned by LPU |
+| requirement-privilege-prevention-set | architecture | **TP-PREV-01**, **TP-PREV-02**, **TP-PREV-03**, TP-SR-PRIV-01..04, TP-ELEV-08/09, TP-SR-05/06, **TP-SR-17**, **TP-SR-18**, TP-CLI-07, TP-LC-05/06 | Closed block vs must-remain-open; OPEN-SUDOER-APPR; OPEN-BEHALF |
+| requirement-actor-role-subject-approver | architecture | TP-SR-17, TP-SR-18, TP-SR-PRIV-04 | Catalog only; dest still has Approver; A may file for B |
+| requirement-incorrect-json-format | domain | **TP-SR-FENCE-01..04** | Dest Fence before yes/no; reject re-validates; action mismatch; subject mismatch not a fence |
+| requirement-domain-sudoer-approval | domain | **TP-SR-01..18**, **TP-SR-PRIV-01..04**, **TP-CLI-14**, **TP-SR-INT-01..05**, **TP-SR-HOOK-01..04**, **TP-SR-FENCE-01..04**, **TP-SR-Q-01..03** | Type 0 convert/submit **have**; pretty `commands[]` fidelity **14/15/16**; A-for-B **17/18**; dest Fence **FENCE-***; elevated sudoer may approve; hook `.profile`; rc owned by LPU |
 
 **Absent by design (no TP Core):** online-install, remote self-management, automatic channel checksum, folder-archive backup/restore.
 

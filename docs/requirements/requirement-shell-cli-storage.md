@@ -10,6 +10,28 @@ This requirement is the **project Single Source of Truth** for **shell CLI stora
 
 Used for **install staging** (`mktemp` under the isolated root). Not a durable backup deposit.
 
+### 1.1 Human-facing
+
+**In one sentence:** Scratch and cache resolve to an isolated root. visudo copies sit under that root plus the process id.
+
+| Box | Meaning | Example |
+|-----|---------|---------|
+| You / this login | Convert/submit without choosing a host cache path | `sudoer-cli sudoers-to-json --file draft.sudoers --action add --purpose "…"` |
+| The other role | Waiting folder is not this resolver | `/var/sudoer-cli/sudoer-request` |
+| Not this file | How a leaf file is created (`mktemp`) | `requirement-shell-temp-file-system` |
+
+| Includes | Excludes |
+|----------|----------|
+| Storage root resolve; about shows resolved paths | Durable backup deposit; Type 0 mkdir of production inbound |
+
+| Surface | What you open | What for |
+|---------|---------------|----------|
+| `src/sudoer-cli` | ship unit | resolver |
+
+| You do… | What it means | What you type |
+|---------|---------------|---------------|
+| Convert a file | Scratch is under the resolver. You do not pick `/tmp/foo.$$`. | `sudoer-cli sudoers-to-json --file draft.sudoers --action add --purpose "Allow backup"` |
+
 ---
 
 ## 2. Core Rules / Requirements (Mandatory)

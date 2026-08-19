@@ -12,6 +12,28 @@ Declare the **bootstrap chain** for this product: this workspace is **sudoer-cli
 
 **Direction is sacred:** cli-template → sudoer-cli only. Never reverse-copy this ship unit onto a cli-template origin.
 
+### 1.1 Human-facing
+
+**In one sentence:** This product grew from a shell CLI template. The live program is sudoer-cli; there is no parent binary here to copy back onto.
+
+| Box | Meaning | Example |
+|-----|---------|---------|
+| You / this login | Use this product as sudoer-cli | `src/sudoer-cli` |
+| The other role | Historical origin is a template, not a live parent | cli-template archive |
+| Not this file | Domain verbs or install lifecycle | `requirement-domain-sudoer-approval` |
+
+| Includes | Excludes |
+|----------|----------|
+| A→B direction; no live parent ship unit | Reverse-copy onto the origin; naming selfmanaged as origin |
+
+| Surface | What you open | What for |
+|---------|---------------|----------|
+| `src/sudoer-cli` | ship unit | this product |
+
+| You do… | What it means | What you type |
+|---------|---------------|---------------|
+| Keep direction | Specialize this product from the template. Do not overwrite a template with this ship unit. | (no command — architecture law) |
+
 ---
 
 ## 2. Core Rules (Mandatory)

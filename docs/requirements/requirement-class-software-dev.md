@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-class-software-dev.md  
-**Status**: Active (Version 1.5.0 – sudoer-cli class law + residual stack)  
+**Status**: Active (Version 1.6.0 – ARSA catalog + dest-fence review)  
 **Area**: class  
 **Key**: `requirement-class-software-dev`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -9,6 +9,29 @@
 Declare this workspace as a **software-development** project class and hold the **residual collection** of software-engineering stack facts **not already owned** by more specific Active peer requirements: primary language, toolchain policy, package/test tooling, and runtime OS family.
 
 This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycle, output, or storage tables (those stay on peer requirements).
+
+### 1.1 Human-facing
+
+**In one sentence:** This workspace is shippable software: a POSIX `/bin/sh` program you install yourself, with a dedicated approver account after first-time setup.
+
+| Box | Meaning | Example |
+|-----|---------|---------|
+| You / this login | Use and install `sudoer-cli` without becoming root | `sh src/sudoer-cli install` |
+| The other role | Host admin who already used password `sudo` | `sudo sudoer-cli setup` |
+| Not this file | Domain verbs, dest fences, Type map | `requirement-domain-sudoer-approval` · `requirement-actor-role-subject-approver` |
+
+| Includes | Excludes |
+|----------|----------|
+| Class membership; residual stack; pointers to ARSA and dest-fence REQs | Online install; inventing a dest fence; inventing an extra approver |
+
+| Surface | What you open | What for |
+|---------|---------------|----------|
+| `src/sudoer-cli` | ship unit | live product |
+| `docs/requirements/index.md` | registry | Active law list |
+
+| You do… | What it means | What you type |
+|---------|---------------|---------------|
+| Confirm class | This is software-development, not an empty seed. Residual stack lives here until a peer owns it. | Read this file + `docs/requirements/index.md` |
 
 ---
 
@@ -64,6 +87,19 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 27. **MUST** put live product name, repo slug, and concrete stack choices in **Implementation Notes** after collection — complete when Status is Active.  
 28. **MUST NOT** store secrets, PATs, or toy credentials in this file.
 
+### 2.8 Actor / role / subject / approver (consider)
+
+29. Every software-development project **MUST** consider an **actor / role / subject / approver** catalog — **even if there is no dest approver**.  
+30. This product **has** dest review: Active `requirement-actor-role-subject-approver` **MUST** print the five-column table. Dest Roles stay on `requirement-domain-sudoer-approval`.  
+31. **MUST NOT** skip the consider. **MUST NOT** invent an extra approver.
+
+### 2.9 Dest fence conditions (review and convert)
+
+32. Every software-development project **MUST review** dest fencing conditions.  
+33. This product’s dest **Fence** is **incorrect JSON format** — independent Active `requirement-incorrect-json-format`. Dest table on `requirement-domain-sudoer-approval` **MUST** still print and **point** at that REQ.  
+34. Dest **MUST NOT** fence rows stay on dest tables only.  
+35. **MUST NOT** invent a dest fence.
+
 ### 2.7 Implementation Notes (this project)
 
 | Field | Value (sudoer-cli) |
@@ -85,7 +121,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | **Architectures supported** | any arch with POSIX sh and the external tools the script invokes |
 | **Git surface** | used when product is published |
 | **Ship unit / install** | yes — `src/sudoer-cli` → `${USER_BIN}/sudoer-cli` (default `~/.local/bin/sudoer-cli`); **local-only** install (no online channel) |
-| **Product version SSOT** | `VERSION="1.6.2"` hard-assign in `src/sudoer-cli` |
+| **Product version SSOT** | `VERSION="1.8.1"` hard-assign in `src/sudoer-cli` |
 | **Bootstrap origin** | Historical **cli-template**. This product is **sudoer-cli**. No live parent ship unit. |
 
 **Residual ownership table:**
@@ -98,7 +134,9 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | Bootstrap lineage / keep-trim | `requirement-bootstrap-chain` | sudoer-cli specialized from cli-template |
 | Privilege / LPU / Type map | `requirement-three-layer-privilege-model` · `requirement-least-privilege-user` | Do not duplicate |
 | What is blocked vs must stay open | `requirement-privilege-prevention-set` | Closed prevention catalog; do not invent walls |
-| Domain sudoers-approval | `requirement-domain-sudoer-approval` | File-based JSON approval; Type 0 routed; Type 1 `setup` / `interactive` live |
+| Domain sudoers-approval | `requirement-domain-sudoer-approval` | File-based JSON approval; dest fence table |
+| Actor / role / subject / approver consider | `requirement-actor-role-subject-approver` | Dest has approver — not residual None |
+| Dest fence: incorrect JSON format | `requirement-incorrect-json-format` | Independent Fence REQ; dest table still prints |
 | Project layout / ship path | `requirement-project-folder` | `src/` + bin targets |
 | Type 0 CLI surface / flags / dispatch | `requirement-shell-cli-interface` | Do not duplicate |
 | Empty argv Type N help | `requirement-shell-cli-zero-arguments` | Local-only |
@@ -143,7 +181,9 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 5. Leave Implementation Notes as hollow stubs when Status claims Active.  
 6. Reintroduce Active **online-install** / remote **self-update** / **self-uninstall** / channel **checksum** law without explicit user order (product is **local-only** by design).  
 7. Treat this file as server-maintenance allowlist law, or register an Active server-maintenance class file in parallel.  
-8. Invent a second primary language SSOT that contradicts peer modular/CLI requirements.
+8. Invent a second primary language SSOT that contradicts peer modular/CLI requirements.  
+9. Skip the actor / role / subject / approver consider, or invent an extra approver.  
+10. Skip dest-fence review, leave a dest **Fence** as only a table cell, or invent a dest fence.
 
 **Violating any of these is considered a critical regression.**
 
@@ -160,6 +200,8 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | AC-5 | No class file conflict with `requirement-class-server-maintenance` |
 | AC-6 | Ship unit identity (posix-sh single-file, local install) consistent with peer shell REQs |
 | AC-7 | Online install package **absent** from Active registry by design |
+| AC-8 | Actor / role / subject / approver considered (Active catalog REQ) |
+| AC-9 | Dest fence reviewed (independent REQ per **Fence**) |
 
 ---
 
@@ -181,6 +223,8 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | `requirement-least-privilege-user` | F1–F7 |
 | `requirement-privilege-prevention-set` | Closed catalog of what is blocked vs must stay open |
 | `requirement-domain-sudoer-approval` | File-based JSON approval |
+| `requirement-actor-role-subject-approver` | Five-column consider catalog |
+| `requirement-incorrect-json-format` | Dest Fence |
 | `docs/requirements/index.md` | Registry SSOT |
 
 ---
@@ -195,9 +239,10 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | 2026-08-13 | Active 1.3.0 | This product is hop 0; selfmanaged is not origin |
 | 2026-08-13 | Active 1.4.0 | Specialize to sudoer-cli; point residual at privilege + domain REQs |
 | 2026-08-14 | Active 1.5.0 | Residual: prevention-set owner; VERSION 1.2.3; `setup` live; `interactive` loop Gap |
+| 2026-08-19 | Active 1.6.0 | ARSA catalog + dest-fence review; §1.1 Human-facing |
 
 ---
 
-**Last Updated**: 2026-08-14  
+**Last Updated**: 2026-08-19  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

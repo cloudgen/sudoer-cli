@@ -10,6 +10,29 @@ This requirement is the **project Single Source of Truth** for **local self-mana
 
 **Install mode:** **local-only**. Online channel install, remote version-check, self-update, and self-uninstall are **out of scope** (intentionally absent).
 
+### 1.1 Human-facing
+
+**In one sentence:** You can install and uninstall this program yourself. Installed mode is 0755 so every login can run it.
+
+| Box | Meaning | Example |
+|-----|---------|---------|
+| You / this login | Place or remove your copy | `sudoer-cli install` / `sudoer-cli uninstall --force` |
+| The other role | System bin for multi-user hosts | `sudo sh src/sudoer-cli install` |
+| Not this file | Remote update; self-uninstall naming | intentionally absent |
+
+| Includes | Excludes |
+|----------|----------|
+| install / uninstall / where-is-me; mode 0755 | Online channel; version-check; self-update |
+
+| Surface | What you open | What for |
+|---------|---------------|----------|
+| `src/sudoer-cli` | ship unit | install from checkout |
+| `~/.local/bin/sudoer-cli` | user bin | local copy |
+
+| You do… | What it means | What you type |
+|---------|---------------|---------------|
+| Install locally | Copy from this checkout into your user bin. Re-run is safe. | `sh src/sudoer-cli install` |
+
 ---
 
 ## 2. Core Rules (Mandatory)
@@ -82,7 +105,7 @@ This product ships as a **POSIX shell script** (interpreted). Execution by any n
 | Variable | Role | Default / note |
 |----------|------|----------------|
 | `APP_NAME` | Binary basename SSOT | hard-assign `sudoer-cli` |
-| `VERSION` | Local version SSOT | hard-assign `1.6.2` |
+| `VERSION` | Local version SSOT | hard-assign `1.8.1` |
 | `GLOBAL_BIN` | System-wide bin | `/usr/local/bin` |
 | `USER_BIN` | Per-user bin | `${HOME}/.local/bin` |
 | `FORCE` | Replace / skip confirm | `0` |

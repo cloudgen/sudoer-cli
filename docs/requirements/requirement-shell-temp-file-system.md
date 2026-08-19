@@ -10,6 +10,28 @@ This requirement is the **project Single Source of Truth** for **scratch file le
 
 **Root resolve** stays in `requirement-shell-cli-storage` (`util_resolve_storage`, `EFFECTIVE_STORAGE_DIR`, export `TMPDIR`). This file owns **how** a temp file is created under that root.
 
+### 1.1 Human-facing
+
+**In one sentence:** Scratch files are created with mktemp. Predictable `$$` names are forbidden. Cleanup is required.
+
+| Box | Meaning | Example |
+|-----|---------|---------|
+| You / this login | Convert or visudo a private copy | `sudoer-cli json-to-sudoers --file request.json` |
+| The other role | Root of the scratch tree | `requirement-shell-cli-storage` |
+| Not this file | Queued grant JSON | `requirement-domain-sudoer-approval` |
+
+| Includes | Excludes |
+|----------|----------|
+| `mktemp`; cleanup; no `$$` paths | Predictable names; leaving visudo copies behind |
+
+| Surface | What you open | What for |
+|---------|---------------|----------|
+| `src/sudoer-cli` | ship unit | `util_mktemp` |
+
+| You do… | What it means | What you type |
+|---------|---------------|---------------|
+| Convert JSON | The program makes a private sudoers copy, checks it, then removes the copy. | `sudoer-cli json-to-sudoers --file request.json` |
+
 ---
 
 ## 2. Core Rules / Requirements (Mandatory)

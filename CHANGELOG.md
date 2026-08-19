@@ -5,6 +5,51 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.8.1] - 2026-08-19
+
+### Fixed
+
+- After `setup` writes or rewrites the LPU `.profile` / `.bashrc` (including hook strip via `mktemp`+`mv`), those files are **`chown`’d to `sudoer-adm`** with mode **0644**. A swallowed `chown` left `root:root` and the login user could not read the hook (**L-HOOK-PROFILE-02**). Existing `.profile` bodies are still not overwritten; owner/mode is healed.
+- Dest **Fence** (incorrect JSON) runs **before** yes/no: `interactive` does not prompt on a broken waiting file; standalone `approve` / `reject` fail closed with the same sentence. Basename **action** must match JSON `action` (`field_mismatch`). Filename subject ≠ JSON `username` is not a fence.
+- `remove-sudoer-request` keeps JSON `username` / `service` (purpose-only means no `commands`, not no subject). A may queue a remove for B.
+
+### Added
+
+- Terms **shell-profile** and **shell-bashrc**. Skills **`SK-CREATE-SHELL-PROFILE`** / **`SK-CREATE-SHELL-BASHRC`**. Domain **2.21.0**; LPU **1.13.0**; ARSA catalog; dest Fence REQ; **TP-SR-HOOK-04**; **TP-SR-17** / **TP-SR-18**; **TP-SR-FENCE-01..04**.
+
+## [1.8.0] - 2026-08-18
+
+### Removed
+
+- `owner_mismatch` on `approve` / `reject` (file owner vs parsed subject). That check blocked reject of legal `dns-cli-dns-adm` names (**INC-20260818-002**).
+- `self_scope` on convert and submit (JSON / sudoers User must equal `id -un`).
+- Type 1 `field_mismatch` of JSON `username`/`service` against a last-hyphen parse.
+
+### Changed
+
+- Approve dest uses JSON `username` / `service` when present (so hyphenated service+user does not write `…-adm`).
+- `reject` archives the file without parsing the subject.
+- Prevention-set **1.6.0** drops **PREV-BEHALF**; **OPEN-DECIDE**; **OPEN-BEHALF**. Domain **2.19.0** (A may submit for B; filename uses B). Term **approval-role-table**.
+
+## [1.7.1] - 2026-08-18
+
+### Fixed
+
+- `setup` **checks** the LPU `~/.profile` and **creates** it when missing (sources `.bashrc` so an SSH login shell reaches the hook). An existing `.profile` is never overwritten. Create-first `useradd -M` copies no skel, so a missing `.profile` previously left the hook dead.
+- Domain **2.17.0**; LPU **1.12.0**; **TP-SR-HOOK-01..03**. Coverage skill Step 3f now requires the check + create sample.
+
+## [1.7.0] - 2026-08-18
+
+### Fixed
+
+- `approve` / `reject` / `interactive` no longer die when `SUDO_USER` is a host admin other than `sudoer-adm`. Password `sudo` **is** the approval. The remaining gate is euid 0. LPU login without `sudo` still fails.
+- Incident **INC-20260818-001**; prevention-set **1.4.0** (**OPEN-SUDOER-APPR**; **PREV-APPR-ACTOR** removed); three-layer **1.12.0**; domain **2.16.0**; **TP-SR-PRIV-04** / **TP-PREV-03** / **TP-ELEV-09**.
+
+### Changed
+
+- `setup` prints a submit next-step (`add-sudoer-request` as yourself, then `sudo … interactive`). Type 0 / an ordinary login still never `useradd`.
+- Help lists `sudo sudoer-cli interactive` as any-admin after setup.
+
 ## [1.6.2] - 2026-08-17
 
 ### Fixed

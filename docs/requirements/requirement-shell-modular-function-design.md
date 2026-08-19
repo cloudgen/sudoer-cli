@@ -12,6 +12,28 @@ This requirement is the **project Single Source of Truth** for **modular functio
 
 Ship unit remains a **single executable** at `src/sudoer-cli`.
 
+### 1.1 Human-facing
+
+**In one sentence:** The program stays one file. Functions use prefixes. Prompt helpers consume TTY instead of re-testing the terminal.
+
+| Box | Meaning | Example |
+|-----|---------|---------|
+| You / this login | One executable | `src/sudoer-cli` |
+| The other role | Domain handlers stay `sr_` / `lpu_` | domain / LPU prefixes |
+| Not this file | Splitting into many shipped files | not this product |
+
+| Includes | Excludes |
+|----------|----------|
+| Prefixes; single-file ship unit; prompt helpers consume TTY | Unprefixed helpers as the default style |
+
+| Surface | What you open | What for |
+|---------|---------------|----------|
+| `src/sudoer-cli` | ship unit | one file |
+
+| You do… | What it means | What you type |
+|---------|---------------|---------------|
+| Change a helper | Keep the prefix. Do not re-test the terminal inside `prompt_*`. | (edit `src/sudoer-cli`) |
+
 ---
 
 ## 2. Core Rules / Requirements (Mandatory)

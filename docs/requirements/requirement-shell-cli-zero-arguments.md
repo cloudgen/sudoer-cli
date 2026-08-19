@@ -8,6 +8,29 @@
 
 This requirement is the **project Single Source of Truth** for **zero-argument (empty argv) dispatcher behavior** of the sudoer-cli POSIX shell CLI.
 
+### 1.1 Human-facing
+
+**In one sentence:** Running the program with no arguments prints help. It does not install, and it does not start a review.
+
+| Box | Meaning | Example |
+|-----|---------|---------|
+| You / this login | Run with no arguments | `sudoer-cli` |
+| The other role | Review is an explicit command after sudo | `sudo sudoer-cli interactive` |
+| Not this file | Online install-ensure on empty argv | intentionally absent |
+
+| Includes | Excludes |
+|----------|----------|
+| Empty argv = help for every user | Empty argv = install or review |
+
+| Surface | What you open | What for |
+|---------|---------------|----------|
+| `sudoer-cli` | no arguments | help |
+
+| You do… | What it means | What you type |
+|---------|---------------|---------------|
+| Ask for help | Type the program name alone. You still need `install` or `interactive` for those jobs. | `sudoer-cli` |
+
+
 ### 1.0 Product type
 
 | Field | Value for sudoer-cli |

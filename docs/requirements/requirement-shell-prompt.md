@@ -10,6 +10,28 @@ This requirement is the **project Single Source of Truth** for **how** sudoer-cl
 
 **Mode policy** (when a human may be prompted, how `TTY` is measured) stays in `requirement-shell-interactive-vs-noninteractive`. This file owns helper **bodies**, contracts, and worked samples.
 
+### 1.1 Human-facing
+
+**In one sentence:** Yes/no and ask helpers read TTY. They do not re-test the terminal themselves.
+
+| Box | Meaning | Example |
+|-----|---------|---------|
+| You / this login | Answer a confirm | `sudo sudoer-cli interactive` |
+| The other role | Non-interactive must not hang on a prompt | `--json` / no TTY |
+| Not this file | When prompting is allowed | `requirement-shell-interactive-vs-noninteractive` |
+
+| Includes | Excludes |
+|----------|----------|
+| Complete `prompt_yes_no` / `prompt_ask` bodies that consume TTY | Ad-hoc `read`; `--force` auto-approve of inbound files |
+
+| Surface | What you open | What for |
+|---------|---------------|----------|
+| `src/sudoer-cli` | ship unit | `prompt_*` |
+
+| You do… | What it means | What you type |
+|---------|---------------|---------------|
+| Confirm one file | Type yes or no. Skip leaves the file waiting. Quit leaves the rest waiting. | `sudo sudoer-cli interactive` |
+
 ---
 
 ## 2. Core Rules / Requirements (Mandatory)

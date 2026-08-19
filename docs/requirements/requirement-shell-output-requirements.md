@@ -10,6 +10,28 @@ This requirement is the **project Single Source of Truth** for **all CLI output*
 
 This origin owns the `out_*` family. Domain verbs **MUST** use the same `out_*` family (convert/submit messages are live).
 
+### 1.1 Human-facing
+
+**In one sentence:** Status lines come from one printer. Blocking errors say what happened and what to type next.
+
+| Box | Meaning | Example |
+|-----|---------|---------|
+| You / this login | Read human status and Next: on fatals | `sudoer-cli version` |
+| The other role | Machine JSON is status, not the grant file | `sudoer-cli --json version` |
+| Not this file | Grant JSON in the waiting folder | `requirement-domain-sudoer-approval` |
+
+| Includes | Excludes |
+|----------|----------|
+| `out_*`; colors consume TTY; operator fatals include Next: | A second printer family; JSON status as the queued grant |
+
+| Surface | What you open | What for |
+|---------|---------------|----------|
+| `src/sudoer-cli` | ship unit | `out_*` |
+
+| You do… | What it means | What you type |
+|---------|---------------|---------------|
+| See a fatal | The line names the problem in people words, then Next: a command. | `sudoer-cli nosuch` |
+
 ---
 
 ## 2. Core Rules / Requirements (Mandatory)

@@ -8,6 +8,29 @@
 
 Define **project folder structure** and path ownership for the sudoer-cli CLI: source layout, install locations, and scratch/cache. Host paths (`/etc/{{username}}/`, LPU home) are **not** project-folder layout. This product has **no** durable host backup deposit.
 
+### 1.1 Human-facing
+
+**In one sentence:** Source lives under `src/`. You install the program into your user bin or the system bin.
+
+| Box | Meaning | Example |
+|-----|---------|---------|
+| You / this login | Install from this checkout | `sh src/sudoer-cli install` |
+| The other role | Host folders for the dedicated account are not this layout | `requirement-least-privilege-user` |
+| Not this file | Queue paths or scratch resolver details | `requirement-domain-sudoer-approval` · `requirement-shell-cli-storage` |
+
+| Includes | Excludes |
+|----------|----------|
+| src layout; user vs system bin | Durable backup deposit; `/etc` layout |
+
+| Surface | What you open | What for |
+|---------|---------------|----------|
+| `src/sudoer-cli` | ship unit | source |
+| `~/.local/bin/sudoer-cli` | user bin | local install |
+
+| You do… | What it means | What you type |
+|---------|---------------|---------------|
+| Install locally | Copy into your user bin so you can run the program as yourself. | `sh src/sudoer-cli install` |
+
 ---
 
 ## 2. Core Rules (Mandatory)

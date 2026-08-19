@@ -22,11 +22,11 @@ Two defects, one class: **`sudo -n` leaked as default elev**.
 |------|----------------|-----------|
 | Local `install` | invoking user → `USER_BIN` | require root / `-n` |
 | Global `install` / `setup` | already-root **or** outer `sudo` (password OK, any admin) | `sudo -n`; require `sudoer-adm` |
-| `approve` / `reject` / `interactive` | F6 `sudoer-adm` or real root login | any other `SUDO_USER` |
+| `approve` / `reject` / `interactive` | any already euid-0 host admin (password `sudo`), F6 `sudoer-adm`, or real root login | LPU euid without sudo; non-root |
 | Login hook (law, not installed) | `sudo -n` **only after F6** (this product **specifies** it) | password `sudo` in `.bashrc`; `-n` as default / bootstrap |
 | Skills / molds / help | omit `-n` unless law names the grant | copy `-n` from a mold as boilerplate |
 
-Ship unit **MUST** check `id -u` / `SUDO_USER`. It **MUST NOT** call `sudo` to become root.
+Ship unit **MUST** check `id -u` for Type 1. After password `sudo`, do **not** require `SUDO_USER==sudoer-adm`. Mix model: the ship unit **MAY** invoke password `sudo` for Table C jobs (`useradd`).
 
 ## Findings
 
@@ -35,7 +35,7 @@ Ship unit **MUST** check `id -u` / `SUDO_USER`. It **MUST NOT** call `sudo` to b
 - **Area:** Type 1 bootstrap authz  
 - **Location:** `sr_require_type1` used to reject any `SUDO_USER` ≠ `sudoer-adm`  
 - **Description:** Chicken-egg. `setup` creates `sudoer-adm` / F6 but required them first.  
-- **Suggestion (done):** `sr_require_type1_bootstrap` = euid 0 only. Approver verbs keep F6.  
+- **Suggestion (done):** `sr_require_type1_bootstrap` = euid 0 only. Approver verbs also euid 0 only after INC-20260818-001 (F6 is extra, not exclusive).  
 - **Test:** TP-SR-PRIV-02, TP-ELEV-08  
 - **Cross-ref:** incident `20260814-001`; `L-ELEV-BOOT-01`; mold §8.1.4  
 
@@ -73,7 +73,7 @@ Ship unit **MUST** check `id -u` / `SUDO_USER`. It **MUST NOT** call `sudo` to b
 | In-tool `sudo -n` invocation | Absent (TP-ELEV-08) |
 | Help `sudo -n sudoer-cli setup` / `install` | Absent |
 | Help `-n` only with specified F6/hook | Present (this product specifies hook) |
-| Approve gate still F6 | Present (TP-SR-PRIV-02) |
+| Approve gate euid 0 only (any elevated sudoer) | Present (TP-SR-PRIV-04 / TP-ELEV-09) |
 | Package password-sudo ladder TP-ELEV-01..05 | Still **n/a** (not claimed) |
 | no-retest-tty TP-ELEV-07 | **have** |
 

@@ -22,6 +22,8 @@
 # - requirement-three-layer-privilege-model.md
 # - requirement-least-privilege-user.md
 # - requirement-privilege-prevention-set.md
+# - requirement-actor-role-subject-approver.md
+# - requirement-incorrect-json-format.md
 # - requirement-domain-sudoer-approval.md
 #
 # Type 0 lifecycle is live. Domain verbs (convert, submit, list, show, print-sudoers)
@@ -31,7 +33,7 @@
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
 # APP NAME: hard-assign APP_NAME="sudoer-cli"
-# VERSION: hard-assign VERSION="1.6.2"
+# VERSION: hard-assign VERSION="1.8.1"
 #
 # =============================================================================
 
@@ -48,7 +50,7 @@ APP_NAME="sudoer-cli"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
 : "${DESCRIPTION:=POSIX /bin/sh CLI: lifecycle plus sudoers-request convert/submit/list/show. Type 1 setup creates sudoer-adm; approve/reject require euid 0.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.6.2"
+VERSION="1.8.1"
 : "${VERSION:=1.0.0}"
 # Repository identity SSOT (git host owner/repo for project-repository alignment).
 # Install remains local-only: SCRIPT_URL stays empty (no online curl|sh channel).
@@ -1692,7 +1694,11 @@ sr_json_encode_request() {
     _je_act="$4"
     _je_cmds="$5"
     if [ "${_je_act}" = "remove" ]; then
-        printf '{"purpose":"%s"}' "$(util_json_escape "${_je_purpose}")"
+        # Purpose-only means no commands, not no subject. Dest uses JSON identity.
+        printf '{"schema_version":1,"purpose":"%s","username":"%s","service":"%s","action":"remove"}' \
+            "$(util_json_escape "${_je_purpose}")" \
+            "$(util_json_escape "${_je_user}")" \
+            "$(util_json_escape "${_je_svc}")"
         return 0
     fi
     _acc=""
@@ -2026,9 +2032,7 @@ sr_sudoers_to_json() {
     esac
     _purpose="${SR_PURPOSE:-${SR_P_PURPOSE}}"
     [ -n "${_purpose}" ] || sr_die "--purpose required when input has no # Purpose:" "xor_input"
-    _me=$(id -un)
-    [ -n "${SR_P_USER}" ] || sr_die "no User spec in sudoers" "self_scope"
-    [ "${SR_P_USER}" = "${_me}" ] || sr_die "self-scope: User ${SR_P_USER} != ${_me}" "self_scope"
+    [ -n "${SR_P_USER}" ] || sr_die "no User spec in sudoers" "invalid_json"
     sr_service_infer "${SR_P_CMDS}" "${SR_SERVICE-}"
     _svc="${SR_INFERRED}"
     _txt=$(sr_render_sudoers "${_purpose}" "${SR_P_USER}" "${_act}" "${SR_P_CMDS}")
@@ -2061,8 +2065,6 @@ sr_json_to_sudoers() {
     [ -n "${SR_D_USER}" ] || sr_die "username required" "invalid_json"
     [ -n "${SR_D_SVC}" ] || sr_die "service required" "invalid_json"
     [ -n "${SR_D_CMDS}" ] || sr_die "commands required for add/update" "invalid_json"
-    _me=$(id -un)
-    [ "${SR_D_USER}" = "${_me}" ] || sr_die "self-scope: username ${SR_D_USER} != ${_me}" "self_scope"
     sr_service_infer "${SR_D_CMDS}" "${SR_D_SVC}"
     _svc="${SR_INFERRED}"
     _txt=$(sr_render_sudoers "${SR_D_PURPOSE}" "${SR_D_USER}" "${SR_D_ACT}" "${SR_D_CMDS}")
@@ -2380,22 +2382,30 @@ sr_submit() {
     case "${_act}" in
         remove)
             [ -n "${SR_SERVICE-}" ] || sr_die "remove-sudoer-request requires --service" "xor_input"
+            _user="${_me}"
             if [ -n "${SR_FILE-}" ]; then
                 _raw=$(sr_read_input)
                 sr_json_decode_to_fields "${_raw}"
                 [ -n "${SR_D_PURPOSE}" ] || sr_die "purpose required" "invalid_json"
                 [ "${SR_D_HAS_CMDS}" -eq 0 ] || sr_die "remove JSON must not include commands" "remove_extra_fields"
+                if [ -n "${SR_D_SVC}" ] && [ "${SR_D_SVC}" != "${SR_SERVICE}" ]; then
+                    sr_die "JSON service does not match --service" "field_mismatch"
+                fi
+                if [ -n "${SR_D_ACT}" ] && [ "${SR_D_ACT}" != "remove" ]; then
+                    sr_die "JSON action must be remove" "field_mismatch"
+                fi
                 _purpose="${SR_D_PURPOSE}"
+                _user="${SR_D_USER:-${_me}}"
             else
                 [ -n "${SR_PURPOSE-}" ] || sr_die "remove requires --purpose or --file" "xor_input"
                 _purpose="${SR_PURPOSE}"
             fi
-            _js=$(sr_json_encode_request "${_purpose}" "${_me}" "${SR_SERVICE}" "remove" "")
-            _id=$(sr_alloc_request_id "${_me}" "${SR_SERVICE}" "remove")
+            _js=$(sr_json_encode_request "${_purpose}" "${_user}" "${SR_SERVICE}" "remove" "")
+            _id=$(sr_alloc_request_id "${_user}" "${SR_SERVICE}" "remove")
             printf '%s\n' "${_js}" >"${SUDOER_QUEUE_REQUEST}/${_id}"
             sr_restrict_submitted_file "${SUDOER_QUEUE_REQUEST}/${_id}"
             sr_sidecar_add "${_id}"
-            _dest=$(sr_grant_dest "${_me}" "${SR_SERVICE}")
+            _dest=$(sr_grant_dest "${_user}" "${SR_SERVICE}")
             if [ "${JSON}" -eq 1 ]; then
                 out_json "success" "submitted" "request_id" "${_id}" "dest" "${_dest}" "action" "remove"
             else
@@ -2410,27 +2420,27 @@ sr_submit() {
         sr_parse_sudoers "${_raw}"
         _purpose="${SR_PURPOSE:-${SR_P_PURPOSE}}"
         [ -n "${_purpose}" ] || sr_die "--purpose required when sudoers lacks # Purpose:" "xor_input"
-        [ "${SR_P_USER}" = "${_me}" ] || sr_die "self-scope: ${SR_P_USER} != ${_me}" "self_scope"
         sr_service_infer "${SR_P_CMDS}" "${SR_SERVICE-}"
         _svc="${SR_INFERRED}"
-        _js=$(sr_json_encode_request "${_purpose}" "${SR_P_USER}" "${_svc}" "${_act}" "${SR_P_CMDS}")
+        _user="${SR_P_USER:-${_me}}"
+        _js=$(sr_json_encode_request "${_purpose}" "${_user}" "${_svc}" "${_act}" "${SR_P_CMDS}")
     else
         sr_json_decode_to_fields "${_raw}"
         [ -n "${SR_D_PURPOSE}" ] || sr_die "purpose required" "invalid_json"
         [ "${SR_D_ACT}" = "${_act}" ] || [ -z "${SR_D_ACT}" ] || sr_die "action mismatch" "field_mismatch"
-        [ "${SR_D_USER}" = "${_me}" ] || sr_die "self-scope" "self_scope"
         _svc="${SR_SERVICE:-${SR_D_SVC}}"
         [ -n "${_svc}" ] || sr_die "service required" "unknown_service"
         [ "${SR_D_HAS_CMDS}" -eq 1 ] || sr_die "commands required" "invalid_json"
         sr_service_infer "${SR_D_CMDS}" "${_svc}"
         _svc="${SR_INFERRED}"
-        _js=$(sr_json_encode_request "${SR_D_PURPOSE}" "${_me}" "${_svc}" "${_act}" "${SR_D_CMDS}")
+        _user="${SR_D_USER:-${_me}}"
+        _js=$(sr_json_encode_request "${SR_D_PURPOSE}" "${_user}" "${_svc}" "${_act}" "${SR_D_CMDS}")
     fi
-    _id=$(sr_alloc_request_id "${_me}" "${_svc}" "${_act}")
+    _id=$(sr_alloc_request_id "${_user}" "${_svc}" "${_act}")
     printf '%s\n' "${_js}" >"${SUDOER_QUEUE_REQUEST}/${_id}"
     sr_restrict_submitted_file "${SUDOER_QUEUE_REQUEST}/${_id}"
     sr_sidecar_add "${_id}"
-    _dest=$(sr_grant_dest "${_me}" "${_svc}")
+    _dest=$(sr_grant_dest "${_user}" "${_svc}")
     if [ "${JSON}" -eq 1 ]; then
         out_json "success" "submitted" "request_id" "${_id}" "dest" "${_dest}" "action" "${_act}"
     else
@@ -2461,17 +2471,11 @@ sr_list() {
     _me=$(id -un)
     if [ "${SR_ORPHANS:-0}" -eq 1 ]; then
         sr_require_type1
-        # orphans: non-regular or owner mismatch vs filename username
+        # orphans: non-regular inbound only
         for _f in "${_dir}"/sudoer-*.json; do
             [ -e "${_f}" ] || continue
             _bn=$(basename "${_f}")
             if [ -L "${_f}" ] || [ ! -f "${_f}" ]; then
-                printf '%s\n' "${_bn}"
-                continue
-            fi
-            sr_parse_request_id "${_bn}"
-            _ow=$(sr_request_owner "${_f}")
-            if [ "${_ow}" != "${SR_ID_USER}" ]; then
                 printf '%s\n' "${_bn}"
             fi
         done
@@ -2519,24 +2523,81 @@ sr_require_type1_bootstrap() {
     fi
 }
 
-# Day-to-day Type 1 (approve / reject / interactive): F6 or a real root login.
-# After F6 exists, the login hook may use sudo -n (NOPASSWD). That is not bootstrap.
+# Type 1 approve / reject / interactive: euid 0 only.
+# Password sudo or a root login is the approval. F6 is an extra path.
 sr_require_type1() {
     _cmd=$(sr_operator_cmd)
     _who=$(id -un 2>/dev/null || echo "this user")
     if [ "$(id -u)" -ne 0 ]; then
         sr_die "approve/reject/interactive must run as root. You are ${_who}." "authz" \
-            "first time: sudo ${_cmd} setup   then login as sudoer-adm, or a root login"
+            "sudo ${_cmd} approve <request-id>     (password sudo OK)"
     fi
-    _su="${SUDO_USER-}"
-    _un=$(id -un)
-    if [ -n "${_su}" ] && [ "${_su}" != "sudoer-adm" ]; then
-        sr_die "approve/reject/interactive is not for ${_su}. Only sudoer-adm (after setup) or a root login." "authz" \
-            "sudo ${_cmd} setup     (any host admin)   then login as sudoer-adm"
+}
+
+# Dest Fence: incorrect JSON format (requirement-incorrect-json-format).
+# Username/service vs basename is not this Fence. Action vs basename is.
+sr_dest_fence_unknown_keys() {
+    _uk_body="$1"
+    _uk_next="$2"
+    _uk_flat=$(printf '%s' "${_uk_body}" | tr '\n' ' ')
+    _uk_flat=$(printf '%s' "${_uk_flat}" | sed 's/"commands"[[:space:]]*:[[:space:]]*\[.*\]/"commands":[]/')
+    _uk_keys=$(printf '%s\n' "${_uk_flat}" | tr ',' '\n' | sed -n 's/^[[:space:]]*"\([a-z_][a-z0-9_]*\)"[[:space:]]*:.*/\1/p')
+    for _uk in ${_uk_keys}; do
+        case "${_uk}" in
+            schema_version|purpose|username|service|action|commands) ;;
+            *)
+                sr_die "This waiting file has an unexpected JSON field '${_uk}'. Dest will not ask yes/no. Do not approve it." "invalid_json" \
+                    "${_uk_next}"
+                ;;
+        esac
+    done
+}
+
+sr_dest_fence_or_die() {
+    _fp="$1"
+    _fid="$2"
+    _cmd=$(sr_operator_cmd)
+    _next="${_cmd} add-sudoer-request --file request.json"
+    if [ -L "${_fp}" ] || [ ! -f "${_fp}" ]; then
+        sr_die "This waiting file is not a regular grant file (symlink or missing). Dest will not ask yes/no." "not_regular" \
+            "${_next}"
     fi
-    if [ -z "${_su}" ] && [ "${_un}" != "root" ]; then
-        sr_die "approve/reject/interactive is not for ${_un}. Only sudoer-adm (after setup) or a root login." "authz" \
-            "sudo ${_cmd} setup     (any host admin)   then login as sudoer-adm"
+    sr_parse_request_id "${_fid}"
+    _body=$(cat "${_fp}")
+    _trim=$(printf '%s' "${_body}" | sed 's/^[[:space:]]*//')
+    case "${_trim}" in
+        "{"*) ;;
+        *)
+            sr_die "This waiting file is not a grant JSON object. Dest will not ask yes/no. Do not approve it." "invalid_json" \
+                "${_next}"
+            ;;
+    esac
+    sr_json_decode_to_fields "${_body}"
+    sr_dest_fence_unknown_keys "${_body}" "${_next}"
+    if [ -n "${SR_D_ACT}" ]; then
+        case "${SR_D_ACT}" in
+            add|update|remove) ;;
+            *)
+                sr_die "This waiting file has an invalid action '${SR_D_ACT}'. Dest will not ask yes/no. Do not approve it." "invalid_json" \
+                    "${_next}"
+                ;;
+        esac
+        if [ "${SR_D_ACT}" != "${SR_ID_ACT}" ]; then
+            sr_die "This waiting file's name says ${SR_ID_ACT} but the JSON action is ${SR_D_ACT}. Dest will not ask yes/no. Do not approve it." "field_mismatch" \
+                "${_next}"
+        fi
+    fi
+    [ -n "${SR_D_PURPOSE}" ] || sr_die "This waiting file has no purpose. Dest will not ask yes/no. Do not approve it." "invalid_json" \
+        "${_next}"
+    _eff_act="${SR_D_ACT:-${SR_ID_ACT}}"
+    if [ "${_eff_act}" = "remove" ]; then
+        [ "${SR_D_HAS_CMDS}" -eq 0 ] || sr_die "This remove request includes commands. Dest will not ask yes/no. Do not approve it." "remove_extra_fields" \
+            "${_next}"
+    else
+        [ "${SR_D_VER}" = "1" ] || sr_die "This waiting file is not schema_version 1. Dest will not ask yes/no. Do not approve it." "schema_version" \
+            "${_next}"
+        { [ "${SR_D_HAS_CMDS}" -eq 1 ] && [ -n "${SR_D_CMDS}" ]; } || sr_die "This add/update request has no commands. Dest will not ask yes/no. Do not approve it." "invalid_json" \
+            "${_next}"
     fi
 }
 
@@ -2550,12 +2611,7 @@ sr_approve() {
     _ok=$(sr_approver_dir approved)
     _path="${_in}/${_id}"
     [ -f "${_path}" ] || sr_die "not in request queue: ${_id}" "not_found"
-    [ -L "${_path}" ] && sr_die "not a regular file" "not_regular"
-    sr_parse_request_id "${_id}"
-    _ow=$(sr_request_owner "${_path}")
-    if [ "${_ow}" != "${SR_ID_USER}" ]; then
-        sr_die "owner ${_ow} != subject ${SR_ID_USER}" "owner_mismatch"
-    fi
+    sr_dest_fence_or_die "${_path}" "${_id}"
     _priv=$(mktemp "${TMPDIR:-/tmp}/sr-apr.XXXXXX")
     if ! cp "${_path}" "${_priv}"; then
         rm -f "${_priv}"
@@ -2563,18 +2619,17 @@ sr_approve() {
     fi
     _body=$(cat "${_priv}")
     sr_json_decode_to_fields "${_body}"
-    _user="${SR_ID_USER}"
-    _svc="${SR_ID_SVC}"
-    _act="${SR_ID_ACT}"
-    if [ -n "${SR_D_USER}" ] && [ "${SR_D_USER}" != "${_user}" ]; then
-        sr_die "username mismatch" "field_mismatch"
+    sr_parse_request_id "${_id}"
+    _user="${SR_D_USER:-${SR_ID_USER}}"
+    _svc="${SR_D_SVC:-${SR_ID_SVC}}"
+    _act="${SR_D_ACT:-${SR_ID_ACT}}"
+    if [ -n "${SR_D_ACT}" ] && [ "${SR_D_ACT}" != "${SR_ID_ACT}" ]; then
+        rm -f "${_priv}"
+        sr_die "This waiting file's name says ${SR_ID_ACT} but the JSON action is ${SR_D_ACT}. Dest will not ask yes/no. Do not approve it." "field_mismatch" \
+            "$(sr_operator_cmd) add-sudoer-request --file request.json"
     fi
-    if [ -n "${SR_D_SVC}" ] && [ "${SR_D_SVC}" != "${_svc}" ]; then
-        sr_die "service mismatch" "field_mismatch"
-    fi
-    if [ -n "${SR_D_ACT}" ] && [ "${SR_D_ACT}" != "${_act}" ]; then
-        sr_die "action mismatch" "field_mismatch"
-    fi
+    [ -n "${_user}" ] || sr_die "username required" "invalid_json"
+    [ -n "${_svc}" ] || sr_die "service required" "unknown_service"
     _dest=$(sr_grant_dest "${_user}" "${_svc}")
     sr_forbid_passwd_or_main_sudoers "${_dest}"
     sr_require_product_sudoers_d "${_dest}"
@@ -2613,12 +2668,7 @@ sr_reject() {
     _no=$(sr_approver_dir rejected)
     _path="${_in}/${_id}"
     [ -f "${_path}" ] || sr_die "not in request queue: ${_id}" "not_found"
-    [ -L "${_path}" ] && sr_die "not a regular file" "not_regular"
-    sr_parse_request_id "${_id}"
-    _ow=$(sr_request_owner "${_path}")
-    if [ "${_ow}" != "${SR_ID_USER}" ]; then
-        sr_die "owner ${_ow} != subject ${SR_ID_USER}" "owner_mismatch"
-    fi
+    sr_dest_fence_or_die "${_path}" "${_id}"
     _priv=$(mktemp "${TMPDIR:-/tmp}/sr-rej.XXXXXX")
     if ! cp "${_path}" "${_priv}"; then
         rm -f "${_priv}"
@@ -2672,6 +2722,9 @@ sr_interactive() {
     while IFS= read -r _bn <&3; do
         [ -n "${_bn}" ] || continue
         out_info "Request ${_bn}"
+        if ! ( sr_dest_fence_or_die "${_in}/${_bn}" "${_bn}" ); then
+            continue
+        fi
         SR_OPERAND="${_bn}"
         sr_show
         if prompt_yes_no "Approve ${_bn}"; then
@@ -2902,6 +2955,17 @@ lpu_mkdir_f5() {
     fi
 }
 
+# After create or mktemp+mv, the dest must belong to the LPU (not the elevated invoker).
+lpu_own_user_rc() {
+    lpu_defaults
+    _of="${1:-}"
+    [ -n "${_of}" ] && [ -f "${_of}" ] || return 0
+    chmod 0644 "${_of}" || sr_die "cannot chmod ${_of} for ${LPU_USER}" "authz"
+    if getent passwd "${LPU_USER}" >/dev/null 2>&1; then
+        chown "${LPU_USER}:${LPU_USER}" "${_of}" || sr_die "cannot chown ${_of} to ${LPU_USER}:${LPU_USER}" "authz"
+    fi
+}
+
 lpu_hook_text() {
     lpu_defaults
     _bin="${GLOBAL_BIN:-/usr/local/bin}/${APP_NAME}"
@@ -2932,6 +2996,7 @@ lpu_hook_strip() {
         { print }
     ' "${_hf}" >"${_ht}" || { rm -f "${_ht}"; sr_die "cannot rewrite ${_hf}" "authz"; }
     mv -f "${_ht}" "${_hf}"
+    lpu_own_user_rc "${_hf}"
 }
 
 lpu_hook_apply() {
@@ -2942,9 +3007,7 @@ lpu_hook_apply() {
     fi
     lpu_hook_strip "${_hf}"
     printf '\n%s\n' "$(lpu_hook_text)" >>"${_hf}" || sr_die "cannot write hook ${_hf}" "authz"
-    if getent passwd "${LPU_USER}" >/dev/null 2>&1; then
-        chown "${LPU_USER}:${LPU_USER}" "${_hf}" 2>/dev/null || true
-    fi
+    lpu_own_user_rc "${_hf}"
 }
 
 lpu_profile_sources_bashrc() {
@@ -2952,9 +3015,42 @@ lpu_profile_sources_bashrc() {
     grep -q '\.bashrc' "$1" 2>/dev/null
 }
 
+lpu_profile_text() {
+    printf '%s\n' \
+        "# BEGIN sudoer-cli profile source-bashrc" \
+        "# Created so a bash login shell sources interactive rc (hook lives in .bashrc)." \
+        "if [ -n \"\${BASH_VERSION:-}\" ]; then" \
+        "    if [ -f \"\${HOME}/.bashrc\" ]; then" \
+        "        . \"\${HOME}/.bashrc\"" \
+        "    fi" \
+        "fi" \
+        "# END sudoer-cli profile source-bashrc"
+}
+
+# Login shells source .profile, not .bashrc. Missing .profile = hook never fires.
+lpu_ensure_profile() {
+    lpu_defaults
+    _pr="${LPU_HOME}/.profile"
+    if [ -f "${_pr}" ]; then
+        lpu_own_user_rc "${_pr}"
+        return 0
+    fi
+    mkdir -p "${LPU_HOME}" || sr_die "cannot create ${LPU_HOME}" "authz"
+    _ptmp=$(mktemp "${LPU_HOME}/.profile.sudoer-cli.XXXXXX") || sr_die "cannot stage .profile" "authz"
+    lpu_profile_text >"${_ptmp}" || { rm -f "${_ptmp}"; sr_die "cannot write .profile" "authz"; }
+    chmod 0644 "${_ptmp}" || { rm -f "${_ptmp}"; sr_die "cannot chmod staged .profile" "authz"; }
+    if [ ! -f "${_pr}" ]; then
+        mv -f "${_ptmp}" "${_pr}" || { rm -f "${_ptmp}"; sr_die "cannot create ${_pr}" "authz"; }
+    else
+        rm -f "${_ptmp}"
+    fi
+    lpu_own_user_rc "${_pr}"
+}
+
 lpu_install_hook() {
     lpu_defaults
     lpu_hook_apply "${LPU_HOME}/.bashrc"
+    lpu_ensure_profile
     _pr="${LPU_HOME}/.profile"
     if [ -f "${_pr}" ]; then
         if lpu_profile_sources_bashrc "${_pr}"; then
@@ -3053,6 +3149,9 @@ lpu_setup() {
         out_success "LPU ${LPU_USER} ready (uid ${LPU_UID}, home ${LPU_HOME})"
         out_info "F6 $(lpu_f6_path)"
         out_info "Global binary ${LPU_GLOBAL_BIN}"
+        _cmd=$(sr_operator_cmd)
+        out_info "Next: as yourself (not ${LPU_USER}), ${_cmd} add-sudoer-request --file request.json"
+        out_info "Then this sudo is the approval: sudo ${_cmd} interactive"
     fi
 }
 
@@ -3164,7 +3263,7 @@ app_help() {
     out_plain "  setup / remove-lpu   Create/teardown LPU (sudoer-adm). Run: sudo ${APP_NAME} setup"
     out_plain "                       Not sudo -n. Not limited to sudoer-adm."
     out_empty_line
-    out_info "Approver (Type 1 — after F6; sudoer-adm or real root):"
+    out_info "Approver (Type 1 — password sudo or a root login; sudoer-adm after F6 is extra):"
     out_plain "  approve|reject <id>  Copy/overwrite/remove dest in /etc/sudoers.d (product names only)"
     out_plain "  interactive          TTY review loop (not empty argv). Hook may sudo -n after F6."
     out_empty_line
@@ -3190,6 +3289,7 @@ app_help() {
     out_plain "  ${APP_NAME} install               # any user → ~/.local/bin"
     out_plain "  sudo ${APP_NAME} install          # any admin → /usr/local/bin (password sudo OK)"
     out_plain "  sudo ${APP_NAME} setup            # any admin bootstrap (password sudo OK; not -n)"
+    out_plain "  sudo ${APP_NAME} interactive      # any admin after setup (password sudo is the approval)"
     out_plain "  ${APP_NAME} version"
     out_plain "  ${APP_NAME} about"
     out_plain "  ${APP_NAME} --json about"

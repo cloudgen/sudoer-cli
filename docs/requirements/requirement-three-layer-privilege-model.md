@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-three-layer-privilege-model.md  
-**Status**: Active (Version 1.11.0)  
+**Status**: Active (Version 1.12.0)  
 **Area**: architecture  
 **Key**: `requirement-three-layer-privilege-model`  
 **id**: RQ-THREE-LAYER-PRIVILEGE-MODEL  
@@ -13,6 +13,29 @@ Domain verbs that *use* elevation are catalogued in `requirement-domain-sudoer-a
 
 The **closed catalog** of what the product blocks — and what it **must not** block after elev — is owned by `requirement-privilege-prevention-set.md`. This file **MUST NOT** grow a parallel unpublished wall.
 
+### 1.1 Human-facing
+
+**In one sentence:** A normal login converts and queues. A host admin who already used password sudo may set up the dedicated account and decide inbound files.
+
+| Box | Meaning | Example |
+|-----|---------|---------|
+| You / this login | Convert and submit without becoming root | `sudoer-cli add-sudoer-request --file request.json` |
+| The other role | Already-root host admin, or `sudoer-adm` after setup | `sudo sudoer-cli setup` |
+| Not this file | Prevention catalog; dest Fence body | `requirement-privilege-prevention-set` · `requirement-incorrect-json-format` |
+
+| Includes | Excludes |
+|----------|----------|
+| Who may run what; extra sudoers fragment is an extra path, not the only approver | Requiring `SUDO_USER` to be `sudoer-adm` after password sudo; Type 2 dest-write |
+
+| Surface | What you open | What for |
+|---------|---------------|----------|
+| `src/sudoer-cli` | ship unit | elev tables |
+| `sudoer-cli print-sudoers` | command | fragment text only |
+
+| You do… | What it means | What you type |
+|---------|---------------|---------------|
+| Set up once | Password sudo is the approval for setup. The extra fragment is for later review without a password. | `sudo sudoer-cli setup` |
+
 ---
 
 ## 2. Core Rules / Requirements (Mandatory)
@@ -21,22 +44,22 @@ The **closed catalog** of what the product blocks — and what it **must not** b
 
 | Layer | Privilege | Typical actor | This product |
 |-------|-----------|---------------|--------------|
-| **Type 0** | Invoking user | Any login | Lifecycle, diagnostics, convert (`sudoers-to-json` / `json-to-sudoers`), self-scoped submit, sidecar list/show, draft emit |
+| **Type 0** | Invoking user | Any login | Lifecycle, diagnostics, convert (`sudoers-to-json` / `json-to-sudoers`), submit (A may name B; filename uses B), sidecar list/show, draft emit |
 | **Type 1 bootstrap** | Elevated host mutation | **Any** host admin already euid 0 (`sudo {{APP}} setup` — **password sudo OK**) | `setup` / `remove-lpu`. F6 / `sudoer-adm` **must not** be required (chicken-egg). |
-| **Type 1 approve** | Elevated host mutation | root login, or `sudoer-adm` via F6 (`SUDO_USER==sudoer-adm` and euid 0) | `approve` / `reject` / `interactive`; `list-approving --orphans` |
+| **Type 1 approve** | Elevated host mutation | **Any** host admin already euid 0 (password `sudo` — `SUDO_USER` may be any login); **or** `sudoer-adm` via F6; **or** a real root login | `approve` / `reject` / `interactive`; `list-approving --orphans`. F6 is an extra path, not the exclusive one |
 | **Type 2** | Dedicated system-user **execution** context | — | **Not used.** `sudoer-adm` is a **least-privilege-approver** (who may invoke F6), not an euid the CLI must switch into for dest writes |
 
 **Mandatory:**
 
 1. Every exposed verb **MUST** have exactly one type.  
-2. Type 1 **MUST** run with euid 0. **Bootstrap** (`setup` / `remove-lpu`) **MUST** accept **any** euid-0 session (`SUDO_USER` may be any host admin). **Approve** (`approve` / `reject` / `interactive`) **MUST** accept `SUDO_USER==sudoer-adm` **or** a real root session (`SUDO_USER` empty and `id -un` is root).  
+2. Type 1 **MUST** run with euid 0. **Bootstrap** (`setup` / `remove-lpu`) **MUST** accept **any** euid-0 session (`SUDO_USER` may be any host admin). **Approve** (`approve` / `reject` / `interactive`) **MUST** accept the same: **any** already euid-0 host admin (password `sudo`), **or** `SUDO_USER==sudoer-adm` via F6, **or** a real root session. **MUST NOT** fail because `SUDO_USER` is a host admin other than `sudoer-adm`. The LPU **euid** without `sudo` still fails (not euid 0).  
 3. The product **MUST NOT** `su` / `runuser` to `sudoer-adm` in order to write dest. **MUST NOT** write `/etc/passwd` or `/etc/sudoers` (main file). Type 1 **MAY** copy, overwrite, and remove **product-owned** files under `/etc/sudoers.d/` (F6 `sudoer-adm`; grant `{{service}}-{{username}}`). Type 0 **MUST NOT** write `/etc/sudoers.d`. LPU home is `/etc/{{LPU_USER}}/`.  
 4. **Mix model (EM-HYB).** The ship unit **MAY** invoke password `sudo` when it needs elev. **`sudo -n` is not suggested** (no NOPASSWD ticket as the default). Usual human path: `sudo {{APP}} setup` (password OK). Do **not** document bootstrap as `sudo -n`. Table C jobs are **`sudo useradd` / `sudo userdel` inside the script** — they are **not** sudoers Cmnds.  
 5. Type 2 execution context **MUST** remain **Not used** unless this requirement is revised.  
 6. **Elev model (this product):** **EM-HYB**. **Bootstrap** = password `sudo` (outer **or** in-tool; any host admin). **Day-to-day F6** = NOPASSWD on the **global** ship unit only. After euid is 0, host writes use **Table C** jobs. There is no package/OS-tool sudoers allowlist. User-grant files under `/etc/sudoers.d/{{service}}-{{username}}` are **not** Table A and are **not** F6.  
 7. A TTY login as `sudoer-adm` enters approve Type 1 **only** through F6. The login hook **MAY** use `sudo -n` **only after F6 exists** (so `.bashrc` does not hang). That is the only specified `-n`. `sudo -n` is **not** the bootstrap elev and **MUST NOT** be written as `sudo -n {{APP}} setup`. The LPU euid **MUST NOT** run `approve` / `reject` / `interactive`. Empty argv is not an elev path.  
 8. Install is **multi-user**: any login may local-install; any host admin may global-install and bootstrap. Do **not** treat `sudoer-adm` as the only installer.  
-9. **Elev is approval.** Password `sudo` or a root login **is** the operator’s approval for that Type 1 invocation. **MUST NOT** invent a second lock. Sensitive undo-hard steps **MUST** use TTY confirm or `--force` only. **No invented live-command whitelist.** Table A is **only** the F6 sudoers line. Table B is **sudoers-forbidden**, **not** a live-command denylist. **No denylist ⇒ no extra restrict:** Type 1 `setup` **MAY** invoke the OS tools it needs (`sudo useradd`, `mkdir`, `visudo`, …). The closed block / must-remain-open rows are `requirement-privilege-prevention-set.md`.
+9. **Elev is approval.** Password `sudo` or a root login **is** the operator’s approval for that Type 1 invocation — **setup and approve alike**. **MUST NOT** invent a second lock (including `SUDO_USER` must be `sudoer-adm` on approve). Sensitive undo-hard steps **MUST** use TTY confirm or `--force` only. **No invented live-command whitelist.** Table A is **only** the F6 sudoers line. Table B is **sudoers-forbidden**, **not** a live-command denylist. **No denylist ⇒ no extra restrict:** Type 1 `setup` **MAY** invoke the OS tools it needs (`sudo useradd`, `mkdir`, `visudo`, …). The closed block / must-remain-open rows are `requirement-privilege-prevention-set.md`.
 
 ### 2.2 Table A — F6 sudoers lines only (not a live-command whitelist)
 
@@ -131,7 +154,7 @@ The CLI invokes these as **internal jobs**. Account create/teardown **MUST** be 
 5. Write `/etc/passwd` or `/etc/sudoers` (main), or ban this product’s Type 1 copy/overwrite/remove of product-owned `/etc/sudoers.d` names.  
 6. Advertise unrouted Type 1 verbs in `help` before they are dispatched.  
 7. Treat a TTY login as `sudoer-adm` as euid-0 without F6, or hook a non-Table-A binary.  
-8. Require `SUDO_USER==sudoer-adm` for `setup` / `remove-lpu` (F6 does not exist yet).  
+8. Require `SUDO_USER==sudoer-adm` for `setup` / `remove-lpu` (F6 does not exist yet), **or** for `approve` / `reject` / `interactive` after password `sudo`. That actor check is blockage, not help.  
 9. Write bootstrap / first-time setup as `sudo -n`. **`sudo -n` is not suggested** except the F6 login hook.  
 10. Treat “mix model” as a ban on in-tool password `sudo`, or as a ban on Table C `useradd` after euid 0.  
 11. Add a product block that is not a row in `requirement-privilege-prevention-set.md`, or close a must-remain-open row in that file.
@@ -161,8 +184,10 @@ The CLI invokes these as **internal jobs**. Account create/teardown **MUST** be 
 | **TP-SR-PRIV-01** | `tests/test_domain_sr.sh` | have | Type 1 verbs fail closed without euid 0 |
 | **TP-SR-PRIV-02** | `tests/test_domain_sr.sh` | have | Bootstrap setup ≠ F6; not `sudo -n`; not only `sudoer-adm` |
 | **TP-SR-PRIV-03** | `tests/test_domain_sr.sh` | have | Live setup body: useradd, collision, F6, hook (static) |
-| **TP-SR-INT-01** | `tests/test_domain_sr.sh` | todo | `interactive` without euid 0 → `authz` |
+| **TP-SR-PRIV-04** | `tests/test_domain_sr.sh` | have | Approve gate has no exclusive-`sudoer-adm` actor lock (OPEN-ELEV) |
+| **TP-ELEV-09** | `tests/test_domain_sr.sh` | have | Alias of TP-SR-PRIV-04 / TP-PREV-03 |
+| **TP-SR-INT-01** | `tests/test_domain_sr.sh` | have | `interactive` without euid 0 → `authz` |
 
-**Last Updated**: 2026-08-15  
+**Last Updated**: 2026-08-18  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-interface.md  
-**Status**: Active (Version 3.3.0)  
+**Status**: Active (Version 3.4.0)  
 **Area**: shell  
 **Key**: `requirement-shell-cli-interface`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -9,6 +9,29 @@
 This requirement is the **project Single Source of Truth** for the **POSIX shell CLI interface** of sudoer-cli: live command surface, privilege typing, global flags, dispatcher behavior, help/about contracts, and mode rules.
 
 The **live** dispatcher is Type 0 lifecycle **plus** Type 0 domain convert/submit/list/show/print-sudoers. Domain catalog and Type 1 fail-closed behavior are owned by `requirement-domain-sudoer-approval.md` and `requirement-three-layer-privilege-model.md`. Help **MUST NOT** list a verb with no `case` arm. Full lifecycle rules live in `requirement-shell-local-self-management.md`.
+
+### 1.1 Human-facing
+
+**In one sentence:** This program lists and runs commands. Help must not advertise a command that is not wired.
+
+| Box | Meaning | Example |
+|-----|---------|---------|
+| You / this login | Run listed commands without becoming root | `sudoer-cli help` |
+| The other role | Host admin already using sudo for setup and review | `sudo sudoer-cli setup` |
+| Not this file | Domain schema, dest fences, empty-argv help-only rule | `requirement-domain-sudoer-approval` · `requirement-shell-cli-zero-arguments` |
+
+| Includes | Excludes |
+|----------|----------|
+| Dispatcher; flags; help lists only wired verbs | A help line with no `case` arm |
+
+| Surface | What you open | What for |
+|---------|---------------|----------|
+| `src/sudoer-cli` | ship unit | dispatcher |
+| `sudoer-cli help` | command | listed verbs |
+
+| You do… | What it means | What you type |
+|---------|---------------|---------------|
+| See what is live | Help is the contract. If a verb is missing from help, it is not a live command. | `sudoer-cli help` |
 
 ---
 
@@ -21,7 +44,7 @@ Every command **MUST** map to exactly one privilege type. Unclassified commands 
 | Category | Privilege | Meaning |
 |----------|-----------|---------|
 | **Type 0 – CLI lifecycle + diagnostics + domain convert** | Invoking user | Lifecycle: `install`, `uninstall`, `where-is-me`, `version`, `about`, `help`. Domain Type 0: convert / submit / list / show / `print-sudoers` (catalog on domain SSOT) |
-| **Type 1 – Narrow elevated host ops** | Controlled sudo | Names **routed**; **fail closed** without euid 0. **`setup` / `remove-lpu`**: any host admin already euid 0 (`sudo {{APP}} setup`, password OK; not `sudo -n`; not limited to `sudoer-adm`). Live: useradd, F6, hook. **`approve` / `reject` / `interactive`**: F6 `sudoer-adm` or real root. Review-loop body is **live** |
+| **Type 1 – Narrow elevated host ops** | Controlled sudo | Names **routed**; **fail closed** without euid 0. **`setup` / `remove-lpu`**: any host admin already euid 0 (`sudo {{APP}} setup`, password OK; not `sudo -n`; not limited to `sudoer-adm`). Live: useradd, F6, hook; after setup print submit next-step. **`approve` / `reject` / `interactive`**: any already euid-0 host admin (password `sudo`), or F6 `sudoer-adm`, or real root. Review-loop body is **live** |
 | **Type 2 – Dedicated system user app ops** | Dedicated app user euid | **Not used** (sudoer-adm is an authorizer, not a Type 2 execution context) |
 
 ### 2.2 Global flags (portable)
@@ -68,11 +91,11 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | **Primary executable** | `src/sudoer-cli` (POSIX `/bin/sh`, single-file ship unit) |
 | **Dispatcher** | `app_main` |
 | **Output SSOT** | `out_text` + wrappers (`out_info`, `out_success`, `out_warn`, `out_error`, `out_die`, `out_plain`, `out_json`, …) |
-| **Version SSOT** | `VERSION="1.6.2"` hard-assign in ship unit |
+| **Version SSOT** | `VERSION="1.8.1"` hard-assign in ship unit |
 | **Install paths** | Global: `GLOBAL_BIN` default `/usr/local/bin`; User: `USER_BIN` default `${HOME}/.local/bin` |
 | **Primary install story** | User bin: `~/.local/bin/sudoer-cli`; global `/usr/local/bin/sudoer-cli` for production F6 |
 | **Online channel env** | **Not product UX** (trimmed) |
-| **Type 1 / Type 2 commands** | Type 1 **routed, fail closed** without euid 0; setup = any admin sudo (live useradd/F6/hook); approve = F6; Type 2 **not used** |
+| **Type 1 / Type 2 commands** | Type 1 **routed, fail closed** without euid 0; setup = any admin sudo (live useradd/F6/hook); approve = same elev (F6 extra); Type 2 **not used** |
 | **Dedicated system user** | `sudoer-adm` (authorizer; see LPU REQ) |
 | **About** | Type 0 only until domain about pillar is routed |
 
@@ -198,9 +221,10 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | 2026-08-14 | Active 3.1.2 | Type 1 split: bootstrap any-admin `sudo setup`; approve stays F6 |
 | 2026-08-14 | Active 3.2.0 | Live `setup`/`remove-lpu`; review loop still Gap |
 | 2026-08-14 | Active 3.3.0 | Point prevention catalog (no invented Type 1 wall) |
+| 2026-08-18 | Active 3.4.0 | Approve = any elevated sudoer (F6 extra); setup helps submit |
 
 ---
 
-**Last Updated**: 2026-08-14  
+**Last Updated**: 2026-08-18  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

@@ -2,6 +2,8 @@
 
 | Date | Report | Scope | Verdict | Suite |
 |------|--------|-------|---------|-------|
+| 2026-08-19 | `reports/2026-08-19-dest-fence.md` | Dest Fence before yes/no; OPEN-BEHALF remove-for-B; version SSOT 1.8.1 | **Pass** (bugs closed; TP-SR-FENCE-01..04, TP-SR-17/18) | PASS=299 FAIL=0 SKIP=2 |
+| 2026-08-18 | `reports/2026-08-18-approve-actor-lock.md` | **T1-SECOND-LOCK** / OPEN-SUDOER-APPR: checklists, AL-* review gate, TP-ELEV-09 | **Pass** (gates live; re-check every full review) | see `test-plan.md` |
 | 2026-08-17 | `reports/2026-08-17-requirement-coverage.md` | C-full-product coverage + folder-backup requirement alignment | **Sufficient with Gaps** (pretty JSON + honesty Issues 1–2 closed; sibling command-identity open) | PASS=244 FAIL=0 SKIP=2 |
 | 2026-08-15 | `reports/2026-08-15-interactive-stdin-steal.md` | `interactive` id walk stole stdin; 1.6.1 fd 3 | **Partial** (P1/P2 in-tree fixed; **SR-HOST-02** / pretty-print open) | see suite |
 | 2026-08-15 | `reports/2026-08-15-requirement-coverage.md` | Requirement sufficient check (C-full-product) | **Sufficient with Gaps** | PASS=203 |

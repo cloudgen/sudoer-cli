@@ -4,8 +4,10 @@
 
 | Version | Supported |
 |---------|-----------|
-| 1.6.2 (current) | Yes |
-| 1.6.1 | Yes |
+| 1.8.1 (current) | Yes |
+| 1.8.0 | Yes |
+| 1.7.x | Yes |
+| 1.6.x | Yes |
 | 1.5.x | Yes |
 | 1.4.x | Yes |
 | Older than 1.4.0 | Best-effort only |
@@ -27,8 +29,8 @@ This project follows **[CIAO](https://github.com/cloudgen/ciao)** / **[CIAO-Lite
 
 | Letter | Principle | Security application |
 |--------|-----------|----------------------|
-| **C** | **Caution** | Unknown commands fail closed. Type 1 `approve` / `reject` / `interactive` fail closed without euid 0 (or a real root session). Submit checks self-scope and JSON. Inbound is **3773**; submit files are **0640**. Approve archives a snapshot then unlinks inbound (no `mv` of a replaceable path). |
-| **I** | **Intentional** | Local-only install (`SCRIPT_URL` empty). Type 0 never writes `/etc/sudoers.d`. Type 1 `setup` is any host admin (`sudo sudoer-cli setup`; password sudo OK; not `sudo -n`). Day-to-day approve stays F6 (or a real root session). Only **product-owned** names under `/etc/sudoers.d/` are copied, overwritten, or removed. |
+| **C** | **Caution** | Unknown commands fail closed. Type 1 `approve` / `reject` / `interactive` fail closed without euid 0 (or a real root session). Submit checks JSON (A may name B). Inbound is **3773**; submit files are **0640**. Approve archives a snapshot then unlinks inbound (no `mv` of a replaceable path). |
+| **I** | **Intentional** | Local-only install (`SCRIPT_URL` empty). Type 0 never writes `/etc/sudoers.d`. Type 1 `setup` is any host admin (`sudo sudoer-cli setup`; password sudo OK; not `sudo -n`). After password `sudo`, that host admin **may** approve — F6 / `sudoer-adm` is an extra path. Only **product-owned** names under `/etc/sudoers.d/` are copied, overwritten, or removed. |
 | **A** | **Anti-fragile** | Isolated scratch (`APP_NAME` + `USERNAME`); atomic install place with mode **0755**. Public queues live under `/var/sudoer-cli/` with F4 views under the live LPU home. F7 removes the three public queue children. |
 | **O** | **Over-protect** | Protection Zones on `out_*` and install. Closed prevention catalog: no invented walls after elev. Never write `/etc/passwd` or `/etc/sudoers` (the main file). No online channel UX. |
 

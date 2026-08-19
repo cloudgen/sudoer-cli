@@ -10,6 +10,28 @@ This requirement is the **project Single Source of Truth** for **idempotency (re
 
 **Informal formula:** for ensure-style operation *f* and system state *x*, **f(f(x)) ≈ f(x)** for the **desired outcome** (logs and timestamps may differ).
 
+### 1.1 Human-facing
+
+**In one sentence:** Install and uninstall can be run again. The second run must leave the same intended result.
+
+| Box | Meaning | Example |
+|-----|---------|---------|
+| You / this login | Re-run install after it already succeeded | `sh src/sudoer-cli install` |
+| The other role | Setup heal is target law, not a second install channel | `sudo sudoer-cli setup` |
+| Not this file | One-shot dest approve as if it were install | `requirement-domain-sudoer-approval` |
+
+| Includes | Excludes |
+|----------|----------|
+| Re-run safety for install / uninstall | Re-running approve as if it were idempotent install |
+
+| Surface | What you open | What for |
+|---------|---------------|----------|
+| `src/sudoer-cli` | ship unit | install/uninstall |
+
+| You do… | What it means | What you type |
+|---------|---------------|---------------|
+| Install twice | The second run must still succeed and leave one installed copy. | `sh src/sudoer-cli install` |
+
 ---
 
 ## 2. Core Rules / Requirements (Mandatory)

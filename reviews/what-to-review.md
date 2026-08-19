@@ -1,12 +1,12 @@
 # What to review — sudoer-cli
 
 **Living checklist** (review plan). Product: **sudoer-cli** (Type 0 live; **Type 0 domain convert/submit/list/show routed**; Type 1 `setup` / `interactive` live).  
-**Class:** software-development · **one** Active domain SSOT (`requirement-domain-sudoer-approval` **2.15.0**) · **local-only** install channel.  
+**Class:** software-development · **one** Active domain SSOT (`requirement-domain-sudoer-approval` **2.21.0**) · **local-only** install channel.  
 **Always load first:** `reviews/lessons.md`  
-**Latest report:** `reviews/reports/2026-08-17-requirement-coverage.md` (coverage + folder-backup alignment). Prior: stdin-steal. Fidelity: INC-20260817-001.
+**Latest report:** `reviews/reports/2026-08-19-dest-fence.md` (dest Fence + OPEN-BEHALF). Prior: 2026-08-18 approve-actor-lock (T1-SECOND-LOCK). Fidelity: INC-20260817-001. Actor lock: INC-20260818-001.
 
-**Last plan update:** 2026-08-17  
-**Ship unit VERSION:** 1.6.2  
+**Last plan update:** 2026-08-19  
+**Ship unit VERSION:** 1.8.1  
 **Suite baseline:** see `reviews/test-plan.md`
 
 ---
@@ -15,10 +15,10 @@
 
 | # | Check | Notes |
 |---|--------|--------|
-| P1 | Read `docs/requirements/index.md` | Class + shell + three-layer + LPU + **prevention-set 1.3.0** + **domain 2.15.0** |
-| P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.6.2**) |
+| P1 | Read `docs/requirements/index.md` | Class + shell + three-layer + LPU + **prevention-set 1.6.0** + **domain 2.21.0** + ARSA + dest Fence |
+| P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.8.1**) |
 | P3 | Load `reviews/lessons.md` and re-check open L-* that still apply | Skip parent backup L-SUDOERS except **L-JSON-CMDS-01** |
-| P4 | Run `./tests/run.sh` | Record PASS/FAIL/SKIP; **must include TP-SR-14/15/16** |
+| P4 | Run `./tests/run.sh` | Record PASS/FAIL/SKIP; **must include TP-SR-14/15/16**, **TP-SR-PRIV-04** / **TP-ELEV-09** / **TP-PREV-03**, and **TP-SR-HOOK-01..04** |
 | P5 | Confirm install **channel** still local-only | No SCRIPT_URL product UX |
 | P6 | Confirm trimmed verbs stay unknown | backup / restore / `remove-project-sudoers` (`print-sudoers` is domain) |
 | P7 | **JSON re-encode fidelity** | Complete section below. **Revise/Block** if skipped. |
@@ -40,10 +40,12 @@
 | Interactive vs noninteractive | `requirement-shell-interactive-vs-noninteractive.md` | Confirm policy; **TTY measured outside functions** |
 | Prompt helpers | `requirement-shell-prompt.md` | `prompt_*` samples consume `TTY` |
 | Temp leaves | `requirement-shell-temp-file-system.md` | `mktemp`; no `$$` scratch |
-| Three-layer | `requirement-three-layer-privilege-model.md` | EM-HYB: bootstrap outer `sudo` vs F6; Table A ≠ user grant |
+| Three-layer | `requirement-three-layer-privilege-model.md` | EM-HYB: any elevated sudoer may setup **and** approve; F6 extra; Table A ≠ user grant |
 | LPU | `requirement-least-privilege-user.md` | F1–F7; home `/etc/sudoer-adm`; dest `/etc/{{username}}/` |
 | Prevention set | `requirement-privilege-prevention-set.md` | Closed block catalog + must-remain-open; no invented walls |
-| Domain SSOT | `requirement-domain-sudoer-approval.md` | JSON samples; convert; queues; host-mutating; **pretty `commands[]` fidelity** |
+| ARSA | `requirement-actor-role-subject-approver.md` | Five-column catalog; dest has Approver; do not invent `*-adm` |
+| Dest Fence | `requirement-incorrect-json-format.md` | Incorrect JSON fail-closed before yes/no |
+| Domain SSOT | `requirement-domain-sudoer-approval.md` | JSON samples; convert; queues; dest fence table; **pretty `commands[]` fidelity** |
 | Idempotency | `requirement-shell-idempotency.md` | Re-install |
 | Storage | `requirement-shell-cli-storage.md` | Isolation |
 
@@ -62,12 +64,17 @@
 | R5 | Password-sudo / package elev TP-ELEV-01..05 | **n/a** (not claimed) |
 | R6 | About queue fields vs TP-CLI-06 / domain pillar 4 | **closed** (about JSON `queue_request` / approved / rejected; TP-CLI-06) |
 | R7 | Domain §2.0 presents file-based JSON approval (roles, submit-when, JSON verify) | **have** (domain 2.2.0+) |
-| R8 | Type 1 authz + hook snippet + interactive loop; dest `/etc/sudoers.d/{{service}}-{{user}}`; setup/hook/loop live | **have** (domain 2.14.0; TP-SR-PRIV-03; TP-SR-INT-01/02/04/05) |
-| R9 | Sudo escalation check: avoid `-n` unless specified; any-admin outer `sudo`; approve stays F6 | **have** TP-ELEV-08 + TP-SR-PRIV-02 |
-| R10 | Prevention set: only published rows block; elev is approval; no Gap/`LIVE_LPU`/live-command whitelist | **have** law (prevention-set 1.0.0); TP-PREV-01/02 |
+| R8 | Type 1 authz + hook snippet + interactive loop; dest `/etc/sudoers.d/{{service}}-{{user}}`; setup/hook/loop live; `.profile` check/create | **have** (domain 2.17.0; TP-SR-PRIV-03; TP-SR-INT-01/02/04/05; **TP-SR-HOOK-01..03**) |
+| R9 | Sudo escalation check: avoid `-n` unless specified; any-admin outer `sudo`; approve is same elev (not exclusive F6) | **have** TP-ELEV-08 + TP-SR-PRIV-02 + **TP-SR-PRIV-04** / **TP-ELEV-09** |
+| R10 | Prevention set: only published rows block; elev is approval; no Gap/`LIVE_LPU`/live-command whitelist; no exclusive-LPU approve lock | **have** law (prevention-set 1.6.0); TP-PREV-01/02/03 |
 | R11 | `interactive` id walk does not steal stdin from `prompt_yes_no` | **have** (1.6.1; TP-SR-INT-05; INC-20260815-001) |
 | R12 | Pretty `commands[]` survive decode/re-encode (not last-`args` only) | **have** (1.6.2; TP-SR-14/15/16; INC-20260817-001) — **re-check every review** |
 | R13 | Blocking CLI errors are operator-readable (what happened + `Next:`; **`CL-OPERATOR-READABLE-ERROR`**) | **have** convert/submit (1.6.2; TP-SR-10 human + Next) + Type 1 (TP-SR-PRIV-01 / TP-ELEV-08) — **re-check every review** |
+| R14 | Approve-path actor lock after password `sudo` is gone (OPEN-SUDOER-APPR) | **have** (1.7.0; TP-SR-PRIV-04 / TP-PREV-03 / TP-ELEV-09; INC-20260818-001) — **re-check every review** |
+| R15 | Hyphenated service **and** hyphenated username (`dns-cli` + `dns-adm` dest is not `…-adm`); dest uses JSON | **have** (1.8.1; **TP-SR-17**; INC-20260818-002; **L-ID-SPLIT-01**) |
+| R17 | Dest Fence first: `interactive` / `approve` / `reject` fail closed on incorrect JSON **before** yes/no; action mismatch; subject token ≠ JSON username is **not** a fence | **have** (1.8.1; **TP-SR-FENCE-01..04**; `requirement-incorrect-json-format`) |
+| R18 | OPEN-BEHALF: A may submit/remove for B; inbound and dest use B | **have** (1.8.1; **TP-SR-17** / **TP-SR-18**) |
+| R16 | After hook install, LPU can **read** `${LPU_HOME}/.profile` (not `root:root` `0600`); existence is not enough | **open** (checkout 1.8.1 + **TP-SR-HOOK-04**; host still `root:root` `0600`; global **1.8.0**; **L-HOOK-PROFILE-02**; INC-20260818-003 · INC-20260819-001) |
 
 ## JSON re-encode / convert fidelity — review plan gate
 
@@ -88,3 +95,24 @@
 **Splitter smell (Block if still the only split):** `sed 's/},{/}\\n{/g'` without `[[:space:]]*` around the comma.
 
 **High-risk symbol:** `sr_json_decode_to_fields` / `sr_submit` re-encode.
+
+## Approve-path actor lock — review plan gate
+
+**In scope when:** `approve` / `reject` / `interactive` / `sr_require_type1` / Type 1 authz table is reviewed. Always in scope for a full product review.  
+**Incomplete review (Revise/Block)** if skipped.  
+**Law:** prevention-set **1.4.0** OPEN-SUDOER-APPR · L-APPR-ACTOR-01 · INC-20260818-001 · **T1-SECOND-LOCK**.  
+**Checklists:** **CL-LEAST-PRIVILEGE §H** · **CL-FILE-BASED-JSON-APPROVAL §5** · **CL-SHELL-TTY-PRIVILEGE-TRAPS** T1-SECOND-LOCK.
+
+| ID | Check | Pass | Fail |
+|----|--------|------|------|
+| **AL-1** | Gate | `sr_require_type1` after euid 0 does **not** compare `SUDO_USER` to `sudoer-adm` | Die “only sudoer-adm” / `!= "sudoer-adm"` |
+| **AL-2** | Law pair | **OPEN-SUDOER-APPR** present; **PREV-APPR-ACTOR** is **not** a §2.2 block row | Both OPEN-ELEV and exclusive-LPU block published |
+| **AL-3** | Help | Approve is password `sudo` (any admin); F6 extra | “after F6; sudoer-adm or real root” as the only path |
+| **AL-4** | Setup help-submit | `lpu_setup` prints `add-sudoer-request` next-step | Setup ends at “LPU ready” with no submit next |
+| **AL-5** | Type 0 never `useradd` | `sr_submit` has no `useradd` | Ordinary login creates the LPU |
+| **AL-6** | Suite | **TP-SR-PRIV-04**, **TP-PREV-03**, **TP-ELEV-09** **have** and ran | Only TP-SR-PRIV-02 “approve keeps F6” greened |
+| **AL-7** | Review lesson | **L-ELEV-BOOT-01** is **not** used to lock approve to F6 | “Split bootstrap vs F6 approve” as the standing fix |
+
+**Actor-lock smell (Block if still the only approve gate):** `SUDO_USER` != `sudoer-adm` → `authz` after euid is already 0.
+
+**High-risk symbol:** `sr_require_type1`.

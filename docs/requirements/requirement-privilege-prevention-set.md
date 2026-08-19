@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-privilege-prevention-set.md  
-**Status**: Active (Version 1.3.0)  
+**Status**: Active (Version 1.6.0)  
 **Area**: architecture  
 **Key**: `requirement-privilege-prevention-set`  
 **id**: RQ-PRIVILEGE-PREVENTION-SET  
@@ -13,6 +13,28 @@ The Type 0 / Type 1 / Type 2 map and elev Tables A / B / C stay on `requirement-
 
 A wall that is not a §2.2 row is **not** product law.
 
+### 1.1 Human-facing
+
+**In one sentence:** After you already used password sudo, this program must not invent a second lock. The catalog lists what is blocked and what must stay open.
+
+| Box | Meaning | Example |
+|-----|---------|---------|
+| You / this login | Approve after sudo as the same person who elevated | `sudo sudoer-cli interactive` |
+| The other role | Dedicated account is an extra path | `sudoer-adm` |
+| Not this file | Dest Fence (broken JSON) | `requirement-incorrect-json-format` |
+
+| Includes | Excludes |
+|----------|----------|
+| Closed block list; OPEN-SUDOER-APPR / OPEN-DECIDE / OPEN-BEHALF | Invented walls; `SUDO_USER` must equal sudoer-adm; forcing A=B |
+
+| Surface | What you open | What for |
+|---------|---------------|----------|
+| `src/sudoer-cli` | ship unit | authz after elev |
+
+| You do… | What it means | What you type |
+|---------|---------------|---------------|
+| Approve as the elevating admin | Password sudo already decided. File checks still run. Person checks must not steal that decision. | `sudo sudoer-cli interactive` |
+
 ---
 
 ## 2. Core Rules / Requirements (Mandatory)
@@ -21,7 +43,7 @@ A wall that is not a §2.2 row is **not** product law.
 
 1. A product **block** exists **only** when it has a row in §2.2.  
 2. If an action is **not** listed in §2.2, the product **MUST NOT** stop it — unless this requirement is revised in the **same change** as the new block.  
-3. Maintainers **MUST NOT** invent a wall that is not a §2.2 row. Invented walls include: an unpublished live-command whitelist; an unpublished live-command denylist; a Gap stub or “not enabled” die on a listed Type 1 verb after euid 0; an env flag that turns off `useradd` / F6 / hook; a ban on in-tool password `sudo`; treating CI, test isolation, or a missing host account as a security gate; a second privilege check after password `sudo` or a root login.  
+3. Maintainers **MUST NOT** invent a wall that is not a §2.2 row. Invented walls include: an unpublished live-command whitelist; an unpublished live-command denylist; a Gap stub or “not enabled” die on a listed Type 1 verb after euid 0; an env flag that turns off `useradd` / F6 / hook; a ban on in-tool password `sudo`; treating CI, test isolation, or a missing host account as a security gate; a second privilege check after password `sudo` or a root login — **including** `SUDO_USER` must equal the LPU on `approve` / `reject` / `interactive`. That last form is **blockage of approval**, not helpful checking. Helpful checks review the **file** (schema, visudo, hostile inode). Forcing A=B or dying because owner A ≠ subject B is blockage (**PP-A-18**), not a helpful check.  
 4. §2.3 is the **must-remain-open** catalog. Closing a §2.3 row **MUST** revise this file first.  
 5. Table A is **only** the F6 sudoers line. Table B is **only** what must not appear **in** the F6 fragment. Table C is **script jobs** (examples of what the already-elevated ship unit runs). Those tables **MUST NOT** be reread as a live-command whitelist or denylist.  
 6. **No published denylist ⇒ no extra restrict** on live tools a Type 1 job needs.
@@ -36,12 +58,11 @@ Each row is a **real** product stop. How the stop is implemented (fail closed, r
 |----|-----------------|------------|--------------|-------|
 | **PREV-PASSWD** | Write `/etc/passwd`, `/etc/group`, `/etc/shadow`, or `/etc/gshadow` | any type | Fail closed. Create/teardown the LPU with `sudo useradd` / `sudo userdel` only | LPU · three-layer |
 | **PREV-SUDOERS-D** | Write `/etc/sudoers` (the main file); Type 0 write `/etc/sudoers.d`; Type 1 write a **foreign** name under `/etc/sudoers.d` | Type 0 / foreign | Fail closed. This product **does** copy / overwrite / remove **product-owned** names (OPEN-SUDOERS-D-EX) | three-layer · domain |
-| **PREV-T0-USER** | Create or delete the LPU (`useradd` / `userdel`) | Type 0 | Fail closed; no account mutate | LPU · domain |
+| **PREV-T0-USER** | Create or delete the LPU (`useradd` / `userdel`) | Type 0 / ordinary login (LSU). An LSU **never** creates an account itself | Fail closed; no account mutate. Only Type 1 `setup` (sudoer sudo) creates the LPU | LPU · domain |
 | **PREV-T0-QUEUE** | `mkdir` the production inbound / accepted / declined trio | Type 0 | Fail closed if the dir is missing | domain |
 | **PREV-T1-EUID** | Any Type 1 verb without euid 0 | any login | Fail closed; no partial host write | three-layer · domain |
 | **PREV-BOOT-EUID** | `setup` / `remove-lpu` without euid 0 | any login | Fail closed; tell the operator to run `sudo {{APP}} setup` (password `sudo`; **not** `sudo -n`) | three-layer · domain |
-| **PREV-APPR-ACTOR** | `approve` / `reject` / `interactive` when `SUDO_USER` is set and is **not** the LPU | other host admin already euid 0 | Fail closed `authz` (bootstrap still allowed) | domain |
-| **PREV-APPR-LPU** | `approve` / `reject` / `interactive` as the LPU **euid** (no F6 re-entry) | LPU login without `sudo` | Fail closed `authz` | domain · three-layer |
+| **PREV-APPR-LPU** | `approve` / `reject` / `interactive` as the LPU **euid** (no F6 re-entry) | LPU login without `sudo` | Fail closed `authz` (not euid 0) | domain · three-layer |
 | **PREV-FORCE-AUTHZ** | `--force` skipping Type 1 authz, or `--force` auto-approving in `interactive` | Type 1 | Still fail `authz`; still prompt | domain |
 
 #### 2.2.2 F6 fragment and dest writes
@@ -70,8 +91,7 @@ Each row is a **real** product stop. How the stop is implemented (fail closed, r
 
 | ID | What is stopped | Who / when | How it stops | Owner |
 |----|-----------------|------------|--------------|-------|
-| **PREV-BEHALF** | Submit (or approve) a grant **for** another login | Type 0 submit; Type 1 re-check | Fail closed `self_scope` | domain |
-| **PREV-SCHEMA** | Unknown JSON keys; remove JSON with `commands`; mixed or unknown service families; body fields that disagree with the basename | submit and approve | Fail closed (`invalid_json` / `remove_extra_fields` / `unknown_service` / `field_mismatch`) | domain |
+| **PREV-SCHEMA** | Unknown JSON keys; remove JSON with `commands`; mixed or unknown service families | submit and approve | Fail closed (`invalid_json` / `remove_extra_fields` / `unknown_service`) | domain |
 | **PREV-INCLUDE** | User `ALL`, Cmnd `ALL`, `#include`, `Defaults`, or aliases in a request | convert / submit / approve | Reject | domain |
 | **PREV-JSON-VISUDO** | Feeding request JSON to `visudo` | convert / submit / approve | Materialize sudoers text on a private copy first | domain |
 
@@ -90,7 +110,10 @@ These rows are **product law**. They are not “nice to have.” Closing one is 
 
 | ID | Must stay open | After / when | Why |
 |----|----------------|--------------|-----|
-| **OPEN-ELEV** | Run the Type 1 job the operator invoked | After password `sudo` **or** a root login | That elev **is** the approval. **MUST NOT** invent a second lock |
+| **OPEN-ELEV** | Run the Type 1 job the operator invoked — **including** `approve` / `reject` / `interactive` | After password `sudo` **or** a root login (`SUDO_USER` may be **any** host admin) | That elev **is** the approval. **MUST NOT** invent a second lock |
+| **OPEN-SUDOER-APPR** | Any already euid-0 host admin **MAY** `approve` / `reject` / `interactive` | Same as OPEN-ELEV | F6 / `sudoer-adm` is **not** the only approver. Requiring `SUDO_USER==sudoer-adm` is an invented wall |
+| **OPEN-DECIDE** | Type 1 `approve` / `reject` **MUST** move a regular inbound JSON after euid 0 | After elev | **MUST NOT** fail `owner_mismatch` or `self_scope`. File owner and parsed subject are not a second lock. Dest identity is JSON `username` / `service` when present |
+| **OPEN-BEHALF** | Type 0 **MAY** submit a grant for another login B; allocated filename uses **B** | Type 0 submit | Forcing A=B or dying because owner A ≠ subject B is **PP-A-18**. Allocator takes JSON / User spec as B |
 | **OPEN-SUDO** | The ship unit **MAY** invoke password `sudo` (outer **or** in-tool) | Mix model | “Avoid `sudo -n`” is **not** “avoid `sudo`” |
 | **OPEN-USERADD** | Type 1 `setup` / `remove-lpu` **MUST** call `sudo useradd` / `sudo userdel` (password `sudo`) | After euid 0 | Account create is a script job, not an F6 Cmnd |
 | **OPEN-TOOLS** | Type 1 **MAY** run the OS tools the job needs (`mkdir`, `chmod`, `visudo -cf`, `install`, product-scoped `rm`, …) | After euid 0 | Table A is not a live-command catalog |
@@ -157,7 +180,7 @@ These steps are **hard to undo**. They stay **allowed** after elev. The extra ga
 **Future AI assistants or maintainers MUST NOT**:
 
 1. Add a product block that is not a §2.2 row without revising this file in the same change.  
-2. Close a §2.3 row (treat Table A as a live-command whitelist; ban in-tool password `sudo`; require `sudo -n` for `setup`; require the operator to already be the LPU; die “not enabled”; add `LIVE_LPU` / isolation / CI as a create gate).  
+2. Close a §2.3 row (treat Table A as a live-command whitelist; ban in-tool password `sudo`; require `sudo -n` for `setup`; require the operator to already be the LPU **for setup or for approve**; die “not enabled”; add `LIVE_LPU` / isolation / CI as a create gate; re-add a **PREV-APPR-ACTOR** row that fails an already euid-0 host admin whose `SUDO_USER` is not `sudoer-adm`).  
 3. Put Table C OS tools into Table A / `print-sudoers` **or** refuse to run those tools after euid 0 because they are not in Table A.  
 4. Invent a Type 2 euid, or `su` / `runuser` to the LPU, in order to write dest.  
 4a. Write `/etc/passwd` or `/etc/sudoers` (main file), or invent a blanket “do not write `/etc`” that blocks `/etc/{{username}}/` **or** this product’s Type 1 sudoers.d copy/overwrite/remove exception.  
@@ -188,15 +211,17 @@ These steps are **hard to undo**. They stay **allowed** after elev. The extra ga
 | TP family / ID | Suite | Status | Note |
 |----------------|-------|--------|------|
 | **TP-SR-PRIV-01** | `tests/test_domain_sr.sh` | have | PREV-T1-EUID / PREV-SUDOERS-D (no dest without euid 0) |
-| **TP-SR-PRIV-02** | `tests/test_domain_sr.sh` | have | OPEN-BOOT-ANY; PREV-SUDO-N-BOOT; approve stays F6 |
+| **TP-SR-PRIV-02** | `tests/test_domain_sr.sh` | have | OPEN-BOOT-ANY; PREV-SUDO-N-BOOT; setup not locked to LPU |
+| **TP-SR-PRIV-04** | `tests/test_domain_sr.sh` | have | OPEN-ELEV / OPEN-SUDOER-APPR: approve gate has no exclusive-LPU actor lock |
 | **TP-SR-PRIV-03** | `tests/test_domain_sr.sh` | have | OPEN-USERADD / OPEN-NO-FLAG (static: useradd, no Gap stub, no `LIVE_LPU`) |
 | **TP-ELEV-08** | `tests/test_cli.sh` | have | `sudo -n` only with F6/hook |
-| **TP-SR-05** | `tests/test_domain_sr.sh` | have | PREV-BEHALF |
+| **TP-SR-05** | `tests/test_domain_sr.sh` | have | Submit / list / show (no self-scope wall) |
 | **TP-SR-06** | `tests/test_domain_sr.sh` | have | PREV-DEST-REMOVE |
 | **TP-CLI-07** | `tests/test_cli.sh` | have | PREV-EMPTY-INT |
 | **TP-LC-05** / **TP-LC-06** | `tests/test_local_lifecycle.sh` | have | OPEN-CONFIRM uninstall; PREV-UNINST-F7 (binary only) |
 | **TP-PREV-01** | `tests/test_domain_sr.sh` | have | Alias of TP-SR-PRIV-03: no second lock / no invented create flag |
 | **TP-PREV-02** | `tests/test_domain_sr.sh` | have | Alias of TP-SR-03 + FORB-07: `print-sudoers` has no `useradd` |
+| **TP-PREV-03** | `tests/test_domain_sr.sh` | have | Alias of TP-SR-PRIV-04 / TP-ELEV-09: elevated sudoer is the approval user |
 
 **Matrix:** `reviews/requirement-test-matrix.md`  
 **Map:** `reviews/test-plan.md`
@@ -208,9 +233,13 @@ These steps are **hard to undo**. They stay **allowed** after elev. The extra ga
 | 2026-08-14 | Active 1.0.0 | Closed prevention catalog + must-remain-open catalog. Elev is approval. No invented walls. |
 | 2026-08-14 | Active 1.1.0 | `/etc` stops are `/etc/passwd` and `/etc/sudoers.d` only. Dest / LPU home = `/etc/{{username}}/` |
 | 2026-08-14 | Active 1.2.0 | Exception OPEN-SUDOERS-D-EX: Type 1 copy/overwrite/remove product-owned `/etc/sudoers.d` names |
+| 2026-08-15 | Active 1.3.0 | Public `/var/` queues as bound dest |
+| 2026-08-18 | Active 1.4.0 | Drop PREV-APPR-ACTOR (second lock). OPEN-SUDOER-APPR. LSU never `useradd`. **TP-PREV-03** |
+| 2026-08-18 | Active 1.5.0 | Drop PREV-BEHALF and Type 1 `owner_mismatch`. Approve/reject are not submitter/owner walls. |
+| 2026-08-18 | Active 1.6.0 | **OPEN-BEHALF**: A may submit for B; filename uses B. Helpful checks are file integrity, not A=B. |
 
 ---
 
-**Last Updated**: 2026-08-15  
+**Last Updated**: 2026-08-18  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

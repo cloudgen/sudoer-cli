@@ -3,9 +3,9 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.6.2  
-**Last plan update:** 2026-08-17  
-**Last suite run:** PASS=244 FAIL=0 SKIP=2 (2026-08-17; TP-SR-14/15/16 pretty JSON; TP-SR-INT-04/05 live pending-id needs Type 1)  
+**Product VERSION:** 1.8.1  
+**Last plan update:** 2026-08-19  
+**Last suite run:** PASS=299 FAIL=0 SKIP=2 (2026-08-19; 1.8.1 dest Fence + OPEN-BEHALF; **TP-SR-17/18**; **TP-SR-FENCE-01..04**; TP-SR-INT-04/05 live pending-id needs Type 1)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)
@@ -25,13 +25,14 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | Trimmed parent verbs fail closed | have | TP-CLI-13 |
 | Local install / idempotent / uninstall / mode 0755 | have | TP-LC-01..10 |
 | Backup / restore | n/a | Absent by design (not a backup product) |
-| Domain sudoers-request (convert / submit / queues) | have | **TP-SR-01..16** + **TP-SR-PRIV-01..03** — `tests/test_domain_sr.sh` |
-| Privilege prevention set (closed block vs must-remain-open) | have | **TP-PREV-01..02** (aliases of PRIV-03 / SR-03) |
+| Domain sudoers-request (convert / submit / queues) | have | **TP-SR-01..18** + **TP-SR-PRIV-01..04** + **TP-SR-FENCE-01..04** — `tests/test_domain_sr.sh` |
+| Privilege prevention set (closed block vs must-remain-open) | have | **TP-PREV-01..03** (aliases of PRIV-03 / SR-03 / PRIV-04) |
 | Routed convert known; junk still unknown | have | **TP-CLI-14** |
 | no-retest-tty (measure `[ -t` outside functions) | have | **TP-ELEV-07** |
 | Unique `mktemp` leaves (no `$$` scratch) | have | **TP-TMP-01**, **TP-TMP-02** |
 | Password-sudo / package Type 1 ladder | n/a | Not claimed; fail-closed is TP-SR-PRIV-01 |
 | Sudo escalation check (avoid `-n` unless specified) | have | **TP-ELEV-08** + **TP-SR-PRIV-02** |
+| No second actor lock after elev (**T1-SECOND-LOCK**) | have | **TP-ELEV-09** + **TP-SR-PRIV-04** + **TP-PREV-03** — **required** on full review (what-to-review **AL-6**) |
 | Online curl / companion checksum | n/a | Local-only product |
 
 ---
@@ -80,7 +81,7 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-02 | Request JSON schema; remove = purpose only | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-SR-03 | sudoers ↔ JSON; visudo on private copy | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-SR-04 | `--queue-root` / per-dir resolve; reject relative | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
-| TP-SR-05 | Self-scope submit; print `request_id` | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
+| TP-SR-05 | Submit (A may name B); print `request_id` | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-SR-06 | Dest `{{service}}-{{user}}`; never `*-remove` | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-SR-07 | REQ add sample JSON → three canonical sudoers lines | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-SR-08 | REQ remove sample JSON → `# Purpose:` only | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
@@ -92,14 +93,25 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-14 | pretty add-sample JSON → all three Cmnd lines | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval 2.15.0 | **have** |
 | TP-SR-15 | pretty add-sample submit inbound keeps all three `path`s | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval 2.15.0 | **have** |
 | TP-SR-16 | pretty folder-backup backup+restore keeps both verbs | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval 2.15.0 | **have** |
+| TP-SR-17 | JSON `username` B (`dns-adm`) + service `dns-cli` → request_id and dest use B (not last-hyphen `adm`) | `tests/test_domain_sr.sh` | domain · OPEN-BEHALF · ARSA | **have** |
+| TP-SR-18 | `remove-sudoer-request --file` for B keeps JSON `username` / dest B | `tests/test_domain_sr.sh` | domain · OPEN-BEHALF | **have** |
+| TP-SR-FENCE-01 | `interactive` / `approve` / `reject` call dest Fence **before** `prompt_yes_no` | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
+| TP-SR-FENCE-02 | Isolated fence: not a JSON object → fail closed, people words, no yes/no | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
+| TP-SR-FENCE-03 | Isolated fence: basename action ≠ JSON action → `field_mismatch` | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
+| TP-SR-FENCE-04 | Isolated fence: filename subject ≠ JSON `username` is **not** a fence | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
 | TP-SR-PRIV-01 | Type 1 verbs: non-root fail-closed, no `/etc` write | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval · three-layer | **have** |
-| TP-SR-PRIV-02 | Bootstrap `setup` is any euid 0 (not `sudo -n`, not `sudoer-adm`); approve keeps F6 | `tests/test_domain_sr.sh` | requirement-three-layer-privilege-model · domain | **have** |
+| TP-SR-PRIV-02 | Bootstrap `setup` is any euid 0 (not `sudo -n`, not `sudoer-adm`); approve still requires euid 0 | `tests/test_domain_sr.sh` | requirement-three-layer-privilege-model · domain | **have** |
+| TP-SR-PRIV-04 | Approve gate has no exclusive-`sudoer-adm` actor lock; setup prints submit next-step | `tests/test_domain_sr.sh` | prevention-set OPEN-SUDOER-APPR · domain | **have** |
 | TP-SR-PRIV-03 | Live setup body: useradd, collision, F6, hook (static; no host useradd in CI) | `tests/test_domain_sr.sh` | requirement-least-privilege-user · domain | **have** |
 | TP-SR-INT-01 | `interactive` without euid 0 → `authz` | `tests/test_domain_sr.sh` | domain · three-layer | **have** |
 | TP-SR-INT-02 | `interactive` `--json` / `TTY=0` → `confirm_required`, no hang | `tests/test_domain_sr.sh` | domain · interactive | **have** |
 | TP-SR-INT-03 | Hook snippet skips non-interactive / `SSH_ORIGINAL_COMMAND`; no `exit` | `tests/test_domain_sr.sh` | domain | **have** |
 | TP-SR-INT-04 | Empty inbound `interactive` exits 0 (live as root; static otherwise) | `tests/test_domain_sr.sh` | domain | **have** |
 | TP-SR-INT-05 | `interactive` loop reads ids on fd 3 so `prompt_yes_no` keeps stdin | `tests/test_domain_sr.sh` | domain · prompt | **have** |
+| TP-SR-HOOK-01 | `setup` checks LPU `.profile`; missing → create source-bashrc sample | `tests/test_domain_sr.sh` | domain · LPU | **have** |
+| TP-SR-HOOK-02 | Existing `.profile` is not overwritten | `tests/test_domain_sr.sh` | domain | **have** |
+| TP-SR-HOOK-03 | Created `.profile` sources `.bashrc` (markers) | `tests/test_domain_sr.sh` | domain | **have** |
+| TP-SR-HOOK-04 | After create/rewrite, `.profile` / `.bashrc` `chown` the LPU (fail-closed) | `tests/test_domain_sr.sh` | domain · LPU | **have** |
 | TP-SR-Q-01 | Public `/var` queues + 3773/0700/0755 | `tests/test_domain_sr.sh` | domain · LPU | **have** |
 | TP-SR-Q-02 | Submit 0640; approve snapshot archive; owner check | `tests/test_domain_sr.sh` | domain | **have** |
 | TP-SR-Q-03 | F7 removes public `/var/{{APP_NAME}}/` children | `tests/test_domain_sr.sh` | domain · LPU | **have** |
@@ -117,6 +129,7 @@ This product claims **fail-closed Type 1** (approve/setup without euid 0), **not
 | TP-ELEV-05 | Human password apt | — | — | **n/a** |
 | TP-ELEV-07 | Static no-retest-tty: `prompt_*` / `app_about` consume `TTY` | `tests/test_cli.sh` | requirement-shell-prompt · interactive AC-4 | **have** |
 | TP-ELEV-08 | Avoid `sudo -n` unless specified: no invoke; help/refuse outer `sudo`; any `-n` text only with F6/hook | `tests/test_cli.sh` | three-layer · domain · mold §8.1.4 | **have** |
+| TP-ELEV-09 | No second actor lock: approve gate must not require `SUDO_USER==sudoer-adm` | `tests/test_domain_sr.sh` (TP-SR-PRIV-04) | prevention-set OPEN-SUDOER-APPR | **have** |
 
 ### TP-PREV (prevention set — closed block vs must-remain-open)
 
@@ -124,6 +137,7 @@ This product claims **fail-closed Type 1** (approve/setup without euid 0), **not
 |-------|--------|-------|------------------------|--------|
 | TP-PREV-01 | No second lock after euid 0: setup body is `useradd`, not Gap / `LIVE_LPU` / “not enabled” | `tests/test_domain_sr.sh` (TP-SR-PRIV-03) | requirement-privilege-prevention-set · LPU | **have** |
 | TP-PREV-02 | `print-sudoers` / F6 emit has no `useradd` (Table C stays a script job) | `tests/test_domain_sr.sh` (TP-SR-03) | requirement-privilege-prevention-set · three-layer | **have** |
+| TP-PREV-03 | No exclusive-LPU actor lock on approve after euid 0 (OPEN-SUDOER-APPR) | `tests/test_domain_sr.sh` (TP-SR-PRIV-04) | requirement-privilege-prevention-set · three-layer · domain | **have** |
 
 ### TP-TMP (scratch leaves)
 
@@ -139,7 +153,7 @@ This product claims **fail-closed Type 1** (approve/setup without euid 0), **not
 1. Closing a **bug** finding updates the matching TP to **have**.  
 2. Do not mark TP **have** without a suite assertion (or honest skip/n/a).  
 3. Do not reintroduce online TP-CURL/TP-CSUM or TP-FOLDER-BACKUP as Core without product-mode change.  
-4. Domain Type 0 convert/submit/list/show are **routed**. Type 1 `setup`/`approve` fail closed without euid 0 (**TP-SR-PRIV-01**). Bootstrap vs F6 is **TP-SR-PRIV-02**. `setup` body is **TP-SR-PRIV-03**. There is no Gap and no flag on `useradd`. Closed block vs must-remain-open is **requirement-privilege-prevention-set** (**TP-PREV-01/02**).  
+4. Domain Type 0 convert/submit/list/show are **routed**. Type 1 `setup`/`approve` fail closed without euid 0 (**TP-SR-PRIV-01**). Bootstrap vs exclusive-LPU is **TP-SR-PRIV-02**. `setup` body is **TP-SR-PRIV-03**. Approve has no second actor lock (**TP-SR-PRIV-04** / **TP-PREV-03** / **TP-ELEV-09**). There is no Gap and no flag on `useradd`. Closed block vs must-remain-open is **requirement-privilege-prevention-set** (**TP-PREV-01/02/03**).  
 5. **TP-SR-07..09** MUST use the worked samples from `requirement-domain-sudoer-approval` (alice / webservice).  
 6. Convert tests that call `visudo` **MUST** skip honestly if `visudo` is absent (not silent pass).  
 7. Subject family is **TP-SR-*** (sudoer-request). Do not mint `TP-DOM-*` or copy `TP-TIMER-*`.  
