@@ -204,7 +204,7 @@ These steps are **hard to undo**. They stay **allowed** after elev. The extra ga
 | `docs/requirements/requirement-shell-cli-zero-arguments.md` | Empty argv ≠ `interactive` |
 | `docs/requirements/requirement-shell-local-self-management.md` | Type 0 `uninstall` ≠ F7 |
 | `docs/requirements/requirement-shell-interactive-vs-noninteractive.md` | Confirm / no-hang |
-| `./sudoer-cli` | Ship unit under test |
+| `src/sudoer-cli` | Ship unit under test |
 
 ## Design-time verification
 

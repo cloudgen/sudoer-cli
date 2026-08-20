@@ -5,6 +5,58 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.12.0] - 2026-08-20
+
+### Changed
+
+- Dest **`interactive`** review asks a **one-off approval question**: **yes** = approve, **no** (or Enter) = reject. Prompt text is **`Approve this request (y/N)?`**. **MUST NOT** offer skip / quit / maybe, and **MUST NOT** chain Approve then Reject then Quit as three `(y/N)` questions. Term **`approval-question`**. Domain **2.24.0**; interactive **1.4.0**; prompt **1.1.0**; dest Fence **1.2.1**. **TP-SR-INT-06**. Direct `approve` / `reject` with a request id stay non-interactive.
+- `setup` **heals** a stale `/usr/local/bin/sudoer-cli` when its `VERSION` does not match the running ship unit (login hook otherwise keeps the old three `(y/N)` walk).
+- Ship unit **`VERSION="1.12.0"`**.
+- CLI-interface **3.6.0** names every routed domain / Type 1 verb on the Supported commands table (dual mention). Class **1.9.1** core-rule sections sequential. **TP-SUDO-05..07** runtime check-before-sudo.
+- Add/review requirement skills gate dest **approval-question**: **`SK-CREATE-SPECIFIC-REQUIREMENT` 3.19.0**, **`SK-REQUIREMENT-REVIEW` 2.19.0**, **`SK-REQUIREMENT-ELICITATION` 2.12.0**, **`SK-REQUIREMENT-SUFFICIENT-CHECK` 1.13.0**. **`CL-FILE-BASED-JSON-APPROVAL`**. Fail skip/quit/three chained `(y/N)` when authoring or reviewing dest review law.
+
+### Fixed
+
+- Dest `submit_by` stamp inserts only at the **first** `{` in the grant JSON. Pretty `commands[]` objects are not re-stamped. **TP-SR-FENCE-11**.
+
+## [1.11.0] - 2026-08-20
+
+### Added
+
+- **`requirement-shell-sudo-command` 1.0.0**: in-tool sudo SSOT. **Sudo-wrapping function** `util_sudo` is the only `sudo "$@"` call site. **`util_chmod`** implements **check before sudo** via `[ -O path ]` — if this login owns the path, **no** `sudo chmod`. **`lpu_sudo`** calls `util_sudo`. **TP-SUDO-01..04**.
+- Term **sudo-wrapping-function** (+ human-intro): the helper that owns every in-tool `sudo` and **MUST** run check before sudo. chmod remains the worked example.
+
+### Changed
+
+- Ship unit **`VERSION="1.11.0"`**. chmod call sites go through `util_chmod`.
+- Coding style **1.3.0** **points** at sudo-command (does not keep wrapper bodies). Class **1.9.0** residual pointer. Modular **3.2.0** prefix table. Three-layer **1.14.0**.
+- Mold **`LM-SHELL-SCRIPT-CODING` 3.13.0** §8.3 wrapping-function samples. **`SK-SH-SCRIPT-CODING` 2.16.0**. **`SK-CREATE-SPECIFIC-REQUIREMENT` 3.18.0**. **`SK-CREATE-CLASS-REQUIREMENT` 1.9.0**.
+
+## [1.10.0] - 2026-08-20
+
+### Added
+
+- Dest-written **`submit_by`**: original Unix owner of the waiting file, converted into JSON after dest format-check. Closed-schema allowlist includes this key. Dest **MUST NOT** fence if it is present or missing. Type 0 `add-sudoer-request` **MUST NOT** plant it. `interactive` reads the owner first, takes LPU ownership when euid 0, then stamps `submit_by` if the JSON is well-formed. **TP-SR-FENCE-09..10**.
+- **`requirement-shell-script-coding`**: specialize-in home for portable POSIX writing lessons. Software-dev class **MUST** have a language-matched coding-style related REQ. **Intention:** without it, agents bring portable learned lessons **raw**.
+- Coding style **1.1.0**: before any `sudo chmod`, probe ownership with a **non-sudo** command (`[ -O path ]`). If this login already owns the path, do **not** `sudo chmod`. Mold **`LM-SHELL-SCRIPT-CODING`** §8.3.
+- Term **check-before-sudo**: before any `sudo <cmd>`, non-sudo probe; skip sudo on match. **`sudo chmod`** is the worked example. Coding style **1.2.0**; three-layer **1.13.0**; mold §8.3 generalized.
+
+### Changed
+
+- Domain **2.23.0**; dest Fence REQ **1.2.0**. Maximal grant JSON is the seven identity/schema keys plus dest-stamped `submit_by`.
+- Class **1.8.0**: coding-style related REQ is MUST (`requirement-shell-script-coding` **1.0.0**). Skills: **`SK-CREATE-CLASS-REQUIREMENT` 1.8.0**, **`SK-CREATE-SPECIFIC-REQUIREMENT` 3.17.0**, review **2.18.0**, elicitation **2.11.0**, sufficient-check **1.12.0**, **`SK-SH-SCRIPT-CODING` 2.13.0**. Term `coding-style-requirement`.
+
+## [1.9.0] - 2026-08-20
+
+### Added
+
+- Type 0 **`test-json-format`**: test a grant JSON file against the dest JSON-format Fence without dest elev and without the waiting folder (`stdin` xor `--file`). Golden fixture `tests/fixtures/login-hook-elev-dns-adm.json`. **TP-SR-FENCE-05..08**.
+- Closed schema optional **`kind`**: `type-2-switch` or `login-hook-elev`.
+
+### Changed
+
+- Dest JSON-format Fence law **1.1.0** requires this Type 0 tester. Domain **2.22.0**; CLI **3.5.0**; class **1.7.0**. Portable fence mold: any JSON-format dest Fence must name a Type 0 test subcommand.
+
 ## [1.8.1] - 2026-08-19
 
 ### Fixed

@@ -146,7 +146,7 @@ Snippet text, guards, the `.profile` create sample, and the review loop are owne
 | `docs/requirements/requirement-privilege-prevention-set.md` | Closed catalog of what create/teardown blocks vs must stay open |
 | `docs/requirements/requirement-domain-sudoer-approval.md` | File-based JSON approval (roles / submit / verify) |
 | `docs/requirements/requirement-shell-cli-interface.md` | Type map on the dispatcher |
-| `./sudoer-cli` | Ship unit |
+| `src/sudoer-cli` | Ship unit |
 
 **Last Updated**: 2026-08-18  
 **Owner**: project maintainers  

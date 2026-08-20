@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-prompt.md  
-**Status**: Active (Version 1.0.0)  
+**Status**: Active (Version 1.1.0)  
 **Area**: shell  
 **Key**: `requirement-shell-prompt`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -22,7 +22,7 @@ This requirement is the **project Single Source of Truth** for **how** sudoer-cl
 
 | Includes | Excludes |
 |----------|----------|
-| Complete `prompt_yes_no` / `prompt_ask` bodies that consume TTY | Ad-hoc `read`; `--force` auto-approve of inbound files |
+| Complete `prompt_yes_no` / `prompt_ask` bodies that consume TTY | Ad-hoc `read`; `--force` auto-approve; a second confirm family; a four-way dest menu |
 
 | Surface | What you open | What for |
 |---------|---------------|----------|
@@ -30,7 +30,7 @@ This requirement is the **project Single Source of Truth** for **how** sudoer-cl
 
 | You do… | What it means | What you type |
 |---------|---------------|---------------|
-| Confirm one file | Type yes or no. Skip leaves the file waiting. Quit leaves the rest waiting. | `sudo sudoer-cli interactive` |
+| Confirm one file | Type yes to accept or no to reject. Enter is no. There is no skip or quit. | `sudo sudoer-cli interactive` |
 
 ---
 
@@ -132,6 +132,7 @@ prompt_ask() {
 | **Product** | `sudoer-cli` |
 | **Ship unit** | `src/sudoer-cli` |
 | **Live confirm** | `uninstall` uses `prompt_yes_no` unless `--force` |
+| **Dest review** | `interactive` uses **one** `prompt_yes_no` per unfenced inbound file (yes=approve, no/Enter=reject). Domain SSOT owns that mapping. **MUST NOT** add a second helper or a skip/quit menu |
 | **Value ask** | `prompt_ask` reserved; domain must not add ad-hoc `read` |
 
 ### 2.5 Why This Requirement Exists (CIAO)
@@ -158,7 +159,8 @@ prompt_ask() {
 1. Re-test live `[ -t 0 ]` / `[ -t 1 ]` inside `prompt_*` as the policy gate.  
 2. Replace `out_msg_n` with raw `printf` for the question.  
 3. Auto-yes on json/quiet/non-TTY.  
-4. Add a second confirm family beside `prompt_yes_no`.
+4. Add a second confirm family beside `prompt_yes_no`.  
+5. Turn dest review into three chained `(y/N)` questions (Approve / Reject / Quit) or a skip/quit menu. The dest approval question uses this helper **once**.
 
 **Violating this rule is a critical prompt regression.**
 
@@ -172,6 +174,7 @@ prompt_ask() {
 | AC-2 | No live `[ -t` policy check inside those functions |
 | AC-3 | Uninstall JSON without force still fail-closed (no hang) |
 | AC-4 | Samples in §2.3 remain complete (not a field table only) |
+| AC-5 | Dest `interactive` uses this helper once per unfenced file (domain SSOT; **TP-SR-INT-06**) |
 
 ---
 
@@ -182,6 +185,7 @@ prompt_ask() {
 | `requirement-shell-interactive-vs-noninteractive` | Mode SSOT; TTY measured outside functions |
 | `requirement-shell-output-requirements` | `out_msg_n` / `out_info` |
 | `requirement-shell-local-self-management` | Uninstall confirm |
+| `requirement-domain-sudoer-approval` | Dest review one-off yes/no (approval-question) |
 | `requirement-shell-modular-function-design` | `prompt_` prefix |
 | `docs/requirements/index.md` | Registry |
 
@@ -193,6 +197,7 @@ prompt_ask() {
 |-------|--------|-------|
 | TP-LC-05 | Uninstall JSON no force fail-closed | `tests/test_local_lifecycle.sh` |
 | TP-ELEV-07 | Static: `prompt_*` / `app_about` consume `TTY`; no live `[ -t` policy gate | `tests/test_cli.sh` |
+| TP-SR-INT-06 | Dest review is one `prompt_yes_no` (yes=approve, no=reject) | `tests/test_domain_sr.sh` |
 
 ---
 
@@ -201,9 +206,10 @@ prompt_ask() {
 | Date | Status | Note |
 |------|--------|------|
 | 2026-08-14 | Active 1.0.0 | Prompt helper SSOT; samples consume `TTY` |
+| 2026-08-20 | Active 1.1.0 | Dest review uses this helper once (approval-question); no skip/quit family |
 
 ---
 
-**Last Updated**: 2026-08-14  
+**Last Updated**: 2026-08-20  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

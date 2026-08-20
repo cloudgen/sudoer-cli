@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-incorrect-json-format.md  
-**Status**: Active (Version 1.0.0)  
+**Status**: Active (Version 1.2.1) — fence match still suppresses the one-off approval question  
 **Area**: domain  
 **Key**: `requirement-incorrect-json-format`  
 **id**: RQ-INCORRECT-JSON-FORMAT  
@@ -7,7 +7,7 @@
 
 ## 1. Purpose
 
-This requirement is **one dest Fence**: **incorrect JSON format**. Dest `approve` / `reject` / `interactive` **MUST** fail closed on a match and **MUST NOT** ask yes/no for that file. The dest fence table on `requirement-domain-sudoer-approval.md` **MUST** still print this row and **point here**.
+This requirement is **one dest Fence**: **incorrect JSON format**. Dest `approve` / `reject` / `interactive` **MUST** fail closed on a match and **MUST NOT** ask yes/no for that file. The dest fence table on `requirement-domain-sudoer-approval.md` **MUST** still print this row and **point here**. Any JSON-format dest Fence **MUST** ship a Type 0 test subcommand that runs these checks without dest elev and without requiring the waiting folder.
 
 ### 1.1 Human-facing
 
@@ -30,6 +30,7 @@ This requirement is **one dest Fence**: **incorrect JSON format**. Dest `approve
 
 | You do… | What it means | What you type |
 |---------|---------------|---------------|
+| Test a grant JSON | Check the file against this Fence without becoming root and without putting it in the waiting folder. | `sudoer-cli test-json-format --file request.json` |
 | Review a broken file | Dest shows what is wrong. It does not ask yes/no. Next file. | `sudo sudoer-cli interactive` |
 | Fix and re-queue | Convert or submit again so the JSON is a complete grant. | `sudoer-cli sudoers-to-json --file draft.sudoers --action add --purpose "…"` |
 
@@ -40,15 +41,22 @@ This requirement is **one dest Fence**: **incorrect JSON format**. Dest `approve
 1. **MUST** name **exactly this** dest Fence: incorrect JSON format.  
 2. **MUST** match when **any** of: not a regular file; symlink; not one parseable JSON object; closed-schema fail (`schema_version`, unknown keys); invalid field types or enums; basename grammar fail; basename **action** ≠ JSON `action`.  
 3. **MUST NOT** treat basename **subject token** ≠ JSON `username` as this Fence. User SSOT is the JSON field.  
-4. On match: dest **MUST** display the match in people/folder words (what happened / what it means / next). **MUST NOT** ask approve / reject / skip as a decision for that file. Standalone `approve` / `reject` **MUST** fail closed with the same sentence.  
+4. On match: dest **MUST** display the match in people/folder words (what happened / what it means / next). **MUST NOT** ask the approval question (one-off yes/no) for that file. Standalone `approve` / `reject` **MUST** fail closed with the same sentence.  
 5. **MUST NOT** ask yes/no before this Fence runs.  
-6. Dest **MUST NOT** fence rows (file-ownership, who submitted, JSON `username` ≠ `sudoer-adm`, dest-written `submit_by`) **MUST NOT** live in this file.
+6. Dest **MUST NOT** fence rows (file-ownership, who submitted, JSON `username` ≠ `sudoer-adm`, dest-written `submit_by`) **MUST NOT** live in this file.  
+7. **MUST** ship a Type 0 test subcommand for this Fence. Dest `approve` / `reject` / `interactive` **MUST NOT** count as that verb. The test verb **MUST** take stdin **xor** `--file PATH`, **MUST NOT** write `/etc/passwd` or `/etc/sudoers.d`, **MUST NOT** queue, and **MUST NOT** require the waiting folder. Basename grammar and basename **action** match apply **only** when the input basename already matches request-id grammar.
 
 ### 2.1 Implementation Notes (this product)
 
 | Field | Value |
 |-------|--------|
 | Dest table | `requirement-domain-sudoer-approval` § dest approval fencing conditions |
+| Type 0 test verb | `test-json-format` — handler `sr_test_json_format`; stdin **xor** `--file PATH` |
+| Invocation sample | `sudoer-cli test-json-format --file request.json` |
+| Golden fixture (Type 0 drop) | `tests/fixtures/login-hook-elev-dns-adm.json` (`kind` `login-hook-elev`; no `submit_by`) |
+| Maximal dest-stamped fixture | `tests/fixtures/maximal-dest-stamped-login-hook-elev.json` (all closed-schema keys including `submit_by`) |
+| Optional `kind` | Closed-schema allowlist includes `kind`. When present: `type-2-switch` or `login-hook-elev` |
+| Dest-written `submit_by` | Allowed key. Converted queue Unix owner. Type 0 **MUST NOT** plant it. Dest **MUST NOT** treat it as unknown |
 | Typical machine codes | `invalid_json`, `schema_version`, `field_mismatch`, `invalid_name`, `not_regular` |
 | Display | Operator `[ERROR]` in people/folder words; JSON `message` same sentence |
 
@@ -72,7 +80,27 @@ This requirement is **one dest Fence**: **incorrect JSON format**. Dest `approve
 1. Fold a second dest Fence into this file.  
 2. Ask yes/no on a match.  
 3. Treat file owner or who submitted as this Fence.  
-4. Delete the dest table row that points here.
+4. Delete the dest table row that points here.  
+5. Leave this JSON-format Fence without Type 0 `test-json-format`, or treat dest review verbs as that test.
+
+## Design-time verification
+
+| TP family / ID | Suite | Status |
+|----------------|-------|--------|
+| **TP-SR-FENCE-01** | `tests/test_domain_sr.sh` | have |
+| **TP-SR-FENCE-02** | `tests/test_domain_sr.sh` | have |
+| **TP-SR-FENCE-03** | `tests/test_domain_sr.sh` | have |
+| **TP-SR-FENCE-04** | `tests/test_domain_sr.sh` | have |
+| **TP-SR-FENCE-05** | `tests/test_domain_sr.sh` | have |
+| **TP-SR-FENCE-06** | `tests/test_domain_sr.sh` | have |
+| **TP-SR-FENCE-07** | `tests/test_domain_sr.sh` | have |
+| **TP-SR-FENCE-08** | `tests/test_domain_sr.sh` | have |
+| **TP-SR-FENCE-09** | `tests/test_domain_sr.sh` | have |
+| **TP-SR-FENCE-10** | `tests/test_domain_sr.sh` | have |
+| **TP-SR-FENCE-11** | `tests/test_domain_sr.sh` | have |
+
+**Matrix:** `reviews/requirement-test-matrix.md`  
+**Map:** `reviews/test-plan.md`.
 
 ## 6. Related artifacts (versioned surface only)
 
@@ -82,7 +110,8 @@ This requirement is **one dest Fence**: **incorrect JSON format**. Dest `approve
 | `requirement-domain-sudoer-approval.md` | Dest table + review loop |
 | `requirement-actor-role-subject-approver.md` | Who may decide (not this Fence) |
 | `src/sudoer-cli` | Ship unit |
+| `requirement-shell-cli-interface` | Dual mention of `test-json-format` |
 
-**Last Updated**: 2026-08-19  
+**Last Updated**: 2026-08-20  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-class-software-dev.md  
-**Status**: Active (Version 1.6.0 – ARSA catalog + dest-fence review)  
+**Status**: Active (Version 1.9.1 – residual points at sudo-command REQ)  
 **Area**: class  
 **Key**: `requirement-class-software-dev`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -8,7 +8,7 @@
 
 Declare this workspace as a **software-development** project class and hold the **residual collection** of software-engineering stack facts **not already owned** by more specific Active peer requirements: primary language, toolchain policy, package/test tooling, and runtime OS family.
 
-This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycle, output, or storage tables (those stay on peer requirements).
+This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycle, output, storage, or coding-style tables (the coding-style related REQ **MUST** exist as the specialize-in home for portable writing lessons).
 
 ### 1.1 Human-facing
 
@@ -18,11 +18,11 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 |-----|---------|---------|
 | You / this login | Use and install `sudoer-cli` without becoming root | `sh src/sudoer-cli install` |
 | The other role | Host admin who already used password `sudo` | `sudo sudoer-cli setup` |
-| Not this file | Domain verbs, dest fences, Type map | `requirement-domain-sudoer-approval` · `requirement-actor-role-subject-approver` |
+| Not this file | Domain verbs, dest fences, Type map, writing-style body | `requirement-domain-sudoer-approval` · `requirement-actor-role-subject-approver` · `requirement-shell-script-coding` |
 
 | Includes | Excludes |
 |----------|----------|
-| Class membership; residual stack; pointers to ARSA and dest-fence REQs | Online install; inventing a dest fence; inventing an extra approver |
+| Class membership; residual stack; pointers to ARSA, dest-fence, and coding-style REQs | Online install; inventing a dest fence; inventing an extra approver; skipping the coding-style REQ so portable lessons arrive raw |
 
 | Surface | What you open | What for |
 |---------|---------------|----------|
@@ -87,20 +87,28 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 27. **MUST** put live product name, repo slug, and concrete stack choices in **Implementation Notes** after collection — complete when Status is Active.  
 28. **MUST NOT** store secrets, PATs, or toy credentials in this file.
 
-### 2.8 Actor / role / subject / approver (consider)
+### 2.7 Actor / role / subject / approver (consider)
 
 29. Every software-development project **MUST** consider an **actor / role / subject / approver** catalog — **even if there is no dest approver**.  
 30. This product **has** dest review: Active `requirement-actor-role-subject-approver` **MUST** print the five-column table. Dest Roles stay on `requirement-domain-sudoer-approval`.  
 31. **MUST NOT** skip the consider. **MUST NOT** invent an extra approver.
 
-### 2.9 Dest fence conditions (review and convert)
+### 2.8 Dest fence conditions (review and convert)
 
 32. Every software-development project **MUST review** dest fencing conditions.  
 33. This product’s dest **Fence** is **incorrect JSON format** — independent Active `requirement-incorrect-json-format`. Dest table on `requirement-domain-sudoer-approval` **MUST** still print and **point** at that REQ.  
 34. Dest **MUST NOT** fence rows stay on dest tables only.  
-35. **MUST NOT** invent a dest fence.
+35. **MUST NOT** invent a dest fence.  
+36. A dest Fence that is JSON format **MUST** name a Type 0 test subcommand on that fence REQ (and dual-mention it on the CLI-interface REQ). Dest review verbs **MUST NOT** count as that test. This product: `test-json-format`.
 
-### 2.7 Implementation Notes (this project)
+### 2.9 Coding-style related requirement (MUST have)
+
+37. This software-development product **MUST** have an Active coding-style related requirement matching the primary language.  
+38. **Intention:** without that REQ, agents bring portable learned lessons **raw** and treat them as this product’s law. That REQ is the **specialize-in home** (adopt, point, or refuse).  
+39. This product: Active `requirement-shell-script-coding` (POSIX `/bin/sh`). This class file **points**; it does **not** keep the writing-style body.  
+40. **MUST NOT** skip. Honest residual **none** is **not** valid.
+
+### 2.10 Implementation Notes (this project)
 
 | Field | Value (sudoer-cli) |
 |-------|---------------------|
@@ -116,12 +124,12 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | **Primary project/package tool** | **none** — no language module system; ship unit is the source |
 | **Lockfile policy** | not used |
 | **Test runner** | POSIX shell suite under `tests/` when present (`tests/run.sh` pattern) |
-| **Linter/formatter** | none as project law (shellcheck optional for maintainers) |
+| **Linter/formatter** | none as project law (shellcheck optional) — see `requirement-shell-script-coding` |
 | **Primary runtime / OS family** | POSIX Linux (and compatible UNIX where `/bin/sh` + `mktemp` + `date` exist) |
 | **Architectures supported** | any arch with POSIX sh and the external tools the script invokes |
 | **Git surface** | used when product is published |
 | **Ship unit / install** | yes — `src/sudoer-cli` → `${USER_BIN}/sudoer-cli` (default `~/.local/bin/sudoer-cli`); **local-only** install (no online channel) |
-| **Product version SSOT** | `VERSION="1.8.1"` hard-assign in `src/sudoer-cli` |
+| **Product version SSOT** | `VERSION="1.12.0"` hard-assign in `src/sudoer-cli` |
 | **Bootstrap origin** | Historical **cli-template**. This product is **sudoer-cli**. No live parent ship unit. |
 
 **Residual ownership table:**
@@ -136,7 +144,9 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | What is blocked vs must stay open | `requirement-privilege-prevention-set` | Closed prevention catalog; do not invent walls |
 | Domain sudoers-approval | `requirement-domain-sudoer-approval` | File-based JSON approval; dest fence table |
 | Actor / role / subject / approver consider | `requirement-actor-role-subject-approver` | Dest has approver — not residual None |
-| Dest fence: incorrect JSON format | `requirement-incorrect-json-format` | Independent Fence REQ; dest table still prints |
+| Dest fence: incorrect JSON format | `requirement-incorrect-json-format` | Independent Fence REQ; dest table still prints; Type 0 `test-json-format` |
+| Coding-style related REQ | `requirement-shell-script-coding` | **MUST**; specialize-in home for portable POSIX writing lessons; residual **points** |
+| In-tool sudo / chmod wrappers | `requirement-shell-sudo-command` | Sudo-wrapping function; check before sudo; chmod example |
 | Project layout / ship path | `requirement-project-folder` | `src/` + bin targets |
 | Type 0 CLI surface / flags / dispatch | `requirement-shell-cli-interface` | Do not duplicate |
 | Empty argv Type N help | `requirement-shell-cli-zero-arguments` | Local-only |
@@ -183,7 +193,9 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 7. Treat this file as server-maintenance allowlist law, or register an Active server-maintenance class file in parallel.  
 8. Invent a second primary language SSOT that contradicts peer modular/CLI requirements.  
 9. Skip the actor / role / subject / approver consider, or invent an extra approver.  
-10. Skip dest-fence review, leave a dest **Fence** as only a table cell, or invent a dest fence.
+10. Skip dest-fence review, leave a dest **Fence** as only a table cell, invent a dest fence, or leave a JSON-format dest Fence without Type 0 `test-json-format`.  
+11. Skip `requirement-shell-script-coding`, leave writing style only as residual “when present”, or treat portable coding lessons as product law because that file is missing.  
+12. Skip `requirement-shell-sudo-command` when the ship unit has in-tool sudo, or keep sudo-wrapping / check-before-sudo bodies only on the coding-style REQ.
 
 **Violating any of these is considered a critical regression.**
 
@@ -202,6 +214,8 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | AC-7 | Online install package **absent** from Active registry by design |
 | AC-8 | Actor / role / subject / approver considered (Active catalog REQ) |
 | AC-9 | Dest fence reviewed (independent REQ per **Fence**) |
+| AC-10 | Coding-style related REQ Active (`requirement-shell-script-coding`); residual **points**; specialize-in intention present |
+| AC-11 | Residual **points** at Active `requirement-shell-sudo-command` for sudo-wrapping / check before sudo |
 
 ---
 
@@ -219,6 +233,8 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | `requirement-shell-idempotency` | Re-run safety |
 | `requirement-shell-interactive-vs-noninteractive` | Mode policy |
 | `requirement-shell-modular-function-design` | Prefixes / single-file modularity |
+| `requirement-shell-script-coding` | Coding-style related REQ (specialize-in home) |
+| `requirement-shell-sudo-command` | Sudo-wrapping function; check before sudo; chmod example |
 | `requirement-three-layer-privilege-model` | Type map + Tables A/B/C |
 | `requirement-least-privilege-user` | F1–F7 |
 | `requirement-privilege-prevention-set` | Closed catalog of what is blocked vs must stay open |
@@ -240,9 +256,13 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | 2026-08-13 | Active 1.4.0 | Specialize to sudoer-cli; point residual at privilege + domain REQs |
 | 2026-08-14 | Active 1.5.0 | Residual: prevention-set owner; VERSION 1.2.3; `setup` live; `interactive` loop Gap |
 | 2026-08-19 | Active 1.6.0 | ARSA catalog + dest-fence review; §1.1 Human-facing |
+| 2026-08-20 | Active 1.7.0 | JSON-format dest Fence MUST name Type 0 `test-json-format` |
+| 2026-08-20 | Active 1.8.0 | Coding-style related REQ MUST (`requirement-shell-script-coding`); specialize-in home for portable lessons |
+| 2026-08-20 | Active 1.9.0 | Residual **points** at `requirement-shell-sudo-command` (sudo-wrapping function; check before sudo; chmod example) |
+| 2026-08-20 | Active 1.9.1 | Core-rule sections sequential: 2.6 dual policy · 2.7 ARSA · 2.8 dest fence · 2.9 coding-style · 2.10 Implementation Notes |
 
 ---
 
-**Last Updated**: 2026-08-19  
+**Last Updated**: 2026-08-20  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

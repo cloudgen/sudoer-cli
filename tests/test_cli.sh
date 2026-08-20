@@ -46,8 +46,14 @@ run_test_cli() {
     assert_not_contains "TP-CLI-04 no restore verb" "$_out" "restore <"
     assert_contains "TP-CLI-04 help sudoers-to-json" "$_out" "sudoers-to-json"
     assert_contains "TP-CLI-04 help json-to-sudoers" "$_out" "json-to-sudoers"
+    assert_contains "TP-CLI-04 help test-json-format" "$_out" "test-json-format"
     assert_contains "TP-CLI-04 help add-sudoer-request" "$_out" "add-sudoer-request"
+    assert_contains "TP-CLI-04 help update-sudoer-request" "$_out" "update-sudoer-request"
+    assert_contains "TP-CLI-04 help remove-sudoer-request" "$_out" "remove-sudoer-request"
     assert_contains "TP-CLI-04 help print-sudoers" "$_out" "print-sudoers"
+    assert_contains "TP-CLI-04 help print-sudoers-install-script" "$_out" "print-sudoers-install-script"
+    assert_contains "TP-CLI-04 help list-approved" "$_out" "list-approved"
+    assert_contains "TP-CLI-04 help list-rejected" "$_out" "list-rejected"
     assert_not_contains "TP-CLI-04 no self-update" "$_out" "self-update"
     assert_not_contains "TP-CLI-04 no self-uninstall" "$_out" "self-uninstall"
     assert_not_contains "TP-CLI-04 no version-check" "$_out" "version-check"
@@ -142,6 +148,10 @@ run_test_cli() {
     _ec=$?
     assert_eq "TP-CLI-14 sudoers-to-json routed (xor fail not unknown)" 1 "$_ec"
     assert_not_contains "TP-CLI-14 sudoers-to-json not unknown" "$_err" "Unknown command"
+    _err=$(sh "${SCRIPT}" test-json-format 2>&1 >/dev/null)
+    _ec=$?
+    assert_eq "TP-CLI-14 test-json-format routed (xor fail not unknown)" 1 "$_ec"
+    assert_not_contains "TP-CLI-14 test-json-format not unknown" "$_err" "Unknown command"
 
     # TP-ELEV-07: only top-level measure + sr_read_input data-source may use [ -t 0/1 ]
     # Specified exception: the login-hook *snippet* (rc policy, not CLI TTY SSOT).
@@ -216,4 +226,78 @@ EOF
     else
         t_pass "TP-TMP-01 no sr-\$\$, scratch paths"
     fi
+
+    # TP-SUDO-*: sudo-wrapping function + check before sudo (chmod example)
+    if grep -q '^util_sudo()' "${SCRIPT}" && grep -q '^util_chmod()' "${SCRIPT}"; then
+        t_pass "TP-SUDO-01 util_sudo and util_chmod defined"
+    else
+        t_fail "TP-SUDO-01 missing util_sudo / util_chmod"
+    fi
+    _sudo_at_n=$(grep -cE '^[[:space:]]+sudo "\$@"' "${SCRIPT}" || true)
+    if [ "${_sudo_at_n}" -eq 1 ]; then
+        t_pass "TP-SUDO-02 sudo \"\$@\" only once (util_sudo)"
+    else
+        t_fail "TP-SUDO-02 expected one sudo \"\$@\" (got ${_sudo_at_n})"
+    fi
+    if grep -E '^[[:space:]]+sudo[[:space:]]+chmod' "${SCRIPT}" >/dev/null 2>&1; then
+        t_fail "TP-SUDO-03 raw sudo chmod still present"
+    else
+        t_pass "TP-SUDO-03 no raw sudo chmod"
+    fi
+    if grep -q 'util_sudo "$@"' "${SCRIPT}"; then
+        t_pass "TP-SUDO-04 lpu_sudo / callers use util_sudo"
+    else
+        t_fail "TP-SUDO-04 no util_sudo \"\$@\" caller"
+    fi
+
+    # TP-SUDO-05..07: runtime check before sudo (chmod example + already-root)
+    _sd=$(mktemp -d "${TMPDIR:-/tmp}/sudoer-cli.sudo.XXXXXX")
+    _sf="${_sd}/owned"
+    : >"${_sf}"
+    chmod 0600 "${_sf}"
+    _runner="${_sd}/run-chmod.sh"
+    {
+        printf '%s\n' 'set -u'
+        sed -n '/^util_sudo()/,/^}/p' "${SCRIPT}"
+        sed -n '/^util_chmod()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' 'sudo() { printf "%s\n" SUDO_CALLED >&2; return 1; }'
+        printf '%s\n' "util_chmod 0640 '${_sf}'"
+    } >"${_runner}"
+    _err=$(sh "${_runner}" 2>&1)
+    _ec=$?
+    assert_eq "TP-SUDO-05 owned file util_chmod exit 0" 0 "${_ec}"
+    assert_not_contains "TP-SUDO-05 owned file no sudo" "${_err}" "SUDO_CALLED"
+    _ls=$(ls -l "${_sf}")
+    assert_contains "TP-SUDO-05 owned file mode 0640" "${_ls}" "rw-r-----"
+
+    _runner="${_sd}/run-missing.sh"
+    {
+        printf '%s\n' 'set -u'
+        sed -n '/^util_sudo()/,/^}/p' "${SCRIPT}"
+        sed -n '/^util_chmod()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' 'sudo() { printf "%s\n" SUDO_CALLED >&2; return 1; }'
+        printf '%s\n' "util_chmod 0640 '${_sd}/missing'"
+    } >"${_runner}"
+    _err=$(sh "${_runner}" 2>&1)
+    _ec=$?
+    if [ "${_ec}" -ne 0 ]; then
+        t_pass "TP-SUDO-06 missing path util_chmod nonzero"
+    else
+        t_fail "TP-SUDO-06 missing path util_chmod expected nonzero"
+    fi
+    assert_not_contains "TP-SUDO-06 missing path no sudo" "${_err}" "SUDO_CALLED"
+
+    _runner="${_sd}/run-root.sh"
+    {
+        printf '%s\n' 'set -u'
+        sed -n '/^util_sudo()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' 'id() { if [ "${1:-}" = "-u" ]; then printf "%s\n" 0; else command id "$@"; fi; }'
+        printf '%s\n' 'sudo() { printf "%s\n" SUDO_CALLED >&2; return 1; }'
+        printf '%s\n' 'util_sudo true'
+    } >"${_runner}"
+    _err=$(sh "${_runner}" 2>&1)
+    _ec=$?
+    assert_eq "TP-SUDO-07 already-root util_sudo skips sudo" 0 "${_ec}"
+    assert_not_contains "TP-SUDO-07 already-root no sudo" "${_err}" "SUDO_CALLED"
+    rm -rf "${_sd}"
 }

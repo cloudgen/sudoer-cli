@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-three-layer-privilege-model.md  
-**Status**: Active (Version 1.12.0)  
+**Status**: Active (Version 1.14.0 – sudo-wrapping function; check before sudo; chmod example)  
 **Area**: architecture  
 **Key**: `requirement-three-layer-privilege-model`  
 **id**: RQ-THREE-LAYER-PRIVILEGE-MODEL  
@@ -44,7 +44,7 @@ The **closed catalog** of what the product blocks — and what it **must not** b
 
 | Layer | Privilege | Typical actor | This product |
 |-------|-----------|---------------|--------------|
-| **Type 0** | Invoking user | Any login | Lifecycle, diagnostics, convert (`sudoers-to-json` / `json-to-sudoers`), submit (A may name B; filename uses B), sidecar list/show, draft emit |
+| **Type 0** | Invoking user | Any login | Lifecycle, diagnostics, convert (`sudoers-to-json` / `json-to-sudoers`), JSON-format test (`test-json-format`), submit (A may name B; filename uses B), sidecar list/show, draft emit |
 | **Type 1 bootstrap** | Elevated host mutation | **Any** host admin already euid 0 (`sudo {{APP}} setup` — **password sudo OK**) | `setup` / `remove-lpu`. F6 / `sudoer-adm` **must not** be required (chicken-egg). |
 | **Type 1 approve** | Elevated host mutation | **Any** host admin already euid 0 (password `sudo` — `SUDO_USER` may be any login); **or** `sudoer-adm` via F6; **or** a real root login | `approve` / `reject` / `interactive`; `list-approving --orphans`. F6 is an extra path, not the exclusive one |
 | **Type 2** | Dedicated system-user **execution** context | — | **Not used.** `sudoer-adm` is a **least-privilege-approver** (who may invoke F6), not an euid the CLI must switch into for dest writes |
@@ -100,6 +100,8 @@ The CLI invokes these as **internal jobs**. Account create/teardown **MUST** be 
 | JOB-INSTALL | Install fragment | `install -m 0440` | F6 `{{LPU_USER}}` or user grant `{{service}}-{{username}}` only |
 | JOB-RM | Remove product fragment | `rm` | those same product-owned names only |
 | JOB-USERDEL | Teardown | `sudo userdel -r` | this LPU only |
+
+**Check before sudo (in-tool):** before `sudo <cmd>`, probe with a **non-sudo** command. If this login already can, **MUST NOT** `sudo`. **Example:** chmod only through `util_chmod` (`[ -O path ]`). Already-root uses the sudo-wrapping function without nested sudo. Writing pattern: `requirement-shell-sudo-command`.
 
 ### 2.5 Fragment emit / install
 
@@ -157,7 +159,8 @@ The CLI invokes these as **internal jobs**. Account create/teardown **MUST** be 
 8. Require `SUDO_USER==sudoer-adm` for `setup` / `remove-lpu` (F6 does not exist yet), **or** for `approve` / `reject` / `interactive` after password `sudo`. That actor check is blockage, not help.  
 9. Write bootstrap / first-time setup as `sudo -n`. **`sudo -n` is not suggested** except the F6 login hook.  
 10. Treat “mix model” as a ban on in-tool password `sudo`, or as a ban on Table C `useradd` after euid 0.  
-11. Add a product block that is not a row in `requirement-privilege-prevention-set.md`, or close a must-remain-open row in that file.
+11. Add a product block that is not a row in `requirement-privilege-prevention-set.md`, or close a must-remain-open row in that file.  
+12. Run in-tool `sudo <cmd>` without the sudo-wrapping function, or `sudo chmod` when this login already owns the path. Writing pattern: `requirement-shell-sudo-command`.
 
 **Violating this rule is a critical privilege / LLM-escape regression.**
 
@@ -172,7 +175,8 @@ The CLI invokes these as **internal jobs**. Account create/teardown **MUST** be 
 | `docs/requirements/requirement-privilege-prevention-set.md` | Closed catalog of what is blocked vs must stay open |
 | `docs/requirements/requirement-domain-sudoer-approval.md` | File-based JSON approval + verb catalog |
 | `docs/requirements/requirement-shell-cli-interface.md` | Dispatcher / Type 0 catalog |
-| `./sudoer-cli` | Ship unit under test |
+| `docs/requirements/requirement-shell-sudo-command.md` | Sudo-wrapping function; check before sudo; chmod example |
+| `src/sudoer-cli` | Ship unit under test |
 
 ## Design-time verification
 
@@ -188,6 +192,6 @@ The CLI invokes these as **internal jobs**. Account create/teardown **MUST** be 
 | **TP-ELEV-09** | `tests/test_domain_sr.sh` | have | Alias of TP-SR-PRIV-04 / TP-PREV-03 |
 | **TP-SR-INT-01** | `tests/test_domain_sr.sh` | have | `interactive` without euid 0 → `authz` |
 
-**Last Updated**: 2026-08-18  
+**Last Updated**: 2026-08-20  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

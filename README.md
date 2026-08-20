@@ -1,6 +1,6 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.8.1-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.12.0-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
@@ -45,6 +45,7 @@ approved   rejected
 | Step | What this means | What you type |
 |------|-----------------|---------------|
 | Convert | Turn a sudoers fragment into JSON. This does **not** put anything in the waiting folder. Use it to look at the grant before you queue it. | `sudoer-cli sudoers-to-json --file draft.sudoers --action add --purpose "..."` |
+| Test JSON | Check a grant JSON against the dest format fence without becoming root and without putting it in the waiting folder. | `sudoer-cli test-json-format --file request.json` |
 | Submit | Hand that JSON to this program. It **chooses the filename** and writes it into `/var/sudoer-cli/sudoer-request/`. You still do not need to be root. | `sudoer-cli add-sudoer-request --file request.json` |
 | Wait | The file sits in the waiting folder. Anyone can drop a file in; they cannot list or steal someone else’s file. | `sudoer-cli list-approving` |
 | Decide | A host admin who already used password `sudo` (or `sudoer-adm`, or a real root login) re-reads the JSON and **moves** the file. Moving it *is* the decision. First-time setup must already have been run. | `sudo sudoer-cli interactive` |
@@ -60,7 +61,7 @@ Pretty-printed and compact JSON are the same grant. If the request looks incompl
 - **Unknown commands fail** (non-zero exit)
 - **CIAO / CIAO-Lite** defensive design
 - **Folder + JSON approval** — waiting folder, one JSON request, approver moves the file
-- **Convert, submit, list, and show without being root** — `sudoers-to-json`, `json-to-sudoers`, `add` / `update` / `remove-sudoer-request`, `list-approving` / `list-approved` / `list-rejected`, `show`
+- **Convert, submit, list, and show without being root** — `sudoers-to-json`, `json-to-sudoers`, `test-json-format`, `add` / `update` / `remove-sudoer-request`, `list-approving` / `list-approved` / `list-rejected`, `show`
 - **First-time setup** (`sudo sudoer-cli setup`) creates `sudoer-adm` and the folders, then tells you how to queue a request as yourself. Approve and `interactive` work after that same password `sudo` — you do not have to log in as `sudoer-adm`. Never writes `/etc/passwd` or the main `/etc/sudoers`
 
 ## Quick Installation
@@ -110,6 +111,7 @@ sudoer-cli uninstall --force
 
 # File-based JSON approval
 sudoer-cli sudoers-to-json --file draft.sudoers --action add --purpose "Reload nginx"
+sudoer-cli test-json-format --file request.json
 sudoer-cli add-sudoer-request --file request.json
 sudoer-cli list-approving
 sudoer-cli show sudoer-20260814-folder-backup-alice-add-1.json
@@ -136,6 +138,9 @@ sudo sh src/sudoer-cli install
 
 # Convert a sudoers fragment to request JSON (does not queue)
 sudoer-cli sudoers-to-json --file draft.sudoers --action add --purpose "Allow backup and restore"
+
+# Test grant JSON against the dest format fence (does not queue)
+sudoer-cli test-json-format --file request.json
 
 # Queue the request for yourself
 sudoer-cli add-sudoer-request --file request.json
@@ -173,7 +178,9 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
-2026-08-19 — version **1.8.1** (LPU `.profile` / `.bashrc` owned by `sudoer-adm` after setup; dest Fence before yes/no; A may queue a remove for B).
+2026-08-20 — version **1.12.0** (dest `interactive` asks one yes/no per waiting file: yes accepts, no or Enter rejects; no skip or quit).
+2026-08-20 — version **1.11.0** (in-tool sudo goes through `util_sudo`; chmod checks owner first via `util_chmod` and does not `sudo chmod` when you already own the file).
+2026-08-20 — version **1.10.0** (dest-written `submit_by` converts queue Unix owner into JSON; Type 0 must not plant it).
 2026-08-18 — version **1.7.1** (`setup` checks and creates a missing LPU `~/.profile` so the login hook can fire).
 2026-08-18 — version **1.7.0** (password `sudo` is the approval; setup prints how to submit as yourself; ordinary logins never create `sudoer-adm`).
 2026-08-17 — version **1.6.2** (pretty `commands[]` fidelity; operator-readable convert/submit errors; README Description follows **write-human-intro**: people and folders, not privilege-type codes).

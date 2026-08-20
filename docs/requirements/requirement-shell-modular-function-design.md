@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-modular-function-design.md  
-**Status**: Active (Version 3.1.0)  
+**Status**: Active (Version 3.2.0 – util_sudo / util_chmod)  
 **Area**: shell  
 **Key**: `requirement-shell-modular-function-design`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -55,7 +55,7 @@ Ship unit remains a **single executable** at `src/sudoer-cli`.
 |--------|----------|---------|-------------------|
 | `out_` | Output system | All user-facing and machine-readable output | `out_text`, `out_info`, `out_json`, `out_die` |
 | `inst_` | Installation lifecycle | Local install/uninstall detect and place/remove | `inst_local_install`, `inst_local_uninstall`, `inst_is_installed` |
-| `util_` | General utilities | Path resolve, storage, CIAO pre-change `.bak` helper | `util_resolve_storage`, `util_get_install_bin_path`, `util_backup` |
+| `util_` | General utilities | Path resolve, storage, CIAO pre-change `.bak` helper, sudo-wrapping | `util_resolve_storage`, `util_backup`, `util_sudo`, `util_chmod` |
 | `app_` | Cross-cutting CLI surface | Entry, dispatch, about/help/version/where-is-me | `app_main`, `app_about`, `app_help`, `app_version`, `app_where_is_me` |
 | `path_` | Shell PATH & environment | Optional PATH ensure after user install | `path_add_shell` |
 | `prompt_` | Interactive prompts | Confirmations that **consume `TTY`** (no live `[ -t` policy gate) | `prompt_yes_no` |
@@ -143,6 +143,8 @@ Critical sections (output SSOT, install place/remove, storage resolve) **MUST** 
 | `requirement-shell-output-requirements` | `out_*` |
 | `requirement-shell-prompt` | `prompt_*` bodies |
 | `requirement-shell-local-self-management` | `inst_*` |
+| `requirement-shell-sudo-command` | `util_sudo` / `util_chmod` bodies |
+| `requirement-shell-script-coding` | Writing-style home; **points** at sudo-command |
 | `docs/requirements/index.md` | Registry |
 
 ---
@@ -155,9 +157,10 @@ Critical sections (output SSOT, install place/remove, storage resolve) **MUST** 
 | 2026-08-13 | Active 2.0.0 | cli-template: no domain prefix |
 | 2026-08-13 | Active 3.0.0 | Reserve `sr_` / `lpu_`; ship `src/sudoer-cli` |
 | 2026-08-14 | Active 3.1.0 | `prompt_*` consume `TTY` (no live `[ -t` policy gate) |
+| 2026-08-20 | Active 3.2.0 | Prefix table: `util_sudo` / `util_chmod` (bodies on sudo-command REQ) |
 
 ---
 
-**Last Updated**: 2026-08-14  
+**Last Updated**: 2026-08-20  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

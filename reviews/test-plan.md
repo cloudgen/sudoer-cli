@@ -3,9 +3,9 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.8.1  
-**Last plan update:** 2026-08-19  
-**Last suite run:** PASS=299 FAIL=0 SKIP=2 (2026-08-19; 1.8.1 dest Fence + OPEN-BEHALF; **TP-SR-17/18**; **TP-SR-FENCE-01..04**; TP-SR-INT-04/05 live pending-id needs Type 1)  
+**Product VERSION:** 1.12.0  
+**Last plan update:** 2026-08-20 (domain 2.24.0 one-off approval-question; **TP-SR-INT-06**)  
+**Last suite run:** PASS=355 FAIL=0 SKIP=2 (2026-08-20; 1.12.0 one-off **Approve this request**; **TP-SR-FENCE-11** pretty `submit_by` stamp; setup heals stale global VERSION)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)
@@ -34,6 +34,8 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | Sudo escalation check (avoid `-n` unless specified) | have | **TP-ELEV-08** + **TP-SR-PRIV-02** |
 | No second actor lock after elev (**T1-SECOND-LOCK**) | have | **TP-ELEV-09** + **TP-SR-PRIV-04** + **TP-PREV-03** — **required** on full review (what-to-review **AL-6**) |
 | Online curl / companion checksum | n/a | Local-only product |
+| Coding-style related REQ (POSIX writing lessons) | n/a | Review-time; `requirement-shell-script-coding`; indirect TP-CLI-01 / TP-ELEV-07 |
+| Sudo-wrapping function + check before sudo (chmod example) | have | **TP-SUDO-01..07** |
 
 ---
 
@@ -57,6 +59,18 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-CLI-12 | storage isolation | test_cli | requirement-shell-cli-storage | **have** |
 | TP-CLI-13 | backup/restore/`remove-project-sudoers` unknown (`print-sudoers` is domain) | test_cli | requirement-bootstrap-chain · interface | **have** |
 | TP-CLI-14 | Convert routed (xor fail ≠ unknown); junk unknown | `tests/test_cli.sh` | requirement-shell-cli-interface · domain SSOT | **have** |
+
+### TP-SUDO (sudo-wrapping function + check before sudo)
+
+| TP-ID | Intent | Suite | Primary requirement(s) | Status |
+|-------|--------|-------|------------------------|--------|
+| TP-SUDO-01 | `util_sudo` and `util_chmod` defined | test_cli | requirement-shell-sudo-command | **have** |
+| TP-SUDO-02 | `sudo "$@"` only once (`util_sudo`) | test_cli | requirement-shell-sudo-command | **have** |
+| TP-SUDO-03 | no raw `sudo chmod` | test_cli | requirement-shell-sudo-command | **have** |
+| TP-SUDO-04 | `lpu_sudo` / callers use `util_sudo` | test_cli | requirement-shell-sudo-command | **have** |
+| TP-SUDO-05 | owned file: `util_chmod` sets mode without sudo | test_cli | requirement-shell-sudo-command | **have** |
+| TP-SUDO-06 | missing path: `util_chmod` nonzero, no sudo | test_cli | requirement-shell-sudo-command | **have** |
+| TP-SUDO-07 | already-root: `util_sudo` runs without sudo | test_cli | requirement-shell-sudo-command | **have** |
 
 ### TP-LC (local lifecycle)
 
@@ -99,6 +113,13 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-FENCE-02 | Isolated fence: not a JSON object → fail closed, people words, no yes/no | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
 | TP-SR-FENCE-03 | Isolated fence: basename action ≠ JSON action → `field_mismatch` | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
 | TP-SR-FENCE-04 | Isolated fence: filename subject ≠ JSON `username` is **not** a fence | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
+| TP-SR-FENCE-05 | Type 0 `test-json-format` accepts `tests/fixtures/login-hook-elev-dns-adm.json` (`kind` login-hook-elev) | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
+| TP-SR-FENCE-06 | `test-json-format` not-a-JSON-object → fail closed, people words, Next test-json-format | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
+| TP-SR-FENCE-07 | `test-json-format` unknown key → `invalid_json` | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
+| TP-SR-FENCE-08 | `test-json-format` on request-id basename: action mismatch → `field_mismatch` | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
+| TP-SR-FENCE-09 | Dest-stamped `submit_by` is well-formed (queue owner converted into JSON) | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
+| TP-SR-FENCE-10 | Type 0 `add-sudoer-request` must not plant `submit_by` | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
+| TP-SR-FENCE-11 | Dest `submit_by` stamp hits only the first `{` (pretty `commands[]` stay unstamped) | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
 | TP-SR-PRIV-01 | Type 1 verbs: non-root fail-closed, no `/etc` write | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval · three-layer | **have** |
 | TP-SR-PRIV-02 | Bootstrap `setup` is any euid 0 (not `sudo -n`, not `sudoer-adm`); approve still requires euid 0 | `tests/test_domain_sr.sh` | requirement-three-layer-privilege-model · domain | **have** |
 | TP-SR-PRIV-04 | Approve gate has no exclusive-`sudoer-adm` actor lock; setup prints submit next-step | `tests/test_domain_sr.sh` | prevention-set OPEN-SUDOER-APPR · domain | **have** |
@@ -108,6 +129,7 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-INT-03 | Hook snippet skips non-interactive / `SSH_ORIGINAL_COMMAND`; no `exit` | `tests/test_domain_sr.sh` | domain | **have** |
 | TP-SR-INT-04 | Empty inbound `interactive` exits 0 (live as root; static otherwise) | `tests/test_domain_sr.sh` | domain | **have** |
 | TP-SR-INT-05 | `interactive` loop reads ids on fd 3 so `prompt_yes_no` keeps stdin | `tests/test_domain_sr.sh` | domain · prompt | **have** |
+| TP-SR-INT-06 | Dest review is one-off `prompt_yes_no` (yes=approve, no/Enter=reject; no skip/quit; no three chained y/N) | `tests/test_domain_sr.sh` | domain · prompt · approval-question | **have** |
 | TP-SR-HOOK-01 | `setup` checks LPU `.profile`; missing → create source-bashrc sample | `tests/test_domain_sr.sh` | domain · LPU | **have** |
 | TP-SR-HOOK-02 | Existing `.profile` is not overwritten | `tests/test_domain_sr.sh` | domain | **have** |
 | TP-SR-HOOK-03 | Created `.profile` sources `.bashrc` (markers) | `tests/test_domain_sr.sh` | domain | **have** |

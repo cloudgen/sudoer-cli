@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..04, TP-SR-FENCE-*)
+# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..04, TP-SR-FENCE-01..11, TP-SR-INT-01..06)
 # Primary REQ: requirement-domain-sudoer-approval.md
 # =============================================================================
 
@@ -396,6 +396,9 @@ EOF
     _apply=$(sed -n '/^lpu_hook_apply()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-HOOK-04 apply calls own_user_rc" "${_apply}" "lpu_own_user_rc"
     assert_contains "TP-SR-HOOK-04 ensure calls own_user_rc" "${_ens}" "lpu_own_user_rc"
+    _gbin=$(sed -n '/^lpu_ensure_global_bin()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-PRIV-03 global bin heals VERSION mismatch" "${_gbin}" '_have'
+    assert_contains "TP-SR-PRIV-03 global bin compares VERSION" "${_gbin}" '_want'
     _ptxt=$(sed -n '/^lpu_profile_text()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-HOOK-03 profile text sources bashrc" "${_ptxt}" '. \"\${HOME}/.bashrc\"'
     assert_contains "TP-SR-HOOK-03 profile text BEGIN marker" "${_ptxt}" "BEGIN sudoer-cli profile source-bashrc"
@@ -406,6 +409,8 @@ EOF
     {
         printf '%s\n' 'sr_die() { printf "%s\n" "$*" >&2; exit 1; }'
         printf '%s\n' 'getent() { return 1; }'
+        sed -n '/^util_sudo()/,/^}/p' "${SCRIPT}"
+        sed -n '/^util_chmod()/,/^}/p' "${SCRIPT}"
         sed -n '/^lpu_defaults()/,/^}/p' "${SCRIPT}"
         sed -n '/^lpu_own_user_rc()/,/^}/p' "${SCRIPT}"
         sed -n '/^lpu_hook_text()/,/^}/p' "${SCRIPT}"
@@ -485,6 +490,13 @@ EOF
     assert_not_contains "TP-SR-INT-04 loop is not a stub" "${_int}" "not implemented yet"
     assert_contains "TP-SR-INT-04 empty inbound note" "${_int}" "no pending requests"
     assert_contains "TP-SR-INT-04 uses prompt_yes_no" "${_int}" "prompt_yes_no"
+    _int_pyn_n=$(printf '%s\n' "${_int}" | grep -c 'prompt_yes_no "' || true)
+    assert_eq "TP-SR-INT-06 one prompt_yes_no in review loop" "1" "${_int_pyn_n}"
+    assert_not_contains "TP-SR-INT-06 no Reject y/N" "${_int}" 'prompt_yes_no "Reject'
+    assert_not_contains "TP-SR-INT-06 no Quit y/N" "${_int}" "Quit review"
+    assert_not_contains "TP-SR-INT-06 no skip branch" "${_int}" "skipped"
+    assert_contains "TP-SR-INT-06 else is reject" "${_int}" "sr_reject"
+    assert_contains "TP-SR-INT-06 Approve this request" "${_int}" 'prompt_yes_no "Approve this request"'
     assert_not_contains "TP-SR-INT-05 loop is not a heredoc" "${_int}" 'done <<'
     assert_contains "TP-SR-INT-05 loop reads ids on fd 3" "${_int}" '3<"${_sorted}"'
     assert_contains "TP-SR-INT-05 read from fd 3" "${_int}" 'read -r _bn <&3'
@@ -533,17 +545,20 @@ EOF
         _pq="${CI_HOME}/pendingq"
         mkdir -p "${_pq}/sudoer-request" "${_pq}/sudoer-approved" "${_pq}/sudoer-rejected"
         _rid="sudoer-20260815-webservice-${_u}-add-1.json"
-        printf '%s\n' '{"schema_version":1,"purpose":"int-05 quit","username":"'"${_u}"'","service":"webservice","action":"add","commands":[]}' \
+        printf '%s\n' '{"schema_version":1,"purpose":"int-06 one-off reject","username":"'"${_u}"'","service":"webservice","action":"add","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/true","args":[]}]}' \
             >"${_pq}/sudoer-request/${_rid}"
-        _err=$(printf 'n\nn\ny\n' | HOME="${CI_HOME}" TTY=1 SUDOER_CLI_ALLOW_TEST_ROOTS=1 \
+        _err=$(printf 'n\n' | HOME="${CI_HOME}" TTY=1 SUDOER_CLI_ALLOW_TEST_ROOTS=1 \
             sh "${SCRIPT}" --queue-root "${_pq}" interactive 2>&1)
-        assert_eq "TP-SR-INT-05 live quit exit 0" 0 "$?"
-        assert_contains "TP-SR-INT-05 live quit note" "${_err}" "quit; remaining requests stay inbound"
-        assert_not_contains "TP-SR-INT-05 live not skipped" "${_err}" "skipped"
-        assert_file_exists "TP-SR-INT-05 live left inbound" "${_pq}/sudoer-request/${_rid}"
+        assert_eq "TP-SR-INT-06 live no-exit 0" 0 "$?"
+        assert_contains "TP-SR-INT-06 live rejected note" "${_err}" "rejected"
+        assert_not_contains "TP-SR-INT-06 live no skip" "${_err}" "skipped"
+        assert_not_contains "TP-SR-INT-06 live no quit" "${_err}" "quit; remaining"
+        assert_not_contains "TP-SR-INT-06 live no Reject prompt" "${_err}" "Reject "
+        assert_file_exists "TP-SR-INT-06 live moved to rejected" "${_pq}/sudoer-rejected/${_rid}"
+        assert_file_missing "TP-SR-INT-06 live left inbound" "${_pq}/sudoer-request/${_rid}"
     else
         t_skip "TP-SR-INT-04 empty inbound live needs Type 1"
-        t_skip "TP-SR-INT-05 live quit needs Type 1"
+        t_skip "TP-SR-INT-06 live reject needs Type 1"
     fi
 
     # TP-SR-FENCE: dest Fence before yes/no; reject re-validates; action mismatch; subject mismatch is not a fence
@@ -573,7 +588,9 @@ EOF
         sed -n '/^sr_valid_service_name()/,/^}/p' "${SCRIPT}"
         sed -n '/^sr_split_service_user()/,/^}/p' "${SCRIPT}"
         sed -n '/^sr_parse_request_id()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_json_format_fence_die()/,/^}/p' "${SCRIPT}"
         sed -n '/^sr_dest_fence_unknown_keys()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_json_format_fence_or_die()/,/^}/p' "${SCRIPT}"
         sed -n '/^sr_dest_fence_or_die()/,/^}/p' "${SCRIPT}"
         printf '%s\n' "id=\"\$1\"; path=\"\$2\""
         printf '%s\n' 'sr_dest_fence_or_die "${path}" "${id}"'
@@ -597,6 +614,86 @@ EOF
     assert_eq "TP-SR-FENCE-04 subject mismatch is not a fence" 0 "$?"
     assert_contains "TP-SR-FENCE-04 subject mismatch passes" "${_ferr}" "FENCE_OK"
     rm -rf "${_tfence}"
+
+    # TP-SR-FENCE-05..08: Type 0 test-json-format (no dest elev; fixture need not sit inbound)
+    _fx="${TESTS_ROOT}/fixtures/login-hook-elev-dns-adm.json"
+    assert_file_exists "TP-SR-FENCE-05 fixture present" "${_fx}"
+    _out=$(HOME="${CI_HOME}" sh "${SCRIPT}" --json test-json-format --file "${_fx}" 2>/dev/null)
+    assert_eq "TP-SR-FENCE-05 login-hook-elev fixture exit 0" 0 "$?"
+    assert_contains "TP-SR-FENCE-05 well-formed message" "${_out}" "JSON format is well-formed"
+    assert_contains "TP-SR-FENCE-05 kind login-hook-elev" "${_out}" '"kind":"login-hook-elev"'
+    assert_contains "TP-SR-FENCE-05 username dns-adm" "${_out}" '"username":"dns-adm"'
+    assert_contains "TP-SR-FENCE-05 service dns-cli" "${_out}" '"service":"dns-cli"'
+    printf '%s\n' 'not json at all' >"${CI_HOME}/not-object.json"
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" test-json-format --file "${CI_HOME}/not-object.json" 2>&1 >/dev/null)
+    assert_eq "TP-SR-FENCE-06 not-json via test-json-format exit 1" 1 "$?"
+    assert_contains "TP-SR-FENCE-06 not-json people words" "${_err}" "not a grant JSON object"
+    assert_contains "TP-SR-FENCE-06 not-json well-formed sentence" "${_err}" "not a well-formed grant JSON"
+    assert_contains "TP-SR-FENCE-06 Next test-json-format" "${_err}" "test-json-format --file"
+    printf '%s\n' '{"schema_version":1,"purpose":"x","username":"alice","service":"webservice","action":"add","token":"nope","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/true","args":[]}]}' >"${CI_HOME}/extra-key.json"
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" test-json-format --file "${CI_HOME}/extra-key.json" 2>&1 >/dev/null)
+    assert_eq "TP-SR-FENCE-07 unknown key via test-json-format exit 1" 1 "$?"
+    assert_contains "TP-SR-FENCE-07 unknown field token" "${_err}" "unexpected JSON field 'token'"
+    _actid="sudoer-20260820-webservice-alice-add-1.json"
+    printf '%s\n' '{"schema_version":1,"purpose":"x","username":"alice","service":"webservice","action":"remove"}' >"${CI_HOME}/${_actid}"
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" test-json-format --file "${CI_HOME}/${_actid}" 2>&1 >/dev/null)
+    assert_eq "TP-SR-FENCE-08 request-id action mismatch via test-json-format exit 1" 1 "$?"
+    assert_contains "TP-SR-FENCE-08 action mismatch words" "${_err}" "name says add but the JSON action is remove"
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" test-json-format 2>&1 >/dev/null)
+    assert_eq "TP-SR-FENCE-05 xor without file exit 1" 1 "$?"
+    assert_not_contains "TP-SR-FENCE-05 xor not unknown" "${_err}" "Unknown command"
+    # TP-SR-FENCE-09: dest-written submit_by is the queue owner converted into JSON
+    _maxfx="${TESTS_ROOT}/fixtures/maximal-dest-stamped-login-hook-elev.json"
+    assert_file_exists "TP-SR-FENCE-09 maximal dest-stamped fixture present" "${_maxfx}"
+    _out=$(HOME="${CI_HOME}" sh "${SCRIPT}" --json test-json-format --file "${_maxfx}" 2>/dev/null)
+    assert_eq "TP-SR-FENCE-09 dest-stamped submit_by exit 0" 0 "$?"
+    assert_contains "TP-SR-FENCE-09 submit_by alice" "${_out}" '"submit_by":"alice"'
+    assert_contains "TP-SR-FENCE-09 still username dns-adm" "${_out}" '"username":"dns-adm"'
+    _err=$(HOME="${CI_HOME}" SUDOER_CLI_ALLOW_TEST_ROOTS=1 sh "${SCRIPT}" --queue-root "${_q}" add-sudoer-request --file "${_maxfx}" 2>&1 >/dev/null)
+    assert_eq "TP-SR-FENCE-10 Type 0 must not plant submit_by exit 1" 1 "$?"
+    assert_contains "TP-SR-FENCE-10 Type 0 submit_by words" "${_err}" "submit_by"
+    _intfn=$(sed -n '/^sr_interactive()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-FENCE-09 interactive reads owner first" "${_intfn}" "sr_request_owner"
+    assert_contains "TP-SR-FENCE-09 interactive stamps submit_by" "${_intfn}" "sr_stamp_submit_by"
+    # TP-SR-FENCE-11: dest stamp inserts submit_by only at the first '{'
+    _pretty="${CI_HOME}/pretty-stamp.json"
+    cat >"${_pretty}" <<'EOF'
+{
+  "schema_version": 1,
+  "purpose": "stamp pretty",
+  "username": "alice",
+  "service": "webservice",
+  "action": "add",
+  "commands": [
+    {
+      "runas": "root",
+      "tags": ["NOPASSWD"],
+      "path": "/bin/true",
+      "args": []
+    },
+    {
+      "runas": "root",
+      "tags": ["NOPASSWD"],
+      "path": "/bin/false",
+      "args": []
+    }
+  ]
+}
+EOF
+    {
+        sed -n '/^util_json_escape()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_json_has_key()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_stamp_submit_by()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' "sr_stamp_submit_by '${_pretty}' bob"
+    } >"${CI_HOME}/run-stamp.sh"
+    sh "${CI_HOME}/run-stamp.sh"
+    assert_eq "TP-SR-FENCE-11 stamp pretty exit 0" 0 "$?"
+    _stamped=$(cat "${_pretty}")
+    _sb_n=$(printf '%s\n' "${_stamped}" | grep -o '"submit_by"' | wc -l | tr -d ' ')
+    assert_eq "TP-SR-FENCE-11 submit_by once" "1" "${_sb_n}"
+    assert_contains "TP-SR-FENCE-11 owner bob" "${_stamped}" '"submit_by":"bob"'
+    assert_contains "TP-SR-FENCE-11 command path kept" "${_stamped}" '"path": "/bin/true"'
+    assert_not_contains "TP-SR-FENCE-11 no nested stamp" "${_stamped}" '{"submit_by":"bob","runas"'
 
     # TP-SR-06 dest name never *-remove
     _out=$(HOME="${CI_HOME}" SUDOER_CLI_ALLOW_TEST_ROOTS=1 sh "${SCRIPT}" --json --queue-root "${_q}" remove-sudoer-request --service webservice --purpose "Revoke my webservice sudoers grant; I no longer operate nginx." 2>/dev/null)

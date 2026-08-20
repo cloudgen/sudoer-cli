@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "kind": "login-hook-elev",
+  "purpose": "Allow dns-adm login hook to run dns-cli interactive via sudo -n.",
+  "username": "dns-adm",
+  "service": "dns-cli",
+  "action": "add",
+  "commands": [
+    {
+      "runas": "root",
+      "tags": ["NOPASSWD"],
+      "path": "/usr/local/bin/dns-cli",
+      "args": ["interactive"]
+    }
+  ]
+}
