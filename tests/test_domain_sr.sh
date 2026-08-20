@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..04, TP-SR-FENCE-01..11, TP-SR-INT-01..06)
+# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..04, TP-SR-FENCE-01..12, TP-SR-INT-01..06)
 # Primary REQ: requirement-domain-sudoer-approval.md
 # =============================================================================
 
@@ -564,16 +564,23 @@ EOF
     # TP-SR-FENCE: dest Fence before yes/no; reject re-validates; action mismatch; subject mismatch is not a fence
     _intfn=$(sed -n '/^sr_interactive()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-FENCE-01 interactive calls dest fence" "${_intfn}" "sr_dest_fence_or_die"
+    assert_contains "TP-SR-FENCE-12 interactive archives fenced" "${_intfn}" "sr_archive_fenced_rejected"
     _aprfn=$(sed -n '/^sr_approve()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-FENCE-01 approve calls dest fence" "${_aprfn}" "sr_dest_fence_or_die"
     _rejfn=$(sed -n '/^sr_reject()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-FENCE-01 reject calls dest fence" "${_rejfn}" "sr_dest_fence_or_die"
     _int_fence_line=$(printf '%s\n' "${_intfn}" | grep -n 'sr_dest_fence_or_die' | head -n1 | cut -d: -f1)
     _int_prompt_line=$(printf '%s\n' "${_intfn}" | grep -n 'prompt_yes_no "Approve' | head -n1 | cut -d: -f1)
+    _int_arch_line=$(printf '%s\n' "${_intfn}" | grep -n 'sr_archive_fenced_rejected' | head -n1 | cut -d: -f1)
     if [ -n "${_int_fence_line}" ] && [ -n "${_int_prompt_line}" ] && [ "${_int_fence_line}" -lt "${_int_prompt_line}" ]; then
         t_pass "TP-SR-FENCE-01 fence runs before Approve prompt"
     else
         t_fail "TP-SR-FENCE-01 fence must run before Approve prompt (fence=${_int_fence_line} prompt=${_int_prompt_line})"
+    fi
+    if [ -n "${_int_fence_line}" ] && [ -n "${_int_arch_line}" ] && [ "${_int_fence_line}" -lt "${_int_arch_line}" ]; then
+        t_pass "TP-SR-FENCE-12 fence display before rejected move"
+    else
+        t_fail "TP-SR-FENCE-12 fence must run before rejected move (fence=${_int_fence_line} archive=${_int_arch_line})"
     fi
 
     _tfence=$(mktemp -d "${TMPDIR:-/tmp}/sudoer-cli.fence.XXXXXX")
@@ -694,6 +701,25 @@ EOF
     assert_contains "TP-SR-FENCE-11 owner bob" "${_stamped}" '"submit_by":"bob"'
     assert_contains "TP-SR-FENCE-11 command path kept" "${_stamped}" '"path": "/bin/true"'
     assert_not_contains "TP-SR-FENCE-11 no nested stamp" "${_stamped}" '{"submit_by":"bob","runas"'
+
+    # TP-SR-FENCE-12: interactive displays a fence match, then moves inbound → rejected
+    if [ "$(id -u)" -eq 0 ]; then
+        _fq="${CI_HOME}/fenceq"
+        mkdir -p "${_fq}/sudoer-request" "${_fq}/sudoer-approved" "${_fq}/sudoer-rejected"
+        _frid="sudoer-20260820-fence12test-${_u}-add-1.json"
+        printf '%s\n' 'not a grant JSON' >"${_fq}/sudoer-request/${_frid}"
+        _ferr=$(HOME="${CI_HOME}" TTY=1 SUDOER_CLI_ALLOW_TEST_ROOTS=1 \
+            sh "${SCRIPT}" --queue-root "${_fq}" interactive 2>&1)
+        assert_eq "TP-SR-FENCE-12 live exit 0" 0 "$?"
+        assert_contains "TP-SR-FENCE-12 live people words" "${_ferr}" "not a grant JSON object"
+        assert_contains "TP-SR-FENCE-12 live no yes/no" "${_ferr}" "Dest will not ask yes/no"
+        assert_contains "TP-SR-FENCE-12 live rejected note" "${_ferr}" "rejected"
+        assert_not_contains "TP-SR-FENCE-12 live no Approve prompt" "${_ferr}" "Approve this request"
+        assert_file_exists "TP-SR-FENCE-12 live moved to rejected" "${_fq}/sudoer-rejected/${_frid}"
+        assert_file_missing "TP-SR-FENCE-12 live left inbound" "${_fq}/sudoer-request/${_frid}"
+    else
+        t_skip "TP-SR-FENCE-12 live interactive fence-to-rejected needs Type 1"
+    fi
 
     # TP-SR-06 dest name never *-remove
     _out=$(HOME="${CI_HOME}" SUDOER_CLI_ALLOW_TEST_ROOTS=1 sh "${SCRIPT}" --json --queue-root "${_q}" remove-sudoer-request --service webservice --purpose "Revoke my webservice sudoers grant; I no longer operate nginx." 2>/dev/null)

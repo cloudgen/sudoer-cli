@@ -129,7 +129,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | **Architectures supported** | any arch with POSIX sh and the external tools the script invokes |
 | **Git surface** | used when product is published |
 | **Ship unit / install** | yes — `src/sudoer-cli` → `${USER_BIN}/sudoer-cli` (default `~/.local/bin/sudoer-cli`); **local-only** install (no online channel) |
-| **Product version SSOT** | `VERSION="1.12.0"` hard-assign in `src/sudoer-cli` |
+| **Product version SSOT** | `VERSION="1.13.0"` hard-assign in `src/sudoer-cli` |
 | **Bootstrap origin** | Historical **cli-template**. This product is **sudoer-cli**. No live parent ship unit. |
 
 **Residual ownership table:**

@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.13.0] - 2026-08-20
+
+### Changed
+
+- Dest **`interactive`** (login hook included): a dest **Fence** match is **displayed**, then the waiting file is **moved to the rejected queue**. **MUST NOT** ask yes/no. **MUST NOT** dest-write `/etc/sudoers.d`. **MUST NOT** stamp `submit_by`. Standalone `approve` / `reject` still fail closed and leave the file inbound. Domain **2.25.0**; dest Fence **1.3.0**. **TP-SR-FENCE-12**.
+- Ship unit **`VERSION="1.13.0"`**.
+
 ## [1.12.0] - 2026-08-20
 
 ### Changed

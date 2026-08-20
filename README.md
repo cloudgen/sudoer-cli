@@ -1,6 +1,6 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.12.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.13.0-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
@@ -178,6 +178,7 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
+2026-08-20 — version **1.13.0** (dest `interactive` shows a broken waiting file, does not ask yes/no, and moves it to the rejected folder).
 2026-08-20 — version **1.12.0** (dest `interactive` asks one yes/no per waiting file: yes accepts, no or Enter rejects; no skip or quit).
 2026-08-20 — version **1.11.0** (in-tool sudo goes through `util_sudo`; chmod checks owner first via `util_chmod` and does not `sudo chmod` when you already own the file).
 2026-08-20 — version **1.10.0** (dest-written `submit_by` converts queue Unix owner into JSON; Type 0 must not plant it).

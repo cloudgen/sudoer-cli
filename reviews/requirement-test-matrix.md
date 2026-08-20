@@ -1,7 +1,7 @@
 # Requirement ↔ test matrix — sudoer-cli
 
-**Updated:** 2026-08-20 (1.12.0 one-off approval-question)  
-**Product VERSION:** 1.12.0  
+**Updated:** 2026-08-20 (1.13.0 interactive fence display-then-rejected)  
+**Product VERSION:** 1.13.0  
 **Suite:** `tests/run.sh`
 
 | Requirement key | Area | TP families | Coverage notes |
@@ -25,8 +25,8 @@
 | requirement-least-privilege-user | architecture | TP-SR-PRIV-01, **TP-SR-PRIV-02**, **TP-SR-PRIV-03**, **TP-SR-PRIV-04**, **TP-SR-HOOK-01..04** | F1–F7; setup any admin; LSU never `useradd`; setup helps submit; hook checks/creates `~/.profile`; rc owned by LPU |
 | requirement-privilege-prevention-set | architecture | **TP-PREV-01**, **TP-PREV-02**, **TP-PREV-03**, TP-SR-PRIV-01..04, TP-ELEV-08/09, TP-SR-05/06, **TP-SR-17**, **TP-SR-18**, TP-CLI-07, TP-LC-05/06 | Closed block vs must-remain-open; OPEN-SUDOER-APPR; OPEN-BEHALF |
 | requirement-actor-role-subject-approver | architecture | TP-SR-17, TP-SR-18, TP-SR-PRIV-04 | Catalog only; dest still has Approver; A may file for B |
-| requirement-incorrect-json-format | domain | **TP-SR-FENCE-01..11** | Dest Fence before yes/no; Type 0 `test-json-format`; dest-written `submit_by`; Type 0 must not plant it; pretty stamp first `{` only |
-| requirement-domain-sudoer-approval | domain | **TP-SR-01..18**, **TP-SR-PRIV-01..04**, **TP-CLI-14**, **TP-SR-INT-01..06**, **TP-SR-HOOK-01..04**, **TP-SR-FENCE-01..11**, **TP-SR-Q-01..03** | Type 0 convert/submit/`test-json-format` **have**; dest-written `submit_by`; pretty `commands[]` fidelity **14/15/16**; A-for-B **17/18**; dest Fence **FENCE-***; one-off approval-question **INT-06**; elevated sudoer may approve; hook `.profile`; rc owned by LPU |
+| requirement-incorrect-json-format | domain | **TP-SR-FENCE-01..12** | Dest Fence before yes/no; Type 0 `test-json-format`; dest-written `submit_by`; Type 0 must not plant it; pretty stamp first `{` only; interactive display-then-rejected |
+| requirement-domain-sudoer-approval | domain | **TP-SR-01..18**, **TP-SR-PRIV-01..04**, **TP-CLI-14**, **TP-SR-INT-01..06**, **TP-SR-HOOK-01..04**, **TP-SR-FENCE-01..12**, **TP-SR-Q-01..03** | Type 0 convert/submit/`test-json-format` **have**; dest-written `submit_by`; pretty `commands[]` fidelity **14/15/16**; A-for-B **17/18**; dest Fence **FENCE-***; interactive fence → rejected **FENCE-12**; one-off approval-question **INT-06**; elevated sudoer may approve; hook `.profile`; rc owned by LPU |
 
 **Absent by design (no TP Core):** online-install, remote self-management, automatic channel checksum, folder-archive backup/restore.
 

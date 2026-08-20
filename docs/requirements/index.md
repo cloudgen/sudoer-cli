@@ -25,8 +25,8 @@
 | requirement-least-privilege-user | sudoer-adm F1–F7; home create `/etc/sudoer-adm`; F5 `/var/{{APP_NAME}}/` 3773 + F4 views; LSU never `useradd`; hook checks/creates `~/.profile`; rc owned by LPU | architecture | Active (1.13.0) | `requirement-least-privilege-user.md` | 2026-08-18 |
 | requirement-privilege-prevention-set | Closed catalog; OPEN-SUDOER-APPR; OPEN-DECIDE; OPEN-BEHALF; no PREV-BEHALF | architecture | Active (1.6.0) | `requirement-privilege-prevention-set.md` | 2026-08-18 |
 | requirement-actor-role-subject-approver | Actor / role / subject / submitter / approver catalog (dest has approver) | architecture | Active (1.0.0) | `requirement-actor-role-subject-approver.md` | 2026-08-19 |
-| requirement-incorrect-json-format | Dest **Fence**: incorrect JSON format (independent REQ; dest table still prints; Type 0 `test-json-format`; dest-written `submit_by`; match suppresses approval-question) | domain | Active (1.2.1) | `requirement-incorrect-json-format.md` | 2026-08-20 |
-| requirement-domain-sudoer-approval | **Domain SSOT** — A may submit for B; filename uses B; human decides via one-off yes/no; dest fence table; Type 0 `test-json-format`; dest-written `submit_by`; submit `/var/{{APP_NAME}}/sudoer-request`; hook checks `~/.profile`; rc owned by LPU | domain | Active (2.24.0) | `requirement-domain-sudoer-approval.md` | 2026-08-20 |
+| requirement-incorrect-json-format | Dest **Fence**: incorrect JSON format (independent REQ; dest table still prints; Type 0 `test-json-format`; dest-written `submit_by`; match suppresses approval-question; interactive display-then-rejected) | domain | Active (1.3.0) | `requirement-incorrect-json-format.md` | 2026-08-20 |
+| requirement-domain-sudoer-approval | **Domain SSOT** — A may submit for B; filename uses B; human decides via one-off yes/no; dest fence table; Type 0 `test-json-format`; dest-written `submit_by`; interactive fence match → rejected; submit `/var/{{APP_NAME}}/sudoer-request`; hook checks `~/.profile`; rc owned by LPU | domain | Active (2.25.0) | `requirement-domain-sudoer-approval.md` | 2026-08-20 |
 
 ## Intentionally absent
 

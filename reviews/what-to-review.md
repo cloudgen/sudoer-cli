@@ -1,12 +1,12 @@
 # What to review — sudoer-cli
 
 **Living checklist** (review plan). Product: **sudoer-cli** (Type 0 live; **Type 0 domain convert/submit/list/show/`test-json-format` routed**; Type 1 `setup` / `interactive` live).  
-**Class:** software-development · **one** Active domain SSOT (`requirement-domain-sudoer-approval` **2.24.0**) · **local-only** install channel.  
+**Class:** software-development · **one** Active domain SSOT (`requirement-domain-sudoer-approval` **2.25.0**) · **local-only** install channel.  
 **Always load first:** `reviews/lessons.md`  
 **Latest report:** `reviews/reports/2026-08-19-dest-fence.md` (dest Fence + OPEN-BEHALF). Prior: 2026-08-18 approve-actor-lock (T1-SECOND-LOCK). Fidelity: INC-20260817-001. Actor lock: INC-20260818-001.
 
 **Last plan update:** 2026-08-20  
-**Ship unit VERSION:** 1.12.0  
+**Ship unit VERSION:** 1.13.0  
 **Suite baseline:** see `reviews/test-plan.md`
 
 ---
@@ -15,8 +15,8 @@
 
 | # | Check | Notes |
 |---|--------|--------|
-| P1 | Read `docs/requirements/index.md` | Class + shell + three-layer + LPU + **prevention-set 1.6.0** + **domain 2.24.0** + ARSA + dest Fence + coding-style + sudo-command |
-| P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.12.0**) |
+| P1 | Read `docs/requirements/index.md` | Class + shell + three-layer + LPU + **prevention-set 1.6.0** + **domain 2.25.0** + ARSA + dest Fence + coding-style + sudo-command |
+| P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.13.0**) |
 | P3 | Load `reviews/lessons.md` and re-check open L-* that still apply | Skip parent backup L-SUDOERS except **L-JSON-CMDS-01** |
 | P4 | Run `./tests/run.sh` | Record PASS/FAIL/SKIP; **must include TP-SR-14/15/16**, **TP-SR-PRIV-04** / **TP-ELEV-09** / **TP-PREV-03**, and **TP-SR-HOOK-01..04** |
 | P5 | Confirm install **channel** still local-only | No SCRIPT_URL product UX |
@@ -46,7 +46,7 @@
 | LPU | `requirement-least-privilege-user.md` | F1–F7; home `/etc/sudoer-adm`; dest `/etc/{{username}}/` |
 | Prevention set | `requirement-privilege-prevention-set.md` | Closed block catalog + must-remain-open; no invented walls |
 | ARSA | `requirement-actor-role-subject-approver.md` | Five-column catalog; dest has Approver; do not invent `*-adm` |
-| Dest Fence | `requirement-incorrect-json-format.md` | Incorrect JSON fail-closed before yes/no |
+| Dest Fence | `requirement-incorrect-json-format.md` | Incorrect JSON fail-closed before yes/no; interactive display-then-rejected |
 | Domain SSOT | `requirement-domain-sudoer-approval.md` | JSON samples; convert; queues; dest fence table; **pretty `commands[]` fidelity**; dest one-off yes/no |
 | Idempotency | `requirement-shell-idempotency.md` | Re-install |
 | Storage | `requirement-shell-cli-storage.md` | Isolation |
@@ -75,6 +75,7 @@
 | R14 | Approve-path actor lock after password `sudo` is gone (OPEN-SUDOER-APPR) | **have** (1.7.0; TP-SR-PRIV-04 / TP-PREV-03 / TP-ELEV-09; INC-20260818-001) — **re-check every review** |
 | R15 | Hyphenated service **and** hyphenated username (`dns-cli` + `dns-adm` dest is not `…-adm`); dest uses JSON | **have** (1.8.1; **TP-SR-17**; INC-20260818-002; **L-ID-SPLIT-01**) |
 | R17 | Dest Fence first: `interactive` / `approve` / `reject` fail closed on incorrect JSON **before** yes/no; action mismatch; subject token ≠ JSON username is **not** a fence | **have** (1.8.1; **TP-SR-FENCE-01..04**; `requirement-incorrect-json-format`) |
+| R21 | Dest `interactive` displays a fence match, then moves that file to rejected (no yes/no, no dest write). Standalone approve/reject stay inbound | **have** (1.13.0; domain 2.25.0; dest Fence 1.3.0; **TP-SR-FENCE-12**) |
 | R19 | Type 0 `test-json-format` tests the JSON-format Fence without dest elev; golden login-hook-elev fixture | **have** (1.9.0; **TP-SR-FENCE-05..08**) |
 | R20 | Dest `interactive` asks one-off yes/no (yes=approve, no/Enter=reject; no skip/quit; no three chained y/N) | **have** (1.12.0; domain 2.24.0; **TP-SR-INT-06**) |
 | R18 | OPEN-BEHALF: A may submit/remove for B; inbound and dest use B | **have** (1.8.1; **TP-SR-17** / **TP-SR-18**) |

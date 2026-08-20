@@ -35,7 +35,7 @@
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
 # APP NAME: hard-assign APP_NAME="sudoer-cli"
-# VERSION: hard-assign VERSION="1.12.0"
+# VERSION: hard-assign VERSION="1.13.0"
 #
 # =============================================================================
 
@@ -52,7 +52,7 @@ APP_NAME="sudoer-cli"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
 : "${DESCRIPTION:=POSIX /bin/sh CLI: lifecycle plus sudoers-request convert/submit/list/show/test-json-format. Type 1 setup creates sudoer-adm; approve/reject require euid 0.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.12.0"
+VERSION="1.13.0"
 : "${VERSION:=1.0.0}"
 # Repository identity SSOT (git host owner/repo for project-repository alignment).
 # Install remains local-only: SCRIPT_URL stays empty (no online curl|sh channel).
@@ -2856,6 +2856,26 @@ sr_reject() {
     fi
 }
 
+# Interactive fence match: display already happened. Drain inbound → rejected
+# without dest-write, without submit_by, without standalone reject re-validate.
+# ALIGNMENT: requirement-incorrect-json-format.md · requirement-domain-sudoer-approval.md
+sr_archive_fenced_rejected() {
+    _fp="$1"
+    _fid="$2"
+    _no=$(sr_approver_dir rejected)
+    _priv=$(mktemp "${TMPDIR:-/tmp}/sr-fence.XXXXXX")
+    if ! cp "${_fp}" "${_priv}"; then
+        rm -f "${_priv}"
+        sr_die "cannot snapshot fenced ${_fid}" "authz"
+    fi
+    sr_archive_validated "${_priv}" "${_no}" "${_fid}" "${_fp}"
+    if [ "${JSON}" -eq 1 ]; then
+        out_json "success" "rejected" "request_id" "${_fid}" "reason" "fence"
+    else
+        out_success "rejected ${_fid}"
+    fi
+}
+
 sr_interactive() {
     : "${TTY:=0}"
     : "${JSON:=0}"
@@ -2901,6 +2921,9 @@ sr_interactive() {
             sr_chown_request_to_lpu "${_in}/${_bn}"
         fi
         if ! ( sr_dest_fence_or_die "${_in}/${_bn}" "${_bn}" ); then
+            if ! ( sr_archive_fenced_rejected "${_in}/${_bn}" "${_bn}" ); then
+                out_error "could not move fenced ${_bn} to rejected; continuing"
+            fi
             continue
         fi
         if [ -n "${_orig_owner}" ]; then

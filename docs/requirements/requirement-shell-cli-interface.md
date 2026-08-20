@@ -91,7 +91,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | **Primary executable** | `src/sudoer-cli` (POSIX `/bin/sh`, single-file ship unit) |
 | **Dispatcher** | `app_main` |
 | **Output SSOT** | `out_text` + wrappers (`out_info`, `out_success`, `out_warn`, `out_error`, `out_die`, `out_plain`, `out_json`, …) |
-| **Version SSOT** | `VERSION="1.12.0"` hard-assign in ship unit |
+| **Version SSOT** | `VERSION="1.13.0"` hard-assign in ship unit |
 | **Install paths** | Global: `GLOBAL_BIN` default `/usr/local/bin`; User: `USER_BIN` default `${HOME}/.local/bin` |
 | **Primary install story** | User bin: `~/.local/bin/sudoer-cli`; global `/usr/local/bin/sudoer-cli` for production F6 |
 | **Online channel env** | **Not product UX** (trimmed) |

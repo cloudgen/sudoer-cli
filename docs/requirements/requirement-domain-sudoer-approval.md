@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-domain-sudoer-approval.md  
-**Status**: Active (Version 2.24.0) — dest review asks one-off yes/no (approval-question)  
+**Status**: Active (Version 2.25.0) — dest review asks one-off yes/no; fenced inbound is displayed then moved to rejected  
 **Area**: domain  
 **Key**: `requirement-domain-sudoer-approval`  
 **id**: RQ-DOMAIN-SUDOER-APPROVAL  
@@ -36,7 +36,7 @@ Privilege types and F6 Cmnds are owned by `requirement-three-layer-privilege-mod
 |---------|---------------|---------------|
 | Convert | Turn sudoers text into JSON. Nothing is queued yet. | `sudoer-cli sudoers-to-json --file draft.sudoers --action add --purpose "…"` |
 | Submit | This program names the file and writes it into the waiting folder. | `sudoer-cli add-sudoer-request --file request.json` |
-| Decide | If the JSON is broken, dest says so and does not ask. If it is valid, **one** yes/no: yes accepts, no (or Enter) declines. No skip or quit. | `sudo sudoer-cli interactive` |
+| Decide | If the JSON is broken, dest says so, does not ask, and moves the file to rejected. If it is valid, **one** yes/no: yes accepts, no (or Enter) declines. No skip or quit. | `sudo sudoer-cli interactive` |
 
 ---
 
@@ -72,7 +72,7 @@ Type 0 submit is allowed **only when all** hold:
 
 **Not a submit situation:** wanting dest written immediately; running `approve` as a normal user (Type 1 fail-closed).
 
-**Human decides:** accept / decline of a **valid inbound** request is a **person**. Dest review asks the **approval question** (term `approval-question`): one-off yes/no. Helpful checks review the **file** (schema, visudo, hostile inode, User `ALL` / alias). Extra actor locks after elev, unpublished auto-reject heuristics, forcing A=B, skip / quit / maybe on that question, and hiding inbound files are **blockage**, not an approval system.
+**Human decides:** accept / decline of a **valid inbound** request is a **person**. Dest review asks the **approval question** (term `approval-question`): one-off yes/no. Helpful checks review the **file** (schema, visudo, hostile inode, User `ALL` / alias). Extra actor locks after elev, unpublished auto-reject heuristics, forcing A=B, skip / quit / maybe on that question, and hiding **valid** inbound files are **blockage**, not an approval system. A dest **Fence** match is **not** a human decision: dest **MUST** display it, then move that file to rejected.
 
 #### How JSON is verified
 
@@ -93,11 +93,11 @@ CLI `--json` is **status** only (`out_json`). It is **not** the request file.
 
 #### Dest approval fencing conditions (closed)
 
-Dest `approve` / `reject` / `interactive` **MUST** run this list **before** the approval question. When a **Fence** matches: display the match in people/folder words; **MUST NOT** ask the approval question for that file. Each dest **Fence** row **MUST** point at an independent REQ.
+Dest `approve` / `reject` / `interactive` **MUST** run this list **before** the approval question. When a **Fence** matches: display the match in people/folder words; **MUST NOT** ask the approval question for that file. Dest `interactive` **MUST then** move that inbound file to rejected. Standalone `approve` / `reject` **MUST** fail closed and **leave** the file inbound. Each dest **Fence** row **MUST** point at an independent REQ.
 
 | Condition | Dest approve / reject / interactive |
 |-----------|--------------------------------------|
-| Incorrect JSON format | **Fence** — fail closed. Independent REQ: `requirement-incorrect-json-format` |
+| Incorrect JSON format | **Fence** — fail closed (no dest write, no yes/no). Interactive: display **then** move to rejected. Standalone approve/reject: stay inbound. Independent REQ: `requirement-incorrect-json-format` |
 | File-ownership | **MUST NOT** fence — dest takes ownership as `sudoer-adm` |
 | Who submitted / dest self-scope (A≠B) | **MUST NOT** fence |
 | JSON `username` ≠ `sudoer-adm` | **MUST NOT** fence |
@@ -127,7 +127,7 @@ Every domain verb **MUST** have exactly one privilege type. Type 0 never writes 
 | `show <request-id>` | 0 | `sr_show` | full basename **with** `.json` | Purpose + body for a known id. |
 | `approve <request-id>` | 1 | `sr_approve` | full basename **with** `.json` | Re-validate; install or delete dest. |
 | `reject <request-id>` | 1 | `sr_reject` | same | Re-validate; move to rejected. |
-| `interactive` | 1 | `sr_interactive` | TTY (`TTY=1`); no operand | Review loop (§2.2). Consume `TTY`. One-off yes/no per unfenced file (approval-question). Non-TTY / `--json` → `confirm_required`. Empty argv is **not** this verb. |
+| `interactive` | 1 | `sr_interactive` | TTY (`TTY=1`); no operand | Review loop (§2.2). Consume `TTY`. Fence match: display then move to rejected (no yes/no). One-off yes/no per unfenced file (approval-question). Non-TTY / `--json` → `confirm_required`. Empty argv is **not** this verb. |
 
 **Global domain flags** (parsed in `app_main`; `help` **MUST** list them now that Type 0 domain is routed):
 
@@ -426,12 +426,12 @@ Session `SUDOER_CLI_HOOK_RAN` **MUST** prevent a second `interactive` if both lo
 3. Prompt only through `prompt_*`. **MUST NOT** ad-hoc `read`. `--force` **MUST NOT** auto-approve. The id walk **MUST NOT** redirect stdin over those prompts (`prompt_yes_no` reads fd 0). Walk ids on another fd.  
 4. Resolve queues once. Type 1 **MAY** readdir inbound. Consider only regular, non-symlink files whose basename matches the request grammar.  
 5. Empty inbound → human note (or JSON success) and exit **0**. Do not hang.  
-6. For each pending id (basename sort): **fence first** (`requirement-incorrect-json-format`). If a fence **matches**: display the match in people/folder words; **MUST NOT** ask the approval question; continue to the next file. If **no** fence: show purpose + body (same contract as `show`); ask the **approval question** (term `approval-question`): **one-off yes/no** via **one** `prompt_yes_no`. **Yes** = approve. **No** (including Enter) = reject. **MUST NOT** offer skip / quit / maybe. **MUST NOT** chain Approve then Reject then Quit as three `(y/N)` questions.  
+6. For each pending id (basename sort): **fence first** (`requirement-incorrect-json-format`). If a fence **matches**: display the match in people/folder words; **MUST NOT** ask the approval question; **then** move inbound → rejected (snapshot + LPU owner + mode `0640` + unlink inbound; **MUST NOT** dest-write `/etc/sudoers.d`; **MUST NOT** stamp `submit_by`; **MUST NOT** call standalone `reject` re-validate). Continue to the next file. If **no** fence: show purpose + body (same contract as `show`); ask the **approval question** (term `approval-question`): **one-off yes/no** via **one** `prompt_yes_no`. **Yes** = approve. **No** (including Enter) = reject. **MUST NOT** offer skip / quit / maybe. **MUST NOT** chain Approve then Reject then Quit as three `(y/N)` questions.  
 7. **yes** / **no** **MUST** run the same re-validate + dest/move as the standalone `approve` / `reject` verbs. Remaining inbound files stay in this loop (no quit). Direct `approve` / `reject` with a request id stay **non-interactive**.  
 8. A validate failure on one id **MUST NOT** abort the rest; emit the error and continue.  
 9. Empty argv **MUST NOT** reach this handler.
 
-The handler is **live**. Non-TTY / `--json` / `--quiet` fail closed `confirm_required`. `--force` does **not** auto-approve. Each unfenced id uses **one** `prompt_yes_no` (default no = reject).
+The handler is **live**. Non-TTY / `--json` / `--quiet` fail closed `confirm_required`. `--force` does **not** auto-approve. Each unfenced id uses **one** `prompt_yes_no` (default no = reject). Each fenced id is displayed, then archived to rejected, with no prompt.
 
 #### Warnings (not hard reject)
 
@@ -467,7 +467,7 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | **Hook marker** | `# BEGIN sudoer-cli login hook` … `# END sudoer-cli login hook` |
 | **Hook env** | `SUDOER_CLI_HOOK_RAN` |
 | **Hook command** | `sudo -n /usr/local/bin/sudoer-cli interactive` |
-| **Approval question** | One-off yes/no (`prompt_yes_no "Approve this request"`). Yes = approve. No / Enter = reject. No skip / quit / maybe. Term `approval-question`. |
+| **Approval question** | One-off yes/no (`prompt_yes_no "Approve this request"`). Yes = approve. No / Enter = reject. No skip / quit / maybe. Term `approval-question`. Fence match: no question; display then rejected. |
 | **`.profile` create** | Missing → write source-bashrc sample (`# BEGIN sudoer-cli profile source-bashrc`). Existing never overwritten. |
 | **Routed now** | Type 0 convert/`test-json-format`/submit/list/show/print-sudoers; Type 1 `setup`/`remove-lpu`/`approve`/`reject`/`interactive` live |
 | **Gap** | about LPU/F6/trust-tier fields (queue paths are already in `about`) |
@@ -522,7 +522,8 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 23. Skip the `${LPU_HOME}/.profile` existence check, or skip auto-create when it is missing (a login shell then never sources `.bashrc`, so the hook never fires).  
 24. Overwrite an existing `.profile`.  
 25. Leave `${LPU_HOME}/.profile` or `.bashrc` as `root:root` / unreadable after create or rewrite (`mktemp`+`mv`). The corresponding user **must** own those files. Swallowing `chown` is forbidden.  
-26. Offer skip / quit / maybe on dest review, or chain Approve then Reject then Quit as three `(y/N)` questions. The approval question is one-off yes/no.
+26. Offer skip / quit / maybe on dest review, or chain Approve then Reject then Quit as three `(y/N)` questions. The approval question is one-off yes/no.  
+27. Leave a dest **Fence** match in inbound after `interactive` displayed it, dest-write `/etc/sudoers.d` on that match, ask yes/no on it, or move it **before** the display.
 
 **Violating this rule is a critical domain-SSOT / privilege regression.**
 
@@ -591,6 +592,7 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | **TP-SR-FENCE-05..08** | `tests/test_domain_sr.sh` | have | Type 0 `test-json-format` + login-hook-elev fixture |
 | **TP-SR-FENCE-11** | `tests/test_domain_sr.sh` | have | Dest `submit_by` stamp first `{` only |
 | **TP-SR-FENCE-09..10** | `tests/test_domain_sr.sh` | have | dest-written `submit_by` accepted; Type 0 must not plant it |
+| **TP-SR-FENCE-12** | `tests/test_domain_sr.sh` | have | Interactive fence match: display then move to rejected; no yes/no; no dest write |
 
 **Matrix:** `reviews/requirement-test-matrix.md`  
 **Map:** `reviews/test-plan.md`
@@ -626,6 +628,7 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | 2026-08-20 | Active 2.22.0 | Type 0 `test-json-format`; optional `kind`; **TP-SR-FENCE-05..08** |
 | 2026-08-20 | Active 2.23.0 | Dest-written `submit_by` = original queue Unix owner; Type 0 must not plant; **TP-SR-FENCE-09..10** |
 | 2026-08-20 | Active 2.24.0 | Dest review asks the **approval question** (one-off yes/no; yes=approve, no/Enter=reject). No skip / quit / maybe. Protection rule 26; **TP-SR-INT-06** |
+| 2026-08-20 | Active 2.25.0 | Interactive fence match: display then move inbound → rejected. Standalone approve/reject stay inbound. Protection rule 27; **TP-SR-FENCE-12** |
 
 ---
 

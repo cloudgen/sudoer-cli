@@ -3,9 +3,9 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.12.0  
-**Last plan update:** 2026-08-20 (domain 2.24.0 one-off approval-question; **TP-SR-INT-06**)  
-**Last suite run:** PASS=355 FAIL=0 SKIP=2 (2026-08-20; 1.12.0 one-off **Approve this request**; **TP-SR-FENCE-11** pretty `submit_by` stamp; setup heals stale global VERSION)  
+**Product VERSION:** 1.13.0  
+**Last plan update:** 2026-08-20 (domain 2.25.0 interactive fence display-then-rejected; **TP-SR-FENCE-12**)  
+**Last suite run:** PASS=357 FAIL=0 SKIP=3 (2026-08-20; 1.13.0 interactive fence display-then-rejected; **TP-SR-FENCE-12** static; live Type 1 skipped)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)
@@ -120,6 +120,7 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-FENCE-09 | Dest-stamped `submit_by` is well-formed (queue owner converted into JSON) | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
 | TP-SR-FENCE-10 | Type 0 `add-sudoer-request` must not plant `submit_by` | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
 | TP-SR-FENCE-11 | Dest `submit_by` stamp hits only the first `{` (pretty `commands[]` stay unstamped) | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
+| TP-SR-FENCE-12 | `interactive` displays a fence match, then moves inbound → rejected; no yes/no; no dest write. Standalone approve/reject stay inbound | `tests/test_domain_sr.sh` | requirement-incorrect-json-format · domain | **have** |
 | TP-SR-PRIV-01 | Type 1 verbs: non-root fail-closed, no `/etc` write | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval · three-layer | **have** |
 | TP-SR-PRIV-02 | Bootstrap `setup` is any euid 0 (not `sudo -n`, not `sudoer-adm`); approve still requires euid 0 | `tests/test_domain_sr.sh` | requirement-three-layer-privilege-model · domain | **have** |
 | TP-SR-PRIV-04 | Approve gate has no exclusive-`sudoer-adm` actor lock; setup prints submit next-step | `tests/test_domain_sr.sh` | prevention-set OPEN-SUDOER-APPR · domain | **have** |
