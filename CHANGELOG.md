@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Dest-owned JSON keys **`submit_app`** / **`submit_version`**: Type 0 add/update encode stamps live Config. Dest format-fences missing or non-string values on add/update. Dest **MUST NOT** fence if the values ≠ dest product or dest version (sibling `dns-cli` is dest-legal). Dest interactive prints `queued by {app} {version}` before yes/no. Closed-schema allowlist includes the keys. Domain **2.30.0**. Dest Fence **1.4.0**. **TP-SR-FENCE-13..15**. Ship unit **`VERSION="1.16.0"`**.
 
+### Fixed
+
+- Test review: **TP-SR-FENCE-13..15** now prove missing/non-string keys, sibling overwrite of inbound `submit_app`/`submit_version` to live Config, and live `PRODUCT_VERSION` on convert. Review-plan VERSION/suite count aligned (**PASS=427 FAIL=0 SKIP=3**). CI-gbin fixtures no longer embed a host home path.
+
 ## [1.15.3] - 2026-08-21
 
 ### Changed

@@ -2,6 +2,7 @@
 
 | Date | Report | Scope | Verdict | Suite |
 |------|--------|-------|---------|-------|
+| 2026-08-21 | `reports/2026-08-21-shell-cli-test.md` | Shell CLI suite review; dest-owned `submit_app`/`submit_version` honesty | **Pass** (FENCE-13..15 strengthened; plan VERSION aligned) | PASS=427 FAIL=0 SKIP=3 |
 | 2026-08-19 | `reports/2026-08-19-dest-fence.md` | Dest Fence before yes/no; OPEN-BEHALF remove-for-B; version SSOT 1.8.1 | **Pass** (bugs closed; TP-SR-FENCE-01..04, TP-SR-17/18) | PASS=299 FAIL=0 SKIP=2 |
 | 2026-08-18 | `reports/2026-08-18-approve-actor-lock.md` | **T1-SECOND-LOCK** / OPEN-SUDOER-APPR: checklists, AL-* review gate, TP-ELEV-09 | **Pass** (gates live; re-check every full review) | see `test-plan.md` |
 | 2026-08-17 | `reports/2026-08-17-requirement-coverage.md` | C-full-product coverage + folder-backup requirement alignment | **Sufficient with Gaps** (pretty JSON + honesty Issues 1–2 closed; sibling command-identity open) | PASS=244 FAIL=0 SKIP=2 |

@@ -11,7 +11,7 @@
     {
       "runas": "root",
       "tags": ["NOPASSWD"],
-      "path": "/home/leolio/prjs/dns-cli/.ci-homes/home.Nh7l39/gbin/dns-cli",
+      "path": "/home/alice/prjs/dns-cli/.ci-homes/home.TEST/gbin/dns-cli",
       "args": ["interactive"]
     }
   ]

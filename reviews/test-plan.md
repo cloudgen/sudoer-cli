@@ -3,9 +3,9 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.15.3  
-**Last plan update:** 2026-08-21 (1.15.2 test-purpose vs operational; help lists testers apart)  
-**Last suite run:** PASS=357 FAIL=0 SKIP=3 (2026-08-20; 1.13.0 interactive fence display-then-rejected; **TP-SR-FENCE-12** static; live Type 1 skipped)  
+**Product VERSION:** 1.16.0  
+**Last plan update:** 2026-08-21 (1.16.0 dest-owned `submit_app` / `submit_version`; **TP-SR-FENCE-13..15** rows)  
+**Last suite run:** PASS=427 FAIL=0 SKIP=3 (2026-08-21; 1.16.0 dest-owned stamps; live Type 1 skipped)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)
@@ -25,7 +25,7 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | Trimmed parent verbs fail closed | have | TP-CLI-13 |
 | Local install / idempotent / uninstall / mode 0755 | have | TP-LC-01..10 |
 | Backup / restore | n/a | Absent by design (not a backup product) |
-| Domain sudoers-request (convert / submit / queues) | have | **TP-SR-01..18** + **TP-SR-PRIV-01..04** + **TP-SR-FENCE-01..04** — `tests/test_domain_sr.sh` |
+| Domain sudoers-request (convert / submit / queues) | have | **TP-SR-01..18** + **TP-SR-PRIV-01..04** + **TP-SR-FENCE-01..15** — `tests/test_domain_sr.sh` |
 | Privilege prevention set (closed block vs must-remain-open) | have | **TP-PREV-01..03** (aliases of PRIV-03 / SR-03 / PRIV-04) |
 | Routed convert known; junk still unknown | have | **TP-CLI-14** |
 | no-retest-tty (measure `[ -t` outside functions) | have | **TP-ELEV-07** |
@@ -121,6 +121,9 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-FENCE-10 | Type 0 `add-sudoer-request` must not plant `submit_by` | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
 | TP-SR-FENCE-11 | Dest `submit_by` stamp hits only the first `{` (pretty `commands[]` stay unstamped) | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
 | TP-SR-FENCE-12 | `interactive` displays a fence match, then moves inbound → rejected; no yes/no; no dest write. Standalone approve/reject stay inbound | `tests/test_domain_sr.sh` | requirement-incorrect-json-format · domain | **have** |
+| TP-SR-FENCE-13 | Add/update missing or non-string `submit_app` / `submit_version` → `invalid_json` | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
+| TP-SR-FENCE-14 | Sibling `submit_app` (`dns-cli`) is dest-legal JSON (not a fence) | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
+| TP-SR-FENCE-15 | Type 0 convert/submit stamps live Config; inbound overwrite of sibling app/version; dest allowlist; interactive `queued by {app} {version}` | `tests/test_domain_sr.sh` | requirement-incorrect-json-format · domain | **have** |
 | TP-SR-WKBIN-01 | Type 0 `test-well-known-binary` accepts login-hook-elev fixture (`/usr/local/bin/dns-cli`) | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |
 | TP-SR-WKBIN-02 | webservice nginx-ctl paths (`systemctl` / `journalctl` / `/usr/sbin/nginx`) pass | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |
 | TP-SR-WKBIN-03 | `/usr/local/bin/nginx-cli request` passes | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |

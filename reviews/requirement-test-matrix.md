@@ -1,7 +1,7 @@
 # Requirement ↔ test matrix — sudoer-cli
 
-**Updated:** 2026-08-21 (1.15.2 test-purpose vs operational verbs)  
-**Product VERSION:** 1.15.3  
+**Updated:** 2026-08-21 (1.16.0 dest-owned `submit_app` / `submit_version`; FENCE-13..15)  
+**Product VERSION:** 1.16.0  
 **Suite:** `tests/run.sh`
 
 | Requirement key | Area | TP families | Coverage notes |

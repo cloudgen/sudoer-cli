@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..04, TP-SR-FENCE-01..12, TP-SR-INT-01..06)
+# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..04, TP-SR-FENCE-01..15, TP-SR-INT-01..06)
 # Primary REQ: requirement-domain-sudoer-approval.md
 # =============================================================================
 
@@ -109,7 +109,7 @@ run_test_domain_sr() {
     assert_contains "TP-SR-07 json systemctl" "${_js}" '"path":"/bin/systemctl"'
     assert_contains "TP-SR-02 schema_version" "${_js}" '"schema_version":1'
     assert_contains "TP-SR-02 submit_app" "${_js}" '"submit_app":"sudoer-cli"'
-    assert_contains "TP-SR-02 submit_version" "${_js}" '"submit_version":"'
+    assert_contains "TP-SR-02 submit_version" "${_js}" "\"submit_version\":\"${PRODUCT_VERSION}\""
 
     HOME="${CI_HOME}" sh "${SCRIPT}" json-to-sudoers --file "${_abs_json}" --out "${_abs_back}" >/dev/null 2>&1
     assert_eq "TP-SR-03 json-to-sudoers exit 0" 0 "$?"
@@ -209,6 +209,9 @@ EOF
             ;;
     esac
     assert_file_exists "TP-SR-05 queued file" "${_q}/sudoer-request/${_rid}"
+    _queued=$(cat "${_q}/sudoer-request/${_rid}")
+    assert_contains "TP-SR-FENCE-15 inbound submit_app dest" "${_queued}" '"submit_app":"sudoer-cli"'
+    assert_contains "TP-SR-FENCE-15 inbound submit_version dest" "${_queued}" "\"submit_version\":\"${PRODUCT_VERSION}\""
     _qm=$(stat -c '%a' "${_q}/sudoer-request/${_rid}")
     assert_eq "TP-SR-Q-02 submitted file mode 0640" "640" "${_qm}"
 
@@ -225,6 +228,11 @@ EOF
     assert_contains "TP-SR-17 request_id uses B" "${_outb}" "dns-cli-dns-adm-add-"
     assert_contains "TP-SR-17 dest uses JSON subject" "${_outb}" '"dest":"/etc/sudoers.d/dns-cli-dns-adm"'
     assert_not_contains "TP-SR-17 dest is not last-hyphen adm" "${_outb}" "dns-cli-adm\""
+    _ridb=$(printf '%s' "${_outb}" | sed -n 's/.*"request_id":"\([^"]*\)".*/\1/p')
+    _queuedb=$(cat "${_q}/sudoer-request/${_ridb}")
+    assert_contains "TP-SR-FENCE-15 overwrite sibling submit_app" "${_queuedb}" '"submit_app":"sudoer-cli"'
+    assert_not_contains "TP-SR-FENCE-15 overwrite drops inbound dns-cli app" "${_queuedb}" '"submit_app":"dns-cli"'
+    assert_contains "TP-SR-FENCE-15 overwrite submit_version dest" "${_queuedb}" "\"submit_version\":\"${PRODUCT_VERSION}\""
 
     # TP-SR-18 remove for B: JSON username survives encode
     printf '%s\n' '{"purpose":"Revoke colleague DNS grant.","username":"dns-adm","service":"dns-cli","action":"remove"}' >"${CI_HOME}/rm-b.json"
@@ -718,18 +726,26 @@ EOF
     _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" test-json-format --file "${CI_HOME}/no-submit-app.json" 2>&1)
     assert_eq "TP-SR-FENCE-13 missing submit_app exit 1" 1 "$?"
     assert_contains "TP-SR-FENCE-13 missing submit_app words" "${_err}" "submit_app"
+    printf '%s\n' '{"schema_version":1,"purpose":"grant","username":"alice","service":"webservice","action":"add","submit_app":"dns-cli","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/true","args":[]}]}' >"${CI_HOME}/no-submit-version.json"
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" test-json-format --file "${CI_HOME}/no-submit-version.json" 2>&1)
+    assert_eq "TP-SR-FENCE-13 missing submit_version exit 1" 1 "$?"
+    assert_contains "TP-SR-FENCE-13 missing submit_version words" "${_err}" "submit_version"
+    printf '%s\n' '{"schema_version":1,"purpose":"grant","username":"alice","service":"webservice","action":"add","submit_app":1,"submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/true","args":[]}]}' >"${CI_HOME}/num-submit-app.json"
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" test-json-format --file "${CI_HOME}/num-submit-app.json" 2>&1)
+    assert_eq "TP-SR-FENCE-13 non-string submit_app exit 1" 1 "$?"
+    assert_contains "TP-SR-FENCE-13 non-string submit_app words" "${_err}" "submit_app"
     printf '%s\n' '{"schema_version":1,"purpose":"grant","username":"alice","service":"webservice","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/true","args":[]}]}' >"${CI_HOME}/sibling-app.json"
     _out=$(HOME="${CI_HOME}" sh "${SCRIPT}" test-json-format --file "${CI_HOME}/sibling-app.json" 2>/dev/null)
     assert_eq "TP-SR-FENCE-14 sibling submit_app exit 0" 0 "$?"
     assert_contains "TP-SR-FENCE-14 sibling well-formed" "${_out}" "JSON format is well-formed"
     _encfn=$(sed -n '/^sr_json_encode_request()/,/^}/p' "${SCRIPT}")
-    assert_contains "TP-SR-FENCE-15 encoder stamps submit_app" "${_encfn}" "submit_app"
-    assert_contains "TP-SR-FENCE-15 encoder stamps submit_version" "${_encfn}" "submit_version"
+    assert_contains "TP-SR-FENCE-15 encoder stamps APP_NAME" "${_encfn}" 'util_json_escape "${APP_NAME}"'
+    assert_contains "TP-SR-FENCE-15 encoder stamps VERSION" "${_encfn}" 'util_json_escape "${VERSION}"'
     _ukfn=$(sed -n '/^sr_dest_fence_unknown_keys()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-FENCE-15 dest allowlist submit_app" "${_ukfn}" "submit_app"
     assert_contains "TP-SR-FENCE-15 dest allowlist submit_version" "${_ukfn}" "submit_version"
     _intfn=$(sed -n '/^sr_interactive()/,/^}/p' "${SCRIPT}")
-    assert_contains "TP-SR-FENCE-15 interactive queued by" "${_intfn}" "queued by"
+    assert_contains "TP-SR-FENCE-15 interactive queued by" "${_intfn}" 'queued by ${SR_D_SUBMIT_APP} ${SR_D_SUBMIT_VERSION}'
 
     # TP-SR-FENCE-12: interactive displays a fence match, then moves inbound → rejected
     if [ "$(id -u)" -eq 0 ]; then
@@ -774,7 +790,7 @@ EOF
     assert_eq "TP-SR-WKBIN-04 certbot exit 0" 0 "$?"
 
     # TP-SR-WKBIN-05: CI gbin (dns-cli incident path class)
-    printf '%s\n' '{"schema_version":1,"kind":"login-hook-elev","purpose":"hook","username":"dns-adm","service":"dns-cli","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/home/leolio/prjs/dns-cli/.ci-homes/home.Nh7l39/gbin/dns-cli","args":["interactive"]}]}' >"${CI_HOME}/ci-gbin.json"
+    printf '%s\n' '{"schema_version":1,"kind":"login-hook-elev","purpose":"hook","username":"dns-adm","service":"dns-cli","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/home/alice/prjs/dns-cli/.ci-homes/home.TEST/gbin/dns-cli","args":["interactive"]}]}' >"${CI_HOME}/ci-gbin.json"
     _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" --json test-well-known-binary --file "${CI_HOME}/ci-gbin.json" 2>&1 >/dev/null)
     assert_eq "TP-SR-WKBIN-05 ci-gbin exit 1" 1 "$?"
     assert_contains "TP-SR-WKBIN-05 ci-gbin people words" "${_err}" "not a well-known system binary"
