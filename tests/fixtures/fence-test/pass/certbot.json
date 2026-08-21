@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "purpose": "Allow alice to renew Let's Encrypt certificates.",
+  "username": "alice",
+  "service": "certbot",
+  "action": "add",
+  "submit_app": "dns-cli",
+  "submit_version": "1.12.0",
+  "commands": [
+    {
+      "runas": "root",
+      "tags": ["NOPASSWD"],
+      "path": "/usr/bin/certbot",
+      "args": ["renew"]
+    }
+  ]
+}

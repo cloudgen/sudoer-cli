@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-domain-sudoer-approval.md  
-**Status**: Active (Version 2.25.0) — dest review asks one-off yes/no; fenced inbound is displayed then moved to rejected  
+**Status**: Active (Version 2.30.0) — dest-owned `submit_app` / `submit_version`; MUST NOT fence sibling app or version  
 **Area**: domain  
 **Key**: `requirement-domain-sudoer-approval`  
 **id**: RQ-DOMAIN-SUDOER-APPROVAL  
@@ -11,7 +11,7 @@ This requirement is the **single current domain SSOT** for sudoers-request appro
 
 Privilege types and F6 Cmnds are owned by `requirement-three-layer-privilege-model.md`. LPU identity is owned by `requirement-least-privilege-user.md`. What Type 0 / Type 1 **block** vs what must stay open after elev is owned by `requirement-privilege-prevention-set.md`. Live Type 0 dispatcher catalog is owned by `requirement-shell-cli-interface.md` (lifecycle) **plus** the Type 0 domain verbs in §2.1.
 
-**Routing honesty:** `help` / `about` **MUST NOT** list a verb that has no dispatcher `case` arm. Convert/submit/list/show/print-sudoers/`test-json-format` **are routed**. Setup and review **are routed** and **fail closed** unless the invoker is already root. Live `setup` creates the dedicated account, the extra sudoers fragment, queues, and login hook. The review-loop body is **live**. About LPU/trust-tier fields remain a **Gap**.
+**Routing honesty:** `help` / `about` **MUST NOT** list a verb that has no dispatcher `case` arm. Convert/submit/list/show/print-sudoers (**operational**) and `test-json-format`/`test-well-known-binary`/`fence-test` (**test-purpose**) **are routed**. Help **MUST** list test-purpose verbs **apart** from operational verbs. Setup and review **are routed** and **fail closed** unless the invoker is already root. Live `setup` creates the dedicated account, the extra sudoers fragment, queues, and login hook. The review-loop body is **live**. About LPU/trust-tier fields remain a **Gap**.
 
 ### 1.1 Human-facing
 
@@ -21,7 +21,7 @@ Privilege types and F6 Cmnds are owned by `requirement-three-layer-privilege-mod
 |-----|---------|---------|
 | You / this login | Convert and queue a grant for yourself or another login | `sudoer-cli add-sudoer-request --file request.json` |
 | The other role | Host admin already root, or `sudoer-adm` after setup | `sudo sudoer-cli interactive` |
-| Not this file | Type map, prevention catalog, dest Fence body | `requirement-three-layer-privilege-model` · `requirement-incorrect-json-format` |
+| Not this file | Type map, prevention catalog, dest Fence body | `requirement-three-layer-privilege-model` · `requirement-incorrect-json-format` · `requirement-well-known-sudoer-binary-fence` |
 
 | Includes | Excludes |
 |----------|----------|
@@ -35,6 +35,7 @@ Privilege types and F6 Cmnds are owned by `requirement-three-layer-privilege-mod
 | You do… | What it means | What you type |
 |---------|---------------|---------------|
 | Convert | Turn sudoers text into JSON. Nothing is queued yet. | `sudoer-cli sudoers-to-json --file draft.sudoers --action add --purpose "…"` |
+| Test dest fences | Point at a JSON file. No `sudo`. Does not queue. | `sh src/sudoer-cli fence-test --file tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json` |
 | Submit | This program names the file and writes it into the waiting folder. | `sudoer-cli add-sudoer-request --file request.json` |
 | Decide | If the JSON is broken, dest says so, does not ask, and moves the file to rejected. If it is valid, **one** yes/no: yes accepts, no (or Enter) declines. No skip or quit. | `sudo sudoer-cli interactive` |
 
@@ -98,11 +99,13 @@ Dest `approve` / `reject` / `interactive` **MUST** run this list **before** the 
 | Condition | Dest approve / reject / interactive |
 |-----------|--------------------------------------|
 | Incorrect JSON format | **Fence** — fail closed (no dest write, no yes/no). Interactive: display **then** move to rejected. Standalone approve/reject: stay inbound. Independent REQ: `requirement-incorrect-json-format` |
+| Well-known sudoer binary | **Fence** — fail closed when any add/update `commands[].path` is not a well-known system binary (home tree, venv, interpreter). Interactive: display **then** move to rejected. Standalone approve/reject: stay inbound. Independent REQ: `requirement-well-known-sudoer-binary-fence` |
 | File-ownership | **MUST NOT** fence — dest takes ownership as `sudoer-adm` |
 | Who submitted / dest self-scope (A≠B) | **MUST NOT** fence |
 | JSON `username` ≠ `sudoer-adm` | **MUST NOT** fence |
 | Filename subject token ≠ JSON `username` | **MUST NOT** fence — user SSOT is the JSON field |
 | Dest-written `submit_by` / missing `submit_by` | **MUST NOT** fence |
+| `submit_app` ≠ dest `APP_NAME` / `submit_version` ≠ dest `VERSION` | **MUST NOT** fence — Type 0 stamps live Config; sibling submitters and mixed versions are dest-legal JSON. Missing / non-string on add/update is incorrect JSON format |
 
 **MUST NOT** add a dest inbound fence that is not on this table.
 
@@ -110,11 +113,22 @@ Dest `approve` / `reject` / `interactive` **MUST** run this list **before** the 
 
 Every domain verb **MUST** have exactly one privilege type. Type 0 never writes `/etc/passwd` or `/etc/sudoers.d`. Type 1 dest is `/etc/sudoers.d/{{service}}-{{username}}` (copy / overwrite / remove product-owned names only). Type 1 host mutation needs euid 0. **Bootstrap** (`setup`) is any host admin (password `sudo` OK — mix model). **Approve** is any already euid-0 host admin (password `sudo`), or F6 `sudoer-adm`, or a real root session.
 
+**Verb purpose (orthogonal to Type 0/1):** test-purpose verbs are **unit testers** of a **local test folder**. Operational verbs **run the product**. Type 0 does **not** mean “unit test.”
+
+| Purpose | Verbs | Target | Sudo |
+|---------|-------|--------|------|
+| **Test-purpose** | `test-json-format`, `test-well-known-binary`, `fence-test` | Local test folder / `--file` under it | Wrap **chmod** / **chown** of that folder only (check before sudo). **MUST NOT** sudo otherwise. **MUST NOT** queue, dest-write, `setup`, or `approve`. |
+| **Operational** | convert, submit, list, show, print-sudoers, `setup`, `approve`, `reject`, `interactive` | Queues, dest, install | Type-appropriate. Type 0 operational **MUST NOT** write `/etc`. |
+
+Help **MUST** list test-purpose under a heading apart from operational Type 0.
+
 | Verb | Type | Handler family | Operands / flags | Required behavior |
 |------|------|----------------|------------------|-------------------|
 | `sudoers-to-json` | 0 | `sr_sudoers_to_json` | stdin **xor** `--file PATH`; `--action add\|update`; `--purpose TEXT`; `--service NAME` optional; `--out PATH` optional | Convert a sudoers text fragment to request JSON. Infer service from Cmnds. Never queue. Never `/etc/passwd` or `/etc/sudoers.d`. `visudo -cf` the input first. |
 | `json-to-sudoers` | 0 | `sr_json_to_sudoers` | stdin **xor** `--file PATH`; `--out PATH` optional | Convert request JSON to sudoers text. `remove` → `# Purpose:` comments only. `visudo -cf` the output except comment-only remove. Never queue. Never `/etc/passwd` or `/etc/sudoers.d`. |
-| `test-json-format` | 0 | `sr_test_json_format` | stdin **xor** `--file PATH` | Test a grant JSON file against `requirement-incorrect-json-format` without dest elev and without the waiting folder. Basename grammar / action match only when the input basename already matches request-id grammar. Never queue. Never `/etc/passwd` or `/etc/sudoers.d`. |
+| `test-json-format` | 0 **test-purpose** | `sr_test_json_format` | stdin **xor** `--file PATH` | **Unit test** of the JSON-format Fence against a **local test folder** / `--file`. Without dest elev and without the waiting folder. Basename grammar / action match only when the input basename already matches request-id grammar. Never queue. Never `/etc/passwd` or `/etc/sudoers.d`. Sudo wrap **only** chmod/chown of that folder (check before sudo). |
+| `test-well-known-binary` | 0 **test-purpose** | `sr_test_well_known_binary` | stdin **xor** `--file PATH` | **Unit test** of the well-known-binary Fence against a **local test folder** / `--file`. Without dest elev and without the waiting folder. JSON-format Fence runs first. `remove` has no commands — this Fence does not apply. Never queue. Never `/etc/passwd` or `/etc/sudoers.d`. Sudo wrap **only** chmod/chown of that folder. |
+| `fence-test` | 0 **test-purpose** | `sr_fence_test` | stdin **xor** `--file PATH` **xor** `--dir DIR`; `--expect-match` only with `--dir` | **Unit test** of dest fence **functions** against a JSON **file location** in a **local test folder**. **MUST NOT** require `sudo` to run. The only allowed in-tool elev is wrapping **chmod** / **chown** of that folder (check before sudo). **MUST NOT** require a sudoers fragment. **MUST NOT** submit, dest-write, `setup`, `approve`, or read the waiting folder. Closed list: JSON format, then well-known sudoer binary. `--dir` tests every regular non-symlink `*.json` in DIR. `--expect-match` succeeds only when every file matches a dest Fence. Sample: `tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json`. Invocation: `{{APP_NAME}} fence-test --file tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json`. |
 | `print-sudoers` | 0 | `sr_print_sudoers` | stdout or draft path | Emit **Table A only** (F6 fragment). Never write `/etc/passwd` or `/etc/sudoers.d`. |
 | `print-sudoers-install-script` | 0 | `sr_print_sudoers_install_script` | — | Emit admin script under volatile storage. |
 | `setup` | 1 | `lpu_setup` | — | Create LPU + default queues + F6 + login hook. Fail closed on UID collision / missing global binary for production F6. Any host admin (password `sudo`). Type 0 / LSU **MUST NOT** `useradd`. After success, **help submit**: print the `add-sudoer-request` next-step for the invoking sudoer (subject **may** be B). |
@@ -137,12 +151,14 @@ Every domain verb **MUST** have exactly one privilege type. Type 0 never writes 
 | `--approved-dir DIR` | `SUDOER_CLI_APPROVED_DIR` | Override accepted archive |
 | `--rejected-dir DIR` | `SUDOER_CLI_REJECTED_DIR` | Override declined archive |
 | `--queue-root DIR` | `SUDOER_CLI_QUEUE_ROOT` | Set the public trio as `DIR/sudoer-request`, `DIR/sudoer-approved`, `DIR/sudoer-rejected` |
+| `--dir DIR` | — | `fence-test` corpus directory (xor `--file` / stdin) |
+| `--expect-match` | — | `fence-test --dir`: every file must match a dest Fence |
 
-**Error codes (machine JSON `error` / `code`):** `invalid_name`, `self_scope`, `visudo_fail`, `not_regular`, `owner_mismatch`, `authz`, `not_found`, `already_done`, `confirm_required`, `xor_input`, `invalid_json`, `unknown_service`, `schema_version`, `field_mismatch`, `remove_extra_fields`.
+**Error codes (machine JSON `error` / `code`):** `invalid_name`, `self_scope`, `visudo_fail`, `not_regular`, `owner_mismatch`, `authz`, `not_found`, `already_done`, `confirm_required`, `xor_input`, `invalid_json`, `unknown_service`, `schema_version`, `field_mismatch`, `remove_extra_fields`, `untrusted_path`.
 
 **Routing:** `app_main` **MUST** dispatch every **live** row. Unrouted target rows stay out of `help`. Conversion verbs **MAY** be routed independently of setup/approve (local file transform).
 
-**Host-mutating (CL-HOST-MUTATING-DOMAIN):** `setup`, `setup --uninstall` / `remove-lpu`, `approve`, `reject`, `interactive`, and `list-approving --orphans` **MUST** fail closed with **no partial host write** unless euid is 0 and authorization matches §2.1. Convert, `test-json-format`, submit, list, show, print-sudoers, and print-sudoers-install-script **MUST NOT** write `/etc/passwd` or `/etc/sudoers.d`, and **MUST NOT** create LPU accounts. Type 1 dest is `/etc/sudoers.d/{{service}}-{{username}}` (copy / overwrite / remove). Privilege actor is **EM-HYB** (mix: password `sudo` for bootstrap; F6 NOPASSWD for day-to-day approve), owned by `requirement-three-layer-privilege-model.md`. Do **not** invent extra blocks — `requirement-privilege-prevention-set.md`.
+**Host-mutating (CL-HOST-MUTATING-DOMAIN):** `setup`, `setup --uninstall` / `remove-lpu`, `approve`, `reject`, `interactive`, and `list-approving --orphans` **MUST** fail closed with **no partial host write** unless euid is 0 and authorization matches §2.1. Convert, `test-json-format`, `test-well-known-binary`, `fence-test`, submit, list, show, print-sudoers, and print-sudoers-install-script **MUST NOT** write `/etc/passwd` or `/etc/sudoers.d`, and **MUST NOT** create LPU accounts. Type 1 dest is `/etc/sudoers.d/{{service}}-{{username}}` (copy / overwrite / remove). Privilege actor is **EM-HYB** (mix: password `sudo` for bootstrap; F6 NOPASSWD for day-to-day approve), owned by `requirement-three-layer-privilege-model.md`. Do **not** invent extra blocks — `requirement-privilege-prevention-set.md`.
 
 #### Type 1 authorization
 
@@ -195,15 +211,16 @@ sudoer-{{yyyyMMdd}}-{{service-name}}-{{username}}-{{add|update|remove}}-{{n}}.js
 
 Closed `schema_version` **1**. POSIX `/bin/sh` codec (`util_json_escape` + constrained decoder). No `jq` required.
 
-**add / update — required:** `schema_version`, `purpose`, `username`, `service`, `action`, non-empty `commands[]`.  
+**add / update — required:** `schema_version`, `purpose`, `username`, `service`, `action`, non-empty `commands[]`, `submit_app`, `submit_version`.  
 Each command: absolute `path`; `args` string array; `runas` default `root`; `tags` v1 `NOPASSWD` only.  
-**Optional `kind`:** `type-2-switch` or `login-hook-elev`. Unknown `kind` → `invalid_json`.
+**Optional `kind`:** `type-2-switch` or `login-hook-elev`. Unknown `kind` → `invalid_json`.  
+**`submit_app` / `submit_version`:** Type 0 submit **MUST** stamp live Config `APP_NAME` / `VERSION` (overwrite on queue). Dest-known non-empty strings. Dest **MUST NOT** dest-write them. Dest **MUST NOT** fence if `submit_app` ≠ `sudoer-cli` or `submit_version` ≠ dest `VERSION`. Missing / non-string on add/update → `invalid_json`. Display before yes/no: `queued by {submit_app} {submit_version}`.
 
 **Dest-written `submit_by`:** original Unix owner of the waiting file **before** dest took ownership. Dest `interactive` **MUST** read that owner first, take ownership as `sudoer-adm`, format-check, and **if** the JSON is well-formed **MUST** write `submit_by` to that owner. Type 0 submit **MUST NOT** include `submit_by`. Dest **MUST NOT** fence if `submit_by` is present or missing. User SSOT stays JSON `username`.
 
-**remove — required: `purpose` only.** Optional `schema_version` / `username` / `service` / `action`=`remove` / `kind` / `submit_by` must match the basename when present. `commands` or any unknown key → `remove_extra_fields`.
+**remove — required: `purpose` only.** Optional `schema_version` / `username` / `service` / `action`=`remove` / `kind` / `submit_by` / `submit_app` / `submit_version` must match the basename when present. If `submit_app` / `submit_version` are present they **MUST** be strings. `commands` or any unknown key → `remove_extra_fields`.
 
-Unknown keys anywhere → `invalid_json`. Closed-schema allowlist: `schema_version`, `purpose`, `username`, `service`, `action`, `commands`, `kind`, `submit_by`. Basename **action** must match JSON `action` when present (`field_mismatch`). User/service SSOT is JSON when present.
+Unknown keys anywhere → `invalid_json`. Closed-schema allowlist: `schema_version`, `purpose`, `username`, `service`, `action`, `commands`, `kind`, `submit_by`, `submit_app`, `submit_version`. Basename **action** must match JSON `action` when present (`field_mismatch`). User/service SSOT is JSON when present.
 
 `--json` CLI status (`out_json`) is **not** the request file.
 
@@ -221,6 +238,8 @@ Unknown keys anywhere → `invalid_json`. Closed-schema allowlist: `schema_versi
   "username": "alice",
   "service": "webservice",
   "action": "add",
+  "submit_app": "sudoer-cli",
+  "submit_version": "1.16.0",
   "commands": [
     {
       "runas": "root",
@@ -254,6 +273,8 @@ Unknown keys anywhere → `invalid_json`. Closed-schema allowlist: `schema_versi
   "username": "dns-adm",
   "service": "dns-cli",
   "action": "add",
+  "submit_app": "dns-cli",
+  "submit_version": "1.12.0",
   "submit_by": "alice",
   "commands": [
     {
@@ -426,7 +447,7 @@ Session `SUDOER_CLI_HOOK_RAN` **MUST** prevent a second `interactive` if both lo
 3. Prompt only through `prompt_*`. **MUST NOT** ad-hoc `read`. `--force` **MUST NOT** auto-approve. The id walk **MUST NOT** redirect stdin over those prompts (`prompt_yes_no` reads fd 0). Walk ids on another fd.  
 4. Resolve queues once. Type 1 **MAY** readdir inbound. Consider only regular, non-symlink files whose basename matches the request grammar.  
 5. Empty inbound → human note (or JSON success) and exit **0**. Do not hang.  
-6. For each pending id (basename sort): **fence first** (`requirement-incorrect-json-format`). If a fence **matches**: display the match in people/folder words; **MUST NOT** ask the approval question; **then** move inbound → rejected (snapshot + LPU owner + mode `0640` + unlink inbound; **MUST NOT** dest-write `/etc/sudoers.d`; **MUST NOT** stamp `submit_by`; **MUST NOT** call standalone `reject` re-validate). Continue to the next file. If **no** fence: show purpose + body (same contract as `show`); ask the **approval question** (term `approval-question`): **one-off yes/no** via **one** `prompt_yes_no`. **Yes** = approve. **No** (including Enter) = reject. **MUST NOT** offer skip / quit / maybe. **MUST NOT** chain Approve then Reject then Quit as three `(y/N)` questions.  
+6. For each pending id (basename sort): **fence first** (`requirement-incorrect-json-format`, then `requirement-well-known-sudoer-binary-fence`). If a fence **matches**: display the match in people/folder words; **MUST NOT** ask the approval question; **then** move inbound → rejected (snapshot + LPU owner + mode `0640` + unlink inbound; **MUST NOT** dest-write `/etc/sudoers.d`; **MUST NOT** stamp `submit_by`; **MUST NOT** call standalone `reject` re-validate). Continue to the next file. If **no** fence: show purpose + body (same contract as `show`); ask the **approval question** (term `approval-question`): **one-off yes/no** via **one** `prompt_yes_no`. **Yes** = approve. **No** (including Enter) = reject. **MUST NOT** offer skip / quit / maybe. **MUST NOT** chain Approve then Reject then Quit as three `(y/N)` questions.  
 7. **yes** / **no** **MUST** run the same re-validate + dest/move as the standalone `approve` / `reject` verbs. Remaining inbound files stay in this loop (no quit). Direct `approve` / `reject` with a request id stay **non-interactive**.  
 8. A validate failure on one id **MUST NOT** abort the rest; emit the error and continue.  
 9. Empty argv **MUST NOT** reach this handler.
@@ -439,7 +460,7 @@ The handler is **live**. Non-TTY / `--json` / `--quiet` fail closed `confirm_req
 
 ### 2.3 Specialized project help items (pillar 3)
 
-`help` **MUST** list Type 0 lifecycle **and** the live domain rows (conversion, `test-json-format`, submit, list, show, print-sudoers, and Type 1 notes for setup/approve/interactive). Examples **MUST** include `sudoers-to-json`, `test-json-format`, `add-sudoer-request`, and a list/show pair.
+`help` **MUST** list Type 0 lifecycle **and** the live domain rows. **Test-purpose** verbs (`test-json-format`, `test-well-known-binary`, `fence-test`) **MUST** appear under a heading **apart** from **operational** Type 0 (conversion, submit, list, show, print-sudoers) and Type 1 notes for setup/approve/interactive. Examples **MUST** include `sudoers-to-json`, `fence-test --file` with a JSON path (no `sudo`), `add-sudoer-request`, and a list/show pair. `fence-test` examples **MUST NOT** use `sudo`.
 
 Empty argv remains **Type N help** for every uid. `interactive` is never implied by empty argv.
 
@@ -469,7 +490,8 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | **Hook command** | `sudo -n /usr/local/bin/sudoer-cli interactive` |
 | **Approval question** | One-off yes/no (`prompt_yes_no "Approve this request"`). Yes = approve. No / Enter = reject. No skip / quit / maybe. Term `approval-question`. Fence match: no question; display then rejected. |
 | **`.profile` create** | Missing → write source-bashrc sample (`# BEGIN sudoer-cli profile source-bashrc`). Existing never overwritten. |
-| **Routed now** | Type 0 convert/`test-json-format`/submit/list/show/print-sudoers; Type 1 `setup`/`remove-lpu`/`approve`/`reject`/`interactive` live |
+| **Routed now** | Type 0 **operational** convert/submit/list/show/print-sudoers; Type 0 **test-purpose** `test-json-format`/`test-well-known-binary`/`fence-test`; Type 1 `setup`/`remove-lpu`/`approve`/`reject`/`interactive` live |
+| **`fence-test` sample JSON** | `tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json` — `--file` that path; test-purpose; sudo wrap only chmod/chown of the local test folder; does not queue |
 | **Gap** | about LPU/F6/trust-tier fields (queue paths are already in `about`) |
 | **Queue overrides** | `--queue-root` / per-dir flags. Fake `SUDOER_CLI_GRANT_ROOT` for dest tests. `setup` always `useradd` when euid 0. There is no `LIVE_LPU` flag and no Gap on create. |
 
@@ -523,7 +545,9 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 24. Overwrite an existing `.profile`.  
 25. Leave `${LPU_HOME}/.profile` or `.bashrc` as `root:root` / unreadable after create or rewrite (`mktemp`+`mv`). The corresponding user **must** own those files. Swallowing `chown` is forbidden.  
 26. Offer skip / quit / maybe on dest review, or chain Approve then Reject then Quit as three `(y/N)` questions. The approval question is one-off yes/no.  
-27. Leave a dest **Fence** match in inbound after `interactive` displayed it, dest-write `/etc/sudoers.d` on that match, ask yes/no on it, or move it **before** the display.
+27. Leave a dest **Fence** match in inbound after `interactive` displayed it, dest-write `/etc/sudoers.d` on that match, ask yes/no on it, or move it **before** the display.  
+28. Treat `fence-test` as needing `sudo`, a sudoers fragment, dest review, host install, or the waiting folder. Input is a JSON **file location**.  
+29. Treat a **test-purpose** verb (`fence-test`, `test-json-format`, `test-well-known-binary`) as **operational** (queue, dest-write, `setup`, `approve`), mix testers into operational help grouping, or `sudo` except wrapping **chmod** / **chown** of the **local test folder** (check before sudo).
 
 **Violating this rule is a critical domain-SSOT / privilege regression.**
 
@@ -545,7 +569,8 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | `docs/requirements/requirement-shell-prompt.md` | `prompt_yes_no` body for the one-off approval question |
 | `docs/requirements/requirement-shell-cli-zero-arguments.md` | Empty argv ≠ `interactive` |
 | `docs/requirements/requirement-actor-role-subject-approver.md` | Five-column consider catalog |
-| `docs/requirements/requirement-incorrect-json-format.md` | Dest Fence body |
+| `docs/requirements/requirement-incorrect-json-format.md` | Dest Fence: JSON format |
+| `docs/requirements/requirement-well-known-sudoer-binary-fence.md` | Dest Fence: well-known sudoer binary |
 | `src/sudoer-cli` | Ship unit |
 
 ## Design-time verification
@@ -593,6 +618,9 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | **TP-SR-FENCE-11** | `tests/test_domain_sr.sh` | have | Dest `submit_by` stamp first `{` only |
 | **TP-SR-FENCE-09..10** | `tests/test_domain_sr.sh` | have | dest-written `submit_by` accepted; Type 0 must not plant it |
 | **TP-SR-FENCE-12** | `tests/test_domain_sr.sh` | have | Interactive fence match: display then move to rejected; no yes/no; no dest write |
+| **TP-SR-FENCE-13..15** | `tests/test_domain_sr.sh` | have | `submit_app` / `submit_version` required on add; sibling name is not a fence; Type 0 encoder stamps |
+| **TP-SR-WKBIN-01..10** | `tests/test_domain_sr.sh` | have | Well-known sudoer binary Fence (dns / nginx / certbot / interpreter / home gbin) |
+| **TP-SR-FT-01..07** | `tests/test_domain_sr.sh` | have | Type 0 `fence-test` `--file` / `--dir` corpus |
 
 **Matrix:** `reviews/requirement-test-matrix.md`  
 **Map:** `reviews/test-plan.md`
@@ -629,9 +657,14 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | 2026-08-20 | Active 2.23.0 | Dest-written `submit_by` = original queue Unix owner; Type 0 must not plant; **TP-SR-FENCE-09..10** |
 | 2026-08-20 | Active 2.24.0 | Dest review asks the **approval question** (one-off yes/no; yes=approve, no/Enter=reject). No skip / quit / maybe. Protection rule 26; **TP-SR-INT-06** |
 | 2026-08-20 | Active 2.25.0 | Interactive fence match: display then move inbound → rejected. Standalone approve/reject stay inbound. Protection rule 27; **TP-SR-FENCE-12** |
+| 2026-08-21 | Active 2.26.0 | Dest Fence **well-known sudoer binary** after JSON format; Type 0 `test-well-known-binary`; **TP-SR-WKBIN-01..10** |
+| 2026-08-21 | Active 2.27.0 | Type 0 `fence-test` runs the closed dest fence list (`--file` / `--dir` / `--expect-match`); **TP-SR-FT-01..07** |
+| 2026-08-21 | Active 2.28.0 | `fence-test` is JSON-file verification: **no sudo**, **no sudoers fragment**, **no queue**. Sample `tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json` |
+| 2026-08-21 | Active 2.29.0 | **Test-purpose** vs **operational** verbs. Testers target a local test folder; sudo wrap only chmod/chown of that folder. Help lists testers apart. Protection 29. |
+| 2026-08-21 | Active 2.30.0 | Dest-owned `submit_app` / `submit_version`; Type 0 stamps live Config; MUST NOT fence sibling app or version; **TP-SR-FENCE-13..15** |
 
 ---
 
-**Last Updated**: 2026-08-20  
+**Last Updated**: 2026-08-21  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

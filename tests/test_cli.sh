@@ -47,6 +47,10 @@ run_test_cli() {
     assert_contains "TP-CLI-04 help sudoers-to-json" "$_out" "sudoers-to-json"
     assert_contains "TP-CLI-04 help json-to-sudoers" "$_out" "json-to-sudoers"
     assert_contains "TP-CLI-04 help test-json-format" "$_out" "test-json-format"
+    assert_contains "TP-CLI-04 help test-well-known-binary" "$_out" "test-well-known-binary"
+    assert_contains "TP-CLI-04 help fence-test" "$_out" "fence-test"
+    assert_contains "TP-CLI-04 help unit test heading" "$_out" "Unit test (local test folder; Type 0 — test-purpose):"
+    assert_contains "TP-CLI-04 help operational heading" "$_out" "Sudoers requests (Type 0 — operational):"
     assert_contains "TP-CLI-04 help add-sudoer-request" "$_out" "add-sudoer-request"
     assert_contains "TP-CLI-04 help update-sudoer-request" "$_out" "update-sudoer-request"
     assert_contains "TP-CLI-04 help remove-sudoer-request" "$_out" "remove-sudoer-request"
@@ -152,6 +156,14 @@ run_test_cli() {
     _ec=$?
     assert_eq "TP-CLI-14 test-json-format routed (xor fail not unknown)" 1 "$_ec"
     assert_not_contains "TP-CLI-14 test-json-format not unknown" "$_err" "Unknown command"
+    _err=$(sh "${SCRIPT}" test-well-known-binary 2>&1 >/dev/null)
+    _ec=$?
+    assert_eq "TP-CLI-15 test-well-known-binary routed (xor fail not unknown)" 1 "$_ec"
+    assert_not_contains "TP-CLI-15 test-well-known-binary not unknown" "$_err" "Unknown command"
+    _err=$(sh "${SCRIPT}" fence-test 2>&1 >/dev/null)
+    _ec=$?
+    assert_eq "TP-CLI-16 fence-test routed (xor fail not unknown)" 1 "$_ec"
+    assert_not_contains "TP-CLI-16 fence-test not unknown" "$_err" "Unknown command"
 
     # TP-ELEV-07: only top-level measure + sr_read_input data-source may use [ -t 0/1 ]
     # Specified exception: the login-hook *snippet* (rc policy, not CLI TTY SSOT).

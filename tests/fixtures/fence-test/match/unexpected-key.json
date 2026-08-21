@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "purpose": "x",
+  "username": "alice",
+  "service": "webservice",
+  "action": "add",
+  "token": "nope",
+  "commands": [
+    {
+      "runas": "root",
+      "tags": ["NOPASSWD"],
+      "path": "/bin/true",
+      "args": []
+    }
+  ]
+}

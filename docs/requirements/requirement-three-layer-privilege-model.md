@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-three-layer-privilege-model.md  
-**Status**: Active (Version 1.14.0 – sudo-wrapping function; check before sudo; chmod example)  
+**Status**: Active (Version 1.14.1 – Type 0 test-purpose testers vs operational Type 0)  
 **Area**: architecture  
 **Key**: `requirement-three-layer-privilege-model`  
 **id**: RQ-THREE-LAYER-PRIVILEGE-MODEL  
@@ -44,7 +44,7 @@ The **closed catalog** of what the product blocks — and what it **must not** b
 
 | Layer | Privilege | Typical actor | This product |
 |-------|-----------|---------------|--------------|
-| **Type 0** | Invoking user | Any login | Lifecycle, diagnostics, convert (`sudoers-to-json` / `json-to-sudoers`), JSON-format test (`test-json-format`), submit (A may name B; filename uses B), sidecar list/show, draft emit |
+| **Type 0** | Invoking user | Any login | **Operational:** lifecycle, diagnostics, convert (`sudoers-to-json` / `json-to-sudoers`), submit (A may name B; filename uses B), sidecar list/show, draft emit. **Test-purpose (unit test; local test folder):** dest-fence testers (`test-json-format` / `test-well-known-binary` / `fence-test`). Type 0 does **not** mean “unit test.” Testers **MUST NOT** queue or dest-write. Sudo wrap on testers **only** chmod/chown of the local test folder. |
 | **Type 1 bootstrap** | Elevated host mutation | **Any** host admin already euid 0 (`sudo {{APP}} setup` — **password sudo OK**) | `setup` / `remove-lpu`. F6 / `sudoer-adm` **must not** be required (chicken-egg). |
 | **Type 1 approve** | Elevated host mutation | **Any** host admin already euid 0 (password `sudo` — `SUDO_USER` may be any login); **or** `sudoer-adm` via F6; **or** a real root login | `approve` / `reject` / `interactive`; `list-approving --orphans`. F6 is an extra path, not the exclusive one |
 | **Type 2** | Dedicated system-user **execution** context | — | **Not used.** `sudoer-adm` is a **least-privilege-approver** (who may invoke F6), not an euid the CLI must switch into for dest writes |
@@ -192,6 +192,6 @@ The CLI invokes these as **internal jobs**. Account create/teardown **MUST** be 
 | **TP-ELEV-09** | `tests/test_domain_sr.sh` | have | Alias of TP-SR-PRIV-04 / TP-PREV-03 |
 | **TP-SR-INT-01** | `tests/test_domain_sr.sh` | have | `interactive` without euid 0 → `authz` |
 
-**Last Updated**: 2026-08-20  
+**Last Updated**: 2026-08-21  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

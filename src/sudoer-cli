@@ -24,6 +24,7 @@
 # - requirement-privilege-prevention-set.md
 # - requirement-actor-role-subject-approver.md
 # - requirement-incorrect-json-format.md
+# - requirement-well-known-sudoer-binary-fence.md
 # - requirement-domain-sudoer-approval.md
 # - requirement-shell-script-coding.md
 # - requirement-shell-sudo-command.md
@@ -35,7 +36,7 @@
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
 # APP NAME: hard-assign APP_NAME="sudoer-cli"
-# VERSION: hard-assign VERSION="1.13.0"
+# VERSION: hard-assign VERSION="1.16.0"
 #
 # =============================================================================
 
@@ -50,9 +51,9 @@ APP_NAME="sudoer-cli"
 : "${APP_NAME:=sudoer-cli}"
 : "${APP_DESC:=Least-privilege sudoers-request approval CLI (Type 0 lifecycle; domain target law)}"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
-: "${DESCRIPTION:=POSIX /bin/sh CLI: lifecycle plus sudoers-request convert/submit/list/show/test-json-format. Type 1 setup creates sudoer-adm; approve/reject require euid 0.}"
+: "${DESCRIPTION:=POSIX /bin/sh CLI: lifecycle plus sudoers-request convert/submit/list/show/test-json-format/test-well-known-binary/fence-test. Type 1 setup creates sudoer-adm; approve/reject require euid 0.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.13.0"
+VERSION="1.16.0"
 : "${VERSION:=1.0.0}"
 # Repository identity SSOT (git host owner/repo for project-repository alignment).
 # Install remains local-only: SCRIPT_URL stays empty (no online curl|sh channel).
@@ -297,6 +298,17 @@ sr_operator_cmd() {
         printf '%s' "${_gb}"
         return 0
     fi
+    _run=$(util_resolve_running_path)
+    if [ -n "${_run}" ] && [ -f "${_run}" ]; then
+        printf '%s' "${_run}"
+        return 0
+    fi
+    printf '%s' "${APP_NAME}"
+}
+
+# Test-purpose Next: the running ship unit (checkout src/…). Never GLOBAL_BIN.
+# fence-test / test-json-format / test-well-known-binary do not need an install.
+sr_test_purpose_cmd() {
     _run=$(util_resolve_running_path)
     if [ -n "${_run}" ] && [ -f "${_run}" ]; then
         printf '%s' "${_run}"
@@ -1788,11 +1800,15 @@ sr_json_encode_request() {
         fi
     done <"${_tf}"
     rm -f "${_tf}"
-    printf '{"schema_version":1,"purpose":"%s","username":"%s","service":"%s","action":"%s","commands":[%s]}' \
+    : "${APP_NAME:=sudoer-cli}"
+    : "${VERSION:=1.16.0}"
+    printf '{"schema_version":1,"purpose":"%s","username":"%s","service":"%s","action":"%s","submit_app":"%s","submit_version":"%s","commands":[%s]}' \
         "$(util_json_escape "${_je_purpose}")" \
         "$(util_json_escape "${_je_user}")" \
         "$(util_json_escape "${_je_svc}")" \
         "$(util_json_escape "${_je_act}")" \
+        "$(util_json_escape "${APP_NAME}")" \
+        "$(util_json_escape "${VERSION}")" \
         "${_acc}"
 }
 
@@ -2031,6 +2047,10 @@ sr_json_decode_to_fields() {
     : "${SR_D_KIND:=}"
     SR_D_SUBMIT_BY=$(sr_json_get_str "${_jd}" "submit_by")
     : "${SR_D_SUBMIT_BY:=}"
+    SR_D_SUBMIT_APP=$(sr_json_get_str "${_jd}" "submit_app")
+    : "${SR_D_SUBMIT_APP:=}"
+    SR_D_SUBMIT_VERSION=$(sr_json_get_str "${_jd}" "submit_version")
+    : "${SR_D_SUBMIT_VERSION:=}"
     SR_D_VER=$(sr_json_get_str "${_jd}" "schema_version")
     [ -n "${SR_D_VER}" ] || SR_D_VER=$(printf '%s' "${_jd}" | tr '\n' ' ' | sed -n 's/.*"schema_version"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p')
     if sr_json_has_key "${_jd}" "commands"; then
@@ -2095,6 +2115,8 @@ sr_sudoers_to_json() {
     _purpose="${SR_PURPOSE:-${SR_P_PURPOSE}}"
     [ -n "${_purpose}" ] || sr_die "--purpose required when input has no # Purpose:" "xor_input"
     [ -n "${SR_P_USER}" ] || sr_die "no User spec in sudoers" "invalid_json"
+    sr_cmds_require_well_known "${SR_P_CMDS}" "convert" \
+        "$(sr_operator_cmd) test-well-known-binary --file request.json"
     sr_service_infer "${SR_P_CMDS}" "${SR_SERVICE-}"
     _svc="${SR_INFERRED}"
     _txt=$(sr_render_sudoers "${_purpose}" "${SR_P_USER}" "${_act}" "${SR_P_CMDS}")
@@ -2127,6 +2149,8 @@ sr_json_to_sudoers() {
     [ -n "${SR_D_USER}" ] || sr_die "username required" "invalid_json"
     [ -n "${SR_D_SVC}" ] || sr_die "service required" "invalid_json"
     [ -n "${SR_D_CMDS}" ] || sr_die "commands required for add/update" "invalid_json"
+    sr_cmds_require_well_known "${SR_D_CMDS}" "convert" \
+        "$(sr_operator_cmd) test-well-known-binary --file request.json"
     sr_service_infer "${SR_D_CMDS}" "${SR_D_SVC}"
     _svc="${SR_INFERRED}"
     _txt=$(sr_render_sudoers "${SR_D_PURPOSE}" "${SR_D_USER}" "${SR_D_ACT}" "${SR_D_CMDS}")
@@ -2521,6 +2545,8 @@ sr_submit() {
         sr_parse_sudoers "${_raw}"
         _purpose="${SR_PURPOSE:-${SR_P_PURPOSE}}"
         [ -n "${_purpose}" ] || sr_die "--purpose required when sudoers lacks # Purpose:" "xor_input"
+        sr_cmds_require_well_known "${SR_P_CMDS}" "convert" \
+            "$(sr_operator_cmd) test-well-known-binary --file request.json"
         sr_service_infer "${SR_P_CMDS}" "${SR_SERVICE-}"
         _svc="${SR_INFERRED}"
         _user="${SR_P_USER:-${_me}}"
@@ -2533,6 +2559,8 @@ sr_submit() {
         _svc="${SR_SERVICE:-${SR_D_SVC}}"
         [ -n "${_svc}" ] || sr_die "service required" "unknown_service"
         [ "${SR_D_HAS_CMDS}" -eq 1 ] || sr_die "commands required" "invalid_json"
+        sr_cmds_require_well_known "${SR_D_CMDS}" "convert" \
+            "$(sr_operator_cmd) test-well-known-binary --file request.json"
         sr_service_infer "${SR_D_CMDS}" "${_svc}"
         _svc="${SR_INFERRED}"
         _user="${SR_D_USER:-${_me}}"
@@ -2664,7 +2692,7 @@ sr_dest_fence_unknown_keys() {
     _uk_keys=$(printf '%s\n' "${_uk_flat}" | tr ',' '\n' | sed -n 's/^[[:space:]]*"\([a-z_][a-z0-9_]*\)"[[:space:]]*:.*/\1/p')
     for _uk in ${_uk_keys}; do
         case "${_uk}" in
-            schema_version|purpose|username|service|action|commands|kind|submit_by) ;;
+            schema_version|purpose|username|service|action|commands|kind|submit_by|submit_app|submit_version) ;;
             *)
                 sr_json_format_fence_die "${_uk_who} has an unexpected JSON field '${_uk}'." "invalid_json" \
                     "${_uk_next}" "${_uk_mode}"
@@ -2726,12 +2754,84 @@ sr_json_format_fence_or_die() {
     if [ "${_eff_act}" = "remove" ]; then
         [ "${SR_D_HAS_CMDS}" -eq 0 ] || sr_json_format_fence_die "${_jf_who} is a remove request that includes commands." "remove_extra_fields" \
             "${_jf_next}" "${_jf_mode}"
+        if sr_json_has_key "${_jf_body}" "submit_app" && [ -z "${SR_D_SUBMIT_APP}" ]; then
+            sr_json_format_fence_die "${_jf_who} has a non-string submit_app." "invalid_json" \
+                "${_jf_next}" "${_jf_mode}"
+        fi
+        if sr_json_has_key "${_jf_body}" "submit_version" && [ -z "${SR_D_SUBMIT_VERSION}" ]; then
+            sr_json_format_fence_die "${_jf_who} has a non-string submit_version." "invalid_json" \
+                "${_jf_next}" "${_jf_mode}"
+        fi
     else
         [ "${SR_D_VER}" = "1" ] || sr_json_format_fence_die "${_jf_who} is not schema_version 1." "schema_version" \
             "${_jf_next}" "${_jf_mode}"
         { [ "${SR_D_HAS_CMDS}" -eq 1 ] && [ -n "${SR_D_CMDS}" ]; } || sr_json_format_fence_die "${_jf_who} is an add/update request with no commands." "invalid_json" \
             "${_jf_next}" "${_jf_mode}"
+        [ -n "${SR_D_SUBMIT_APP}" ] || sr_json_format_fence_die "${_jf_who} has no submit_app (which CLI queued it)." "invalid_json" \
+            "${_jf_next}" "${_jf_mode}"
+        [ -n "${SR_D_SUBMIT_VERSION}" ] || sr_json_format_fence_die "${_jf_who} has no submit_version (which CLI version queued it)." "invalid_json" \
+            "${_jf_next}" "${_jf_mode}"
     fi
+}
+
+# Dest Fence: well-known sudoer binary (requirement-well-known-sudoer-binary-fence).
+# JSON-format Fence runs first. remove has no commands — skip.
+sr_path_is_well_known() {
+    _wp="$1"
+    _skip_rp="${2:-0}"
+    [ -n "${_wp}" ] || return 1
+    case "${_wp}" in
+        /*) ;;
+        *) return 1 ;;
+    esac
+    case "${_wp}" in
+        *'/../'*|*/..) return 1 ;;
+    esac
+    _wb="${_wp##*/}"
+    [ -n "${_wb}" ] || return 1
+    case "${_wb}" in
+        python|python2|python3|pypy|pypy3|env|pip|pip3) return 1 ;;
+        python3.*|python[0-9].*|python[0-9]|pypy[0-9]*) return 1 ;;
+    esac
+    case "${_wp}" in
+        /bin/*|/sbin/*|/usr/bin/*|/usr/sbin/*|/usr/libexec/*|/usr/local/bin/*|/usr/local/sbin/*|/opt/gitlab/bin/*) ;;
+        *) return 1 ;;
+    esac
+    if [ "${_skip_rp}" != "1" ] && [ -e "${_wp}" ] && command -v realpath >/dev/null 2>&1; then
+        _wr=$(realpath "${_wp}" 2>/dev/null) || return 1
+        if [ "${_wr}" != "${_wp}" ]; then
+            sr_path_is_well_known "${_wr}" 1 || return 1
+        fi
+    fi
+    return 0
+}
+
+sr_well_known_fence_die() {
+    _wk_path="$1"
+    _wk_mode="${2:-dest}"
+    _wk_next="$3"
+    _wk_msg="This grant names a command that is not a well-known system binary ('${_wk_path}'). A normal user can change a program under their own files and sudo would still run it."
+    if [ "${_wk_mode}" = "dest" ]; then
+        sr_die "${_wk_msg} Dest will not ask yes/no. Do not approve it." "untrusted_path" "${_wk_next}"
+    fi
+    sr_die "${_wk_msg} Do not convert or queue it." "untrusted_path" "${_wk_next}"
+}
+
+sr_cmds_require_well_known() {
+    _cc="$1"
+    _wk_mode="${2:-dest}"
+    _wk_next="$3"
+    [ -n "${_cc}" ] || return 0
+    _wktf=$(util_mktemp)
+    printf '%s' "${_cc}" >"${_wktf}"
+    while IFS='|' read -r _wrn _wtg _wp _wa || [ -n "${_wp-}" ]; do
+        [ -n "${_wp}" ] || continue
+        if ! sr_path_is_well_known "${_wp}"; then
+            rm -f "${_wktf}"
+            sr_well_known_fence_die "${_wp}" "${_wk_mode}" "${_wk_next}"
+        fi
+    done <"${_wktf}"
+    rm -f "${_wktf}"
 }
 
 sr_dest_fence_or_die() {
@@ -2746,11 +2846,15 @@ sr_dest_fence_or_die() {
     sr_parse_request_id "${_fid}"
     _body=$(cat "${_fp}")
     sr_json_format_fence_or_die "${_body}" "${_next}" "dest" "${_fid}"
+    _wk_act="${SR_D_ACT:-${SR_ID_ACT}}"
+    if [ "${_wk_act}" != "remove" ]; then
+        sr_cmds_require_well_known "${SR_D_CMDS}" "dest" "${_next}"
+    fi
 }
 
 sr_test_json_format() {
     _raw=$(sr_read_input)
-    _cmd=$(sr_operator_cmd)
+    _cmd=$(sr_test_purpose_cmd)
     _next="${_cmd} test-json-format --file request.json"
     _fid=""
     if [ -n "${SR_FILE-}" ]; then
@@ -2769,9 +2873,172 @@ sr_test_json_format() {
             "service" "${SR_D_SVC}" \
             "action" "${SR_D_ACT}" \
             "kind" "${SR_D_KIND}" \
+            "submit_app" "${SR_D_SUBMIT_APP}" \
+            "submit_version" "${SR_D_SUBMIT_VERSION}" \
             "submit_by" "${SR_D_SUBMIT_BY}"
     else
         out_success "JSON format is well-formed."
+    fi
+}
+
+sr_test_well_known_binary() {
+    _raw=$(sr_read_input)
+    _cmd=$(sr_test_purpose_cmd)
+    _next="${_cmd} test-well-known-binary --file request.json"
+    _fid=""
+    if [ -n "${SR_FILE-}" ]; then
+        _bn=$(basename -- "${SR_FILE}")
+        case "${_bn}" in
+            sudoer-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-*.json)
+                _fid="${_bn}"
+                ;;
+        esac
+    fi
+    sr_json_format_fence_or_die "${_raw}" "${_cmd} test-json-format --file request.json" "test" "${_fid}"
+    _wk_act="${SR_D_ACT:-}"
+    if [ -n "${_fid}" ] && [ -z "${_wk_act}" ]; then
+        _wk_act="${SR_ID_ACT}"
+    fi
+    if [ "${_wk_act}" = "remove" ]; then
+        if [ "${JSON}" -eq 1 ]; then
+            out_json "success" "remove has no commands; well-known binary fence does not apply." \
+                "command" "test-well-known-binary" \
+                "action" "remove"
+        else
+            out_success "remove has no commands; well-known binary fence does not apply."
+        fi
+        return 0
+    fi
+    sr_cmds_require_well_known "${SR_D_CMDS}" "test" "${_next}"
+    if [ "${JSON}" -eq 1 ]; then
+        out_json "success" "Command paths are well-known system binaries." \
+            "command" "test-well-known-binary" \
+            "username" "${SR_D_USER}" \
+            "service" "${SR_D_SVC}" \
+            "action" "${SR_D_ACT}"
+    else
+        out_success "Command paths are well-known system binaries."
+    fi
+}
+
+sr_fence_test_fid() {
+    _ft_bn=$(basename -- "${1-}")
+    case "${_ft_bn}" in
+        sudoer-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-*.json)
+            printf '%s' "${_ft_bn}"
+            ;;
+        *)
+            printf '%s' ""
+            ;;
+    esac
+}
+
+# Run the closed dest fence list (JSON format, then well-known binary). Dies on match.
+sr_fence_test_apply() {
+    _ft_body="$1"
+    _ft_fid="$2"
+    _cmd=$(sr_test_purpose_cmd)
+    _next="${_cmd} fence-test --file request.json"
+    sr_json_format_fence_or_die "${_ft_body}" "${_next}" "test" "${_ft_fid}"
+    _ft_act="${SR_D_ACT:-}"
+    if [ -n "${_ft_fid}" ] && [ -z "${_ft_act}" ]; then
+        _ft_act="${SR_ID_ACT}"
+    fi
+    if [ "${_ft_act}" != "remove" ]; then
+        sr_cmds_require_well_known "${SR_D_CMDS}" "test" "${_next}"
+    fi
+}
+
+sr_fence_test() {
+    _cmd=$(sr_test_purpose_cmd)
+    if [ -n "${SR_DIR-}" ] && [ -n "${SR_FILE-}" ]; then
+        sr_die "fence-test takes --file PATH or --dir DIR or stdin, not both --file and --dir." "xor_input" \
+            "${_cmd} fence-test --file request.json"
+    fi
+    if [ -n "${SR_DIR-}" ]; then
+        sr_fence_test_dir
+        return 0
+    fi
+    if [ "${SR_EXPECT_MATCH:-0}" = "1" ]; then
+        sr_die "--expect-match is only valid with --dir DIR." "xor_input" \
+            "${_cmd} fence-test --dir tests/fixtures/fence-test/match --expect-match"
+    fi
+    _raw=$(sr_read_input)
+    _fid=""
+    if [ -n "${SR_FILE-}" ]; then
+        _fid=$(sr_fence_test_fid "${SR_FILE}")
+    fi
+    sr_fence_test_apply "${_raw}" "${_fid}"
+    if [ "${JSON}" -eq 1 ]; then
+        out_json "success" "No dest fence matched." \
+            "command" "fence-test" \
+            "username" "${SR_D_USER}" \
+            "service" "${SR_D_SVC}" \
+            "action" "${SR_D_ACT}"
+    else
+        out_success "No dest fence matched."
+    fi
+}
+
+sr_fence_test_dir() {
+    _dir="${SR_DIR}"
+    _cmd=$(sr_test_purpose_cmd)
+    [ -n "${_dir}" ] || sr_die "fence-test --dir requires DIR." "xor_input" \
+        "${_cmd} fence-test --dir tests/fixtures/fence-test/pass"
+    [ -d "${_dir}" ] || sr_die "fence-test --dir is not a directory: ${_dir}" "not_found" \
+        "${_cmd} fence-test --dir tests/fixtures/fence-test/pass"
+    [ -L "${_dir}" ] && sr_die "fence-test refuses a symlink --dir: ${_dir}" "not_regular" \
+        "${_cmd} fence-test --dir tests/fixtures/fence-test/pass"
+    _expect="${SR_EXPECT_MATCH:-0}"
+    _n=0
+    _matched=0
+    _passed=0
+    for _fp in "${_dir}"/*.json; do
+        [ -f "${_fp}" ] || continue
+        [ -L "${_fp}" ] && continue
+        _bn=$(basename -- "${_fp}")
+        _n=$((_n + 1))
+        if ( sr_fence_test_apply "$(cat "${_fp}")" "$(sr_fence_test_fid "${_fp}")" ); then
+            _passed=$((_passed + 1))
+            out_info "pass ${_bn}"
+        else
+            _matched=$((_matched + 1))
+            out_info "fence-matched ${_bn}"
+        fi
+    done
+    if [ "${_n}" -eq 0 ]; then
+        sr_die "fence-test --dir has no regular .json files: ${_dir}" "not_found" \
+            "${_cmd} fence-test --file request.json"
+    fi
+    if [ "${_expect}" = "1" ]; then
+        if [ "${_passed}" -ne 0 ] || [ "${_matched}" -ne "${_n}" ]; then
+            sr_die "fence-test --expect-match: ${_passed} of ${_n} files had no dest fence (want every file to match)." "invalid_json" \
+                "${_cmd} fence-test --dir ${_dir} --expect-match"
+        fi
+        if [ "${JSON}" -eq 1 ]; then
+            out_json "success" "fence-test: ${_n} files, all matched a dest fence." \
+                "command" "fence-test" \
+                "files" "${_n}" \
+                "matched" "${_matched}" \
+                "passed" "${_passed}" \
+                "expect_match" "1"
+        else
+            out_success "fence-test: ${_n} files, all matched a dest fence."
+        fi
+        return 0
+    fi
+    if [ "${_matched}" -ne 0 ]; then
+        sr_die "fence-test: ${_matched} of ${_n} files matched a dest fence." "invalid_json" \
+            "${_cmd} fence-test --file request.json"
+    fi
+    if [ "${JSON}" -eq 1 ]; then
+        out_json "success" "fence-test: ${_n} files, no dest fence matched." \
+            "command" "fence-test" \
+            "files" "${_n}" \
+            "matched" "0" \
+            "passed" "${_passed}"
+    else
+        out_success "fence-test: ${_n} files, no dest fence matched."
     fi
 }
 
@@ -2928,6 +3195,9 @@ sr_interactive() {
         fi
         if [ -n "${_orig_owner}" ]; then
             sr_stamp_submit_by "${_in}/${_bn}" "${_orig_owner}"
+        fi
+        if [ -n "${SR_D_SUBMIT_APP}" ] || [ -n "${SR_D_SUBMIT_VERSION}" ]; then
+            out_plain "queued by ${SR_D_SUBMIT_APP} ${SR_D_SUBMIT_VERSION}"
         fi
         SR_OPERAND="${_bn}"
         sr_show
@@ -3450,10 +3720,9 @@ app_help() {
     out_plain "  about                Show diagnostics (Type 0 + resolved queue paths)"
     out_plain "  help                 Show this help"
     out_empty_line
-    out_info "Sudoers requests (Type 0):"
+    out_info "Sudoers requests (Type 0 — operational):"
     out_plain "  sudoers-to-json      Convert sudoers fragment to request JSON"
     out_plain "  json-to-sudoers      Convert request JSON to sudoers fragment"
-    out_plain "  test-json-format     Test a grant JSON file against the dest JSON-format fence (does not queue)"
     out_plain "  print-sudoers        Emit F6 Table A draft (Type 0; never writes /etc/passwd or /etc/sudoers)"
     out_plain "  print-sudoers-install-script  Emit admin install script"
     out_plain "  add-sudoer-request   Queue an add request (JSON or sudoers)"
@@ -3461,6 +3730,11 @@ app_help() {
     out_plain "  remove-sudoer-request  Queue a purpose-only remove (--service)"
     out_plain "  list-approving|list-approved|list-rejected"
     out_plain "  show <request-id.json>   Show a known request"
+    out_empty_line
+    out_info "Unit test (local test folder; Type 0 — test-purpose):"
+    out_plain "  test-json-format     Test a grant JSON file against the dest JSON-format fence (does not queue)"
+    out_plain "  test-well-known-binary  Test grant command paths against the well-known system-binary fence (does not queue)"
+    out_plain "  fence-test            Test dest fence functions against a local JSON file (no sudo; does not queue)"
     out_empty_line
     out_info "Bootstrap (Type 1 — any host admin, outer sudo; password OK):"
     out_plain "  setup / remove-lpu   Create/teardown LPU (sudoer-adm). Run: sudo ${APP_NAME} setup"
@@ -3476,7 +3750,9 @@ app_help() {
     out_plain "  --force              Force reinstall / skip uninstall confirm"
     out_plain "  --global             Install to GLOBAL_BIN"
     out_plain "  --debug              Debug diagnostics on stderr"
-    out_plain "  --file PATH          Input file (xor stdin)"
+    out_plain "  --file PATH          Input file (xor stdin xor --dir)"
+    out_plain "  --dir DIR            fence-test: every regular .json in DIR (xor --file / stdin)"
+    out_plain "  --expect-match       fence-test --dir: succeed only if every file matches a dest fence"
     out_plain "  --action add|update  Required for sudoers-to-json"
     out_plain "  --purpose TEXT       Purpose when missing from input"
     out_plain "  --service NAME       Service pin / required on remove"
@@ -3499,6 +3775,10 @@ app_help() {
     out_plain "  ${APP_NAME} uninstall --force"
     out_plain "  ${APP_NAME} sudoers-to-json --file grant.sudoers --action add --purpose '…'"
     out_plain "  ${APP_NAME} test-json-format --file request.json"
+    out_plain "  ${APP_NAME} test-well-known-binary --file request.json"
+    out_plain "  ${APP_NAME} fence-test --file tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json"
+    out_plain "  ${APP_NAME} fence-test --dir tests/fixtures/fence-test/pass"
+    out_plain "  ${APP_NAME} fence-test --dir tests/fixtures/fence-test/match --expect-match"
     out_empty_line
     out_info "Empty argv shows help (Type N — local-only; no curl|sh install-ensure)."
 }
@@ -3532,6 +3812,8 @@ app_main() {
     : "${APP_NAME:=cli-template}"
     : "${STORAGE_DIR:=${XDG_CACHE_HOME}/${APP_NAME}-${USERNAME}}"
     : "${SR_FILE:=}"
+    : "${SR_DIR:=}"
+    : "${SR_EXPECT_MATCH:=0}"
     : "${SR_ACTION:=}"
     : "${SR_PURPOSE:=}"
     : "${SR_SERVICE:=}"
@@ -3564,6 +3846,11 @@ app_main() {
                 [ -n "${2-}" ] || out_die "--file requires PATH"
                 SR_FILE="$2"; shift
                 ;;
+            --dir)
+                [ -n "${2-}" ] || out_die "--dir requires DIR"
+                SR_DIR="$2"; shift
+                ;;
+            --expect-match) SR_EXPECT_MATCH=1 ;;
             --action)
                 [ -n "${2-}" ] || out_die "--action requires add|update"
                 SR_ACTION="$2"; shift
@@ -3604,7 +3891,7 @@ app_main() {
             --uninstall)  SR_UNINSTALL=1 ;;
             --purge-queues) SR_PURGE_QUEUES=1 ;;
             version|about|help|install|uninstall|where-is-me|\
-            sudoers-to-json|json-to-sudoers|test-json-format|print-sudoers|print-sudoers-install-script|\
+            sudoers-to-json|json-to-sudoers|test-json-format|test-well-known-binary|fence-test|print-sudoers|print-sudoers-install-script|\
             add-sudoer-request|update-sudoer-request|remove-sudoer-request|\
             list-approving|list-approved|list-rejected|show|approve|reject|\
             interactive|setup|remove-lpu)
@@ -3640,6 +3927,8 @@ app_main() {
         sudoers-to-json) sr_sudoers_to_json ;;
         json-to-sudoers) sr_json_to_sudoers ;;
         test-json-format) sr_test_json_format ;;
+        test-well-known-binary) sr_test_well_known_binary ;;
+        fence-test) sr_fence_test ;;
         print-sudoers) sr_print_sudoers ;;
         print-sudoers-install-script) sr_print_sudoers_install_script ;;
         add-sudoer-request)    sr_submit add ;;

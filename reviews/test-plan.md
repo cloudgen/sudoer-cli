@@ -3,8 +3,8 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.13.0  
-**Last plan update:** 2026-08-20 (domain 2.25.0 interactive fence display-then-rejected; **TP-SR-FENCE-12**)  
+**Product VERSION:** 1.15.3  
+**Last plan update:** 2026-08-21 (1.15.2 test-purpose vs operational; help lists testers apart)  
 **Last suite run:** PASS=357 FAIL=0 SKIP=3 (2026-08-20; 1.13.0 interactive fence display-then-rejected; **TP-SR-FENCE-12** static; live Type 1 skipped)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
@@ -121,6 +121,25 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-FENCE-10 | Type 0 `add-sudoer-request` must not plant `submit_by` | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
 | TP-SR-FENCE-11 | Dest `submit_by` stamp hits only the first `{` (pretty `commands[]` stay unstamped) | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
 | TP-SR-FENCE-12 | `interactive` displays a fence match, then moves inbound → rejected; no yes/no; no dest write. Standalone approve/reject stay inbound | `tests/test_domain_sr.sh` | requirement-incorrect-json-format · domain | **have** |
+| TP-SR-WKBIN-01 | Type 0 `test-well-known-binary` accepts login-hook-elev fixture (`/usr/local/bin/dns-cli`) | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |
+| TP-SR-WKBIN-02 | webservice nginx-ctl paths (`systemctl` / `journalctl` / `/usr/sbin/nginx`) pass | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |
+| TP-SR-WKBIN-03 | `/usr/local/bin/nginx-cli request` passes | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |
+| TP-SR-WKBIN-04 | `/usr/bin/certbot` passes | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |
+| TP-SR-WKBIN-05 | `.ci-homes/…/gbin/dns-cli` fences (`untrusted_path`) | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |
+| TP-SR-WKBIN-06 | `~/.local/bin/certbot` fences | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |
+| TP-SR-WKBIN-07 | `/usr/bin/python3` fences | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |
+| TP-SR-WKBIN-08 | `/usr/local/bin/../home/…` fences | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |
+| TP-SR-WKBIN-09 | dest fence runner: CI gbin fail-closed (no yes/no); golden fixture pass | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |
+| TP-SR-WKBIN-10 | Type 0 submit refuses CI gbin | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |
+| TP-CLI-15 | `test-well-known-binary` is routed (xor fail is not unknown) | `tests/test_cli.sh` | requirement-shell-cli-interface | **have** |
+| TP-SR-FT-01 | Type 0 `fence-test --file` accepts login-hook-elev fixture | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
+| TP-SR-FT-02 | `fence-test --file` not-a-JSON-object → fail closed | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
+| TP-SR-FT-03 | `fence-test --file` CI gbin → `untrusted_path` | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval · well-known fence | **have** |
+| TP-SR-FT-04 | `fence-test --dir` pass corpus succeeds | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
+| TP-SR-FT-05 | `fence-test --dir --expect-match` match corpus succeeds | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
+| TP-SR-FT-06 | `fence-test --dir` xor `--file` fail closed | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
+| TP-SR-FT-07 | `--expect-match` without `--dir` fail closed | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
+| TP-CLI-16 | `fence-test` is routed (xor fail is not unknown) | `tests/test_cli.sh` | requirement-shell-cli-interface | **have** |
 | TP-SR-PRIV-01 | Type 1 verbs: non-root fail-closed, no `/etc` write | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval · three-layer | **have** |
 | TP-SR-PRIV-02 | Bootstrap `setup` is any euid 0 (not `sudo -n`, not `sudoer-adm`); approve still requires euid 0 | `tests/test_domain_sr.sh` | requirement-three-layer-privilege-model · domain | **have** |
 | TP-SR-PRIV-04 | Approve gate has no exclusive-`sudoer-adm` actor lock; setup prints submit next-step | `tests/test_domain_sr.sh` | prevention-set OPEN-SUDOER-APPR · domain | **have** |

@@ -19,7 +19,7 @@ EOF
 _sr_sample_json() {
     _u=$(id -un)
     cat <<EOF
-{"schema_version":1,"purpose":"Allow this user to reload nginx and read the nginx unit journal.","username":"${_u}","service":"webservice","action":"add","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/systemctl","args":["reload","nginx"]},{"runas":"root","tags":["NOPASSWD"],"path":"/usr/bin/journalctl","args":["-u","nginx"]},{"runas":"root","tags":["NOPASSWD"],"path":"/usr/sbin/nginx","args":["-t"]}]}
+{"schema_version":1,"purpose":"Allow this user to reload nginx and read the nginx unit journal.","username":"${_u}","service":"webservice","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/systemctl","args":["reload","nginx"]},{"runas":"root","tags":["NOPASSWD"],"path":"/usr/bin/journalctl","args":["-u","nginx"]},{"runas":"root","tags":["NOPASSWD"],"path":"/usr/sbin/nginx","args":["-t"]}]}
 EOF
 }
 
@@ -33,6 +33,8 @@ _sr_sample_json_pretty() {
   "username": "${_u}",
   "service": "webservice",
   "action": "add",
+  "submit_app": "dns-cli",
+  "submit_version": "1.12.0",
   "commands": [
     {
       "runas": "root",
@@ -66,6 +68,8 @@ _sr_sample_folder_backup_pretty() {
   "username": "${_u}",
   "service": "folder-backup",
   "action": "add",
+  "submit_app": "dns-cli",
+  "submit_version": "1.12.0",
   "commands": [
     {
       "runas": "root",
@@ -104,6 +108,8 @@ run_test_domain_sr() {
     assert_contains "TP-SR-07 json service webservice" "${_js}" '"service":"webservice"'
     assert_contains "TP-SR-07 json systemctl" "${_js}" '"path":"/bin/systemctl"'
     assert_contains "TP-SR-02 schema_version" "${_js}" '"schema_version":1'
+    assert_contains "TP-SR-02 submit_app" "${_js}" '"submit_app":"sudoer-cli"'
+    assert_contains "TP-SR-02 submit_version" "${_js}" '"submit_version":"'
 
     HOME="${CI_HOME}" sh "${SCRIPT}" json-to-sudoers --file "${_abs_json}" --out "${_abs_back}" >/dev/null 2>&1
     assert_eq "TP-SR-03 json-to-sudoers exit 0" 0 "$?"
@@ -167,7 +173,7 @@ EOF
     assert_contains "TP-SR-10 infer --service" "${_err}" "--service"
 
     # Decode count mismatch: two "path" keys in one object — do not approve
-    printf '%s\n' '{"schema_version":1,"purpose":"broken","username":"'"${_u}"'","service":"webservice","action":"add","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/systemctl","args":["reload","nginx"],"path":"/usr/sbin/nginx"}]}' >"${CI_HOME}/dup-path.json"
+    printf '%s\n' '{"schema_version":1,"purpose":"broken","username":"'"${_u}"'","service":"webservice","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/systemctl","args":["reload","nginx"],"path":"/usr/sbin/nginx"}]}' >"${CI_HOME}/dup-path.json"
     _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" json-to-sudoers --file "${CI_HOME}/dup-path.json" --out "${CI_HOME}/dup-path.out" 2>&1 >/dev/null)
     assert_eq "TP-SR-10 decode-lost exit 1" 1 "$?"
     assert_contains "TP-SR-10 decode-lost incomplete" "${_err}" "incomplete"
@@ -213,7 +219,7 @@ EOF
     assert_contains "TP-SR-05 show purpose" "${_shown}" "Allow this user to reload nginx"
 
     # TP-SR-17 OPEN-BEHALF: JSON username B (hyphenated service+user) — dest uses B, not last-hyphen adm
-    printf '%s\n' '{"schema_version":1,"purpose":"DNS grant for colleague.","username":"dns-adm","service":"dns-cli","action":"add","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/usr/local/bin/dns-cli","args":["reload"]}]}' >"${CI_HOME}/behalf.json"
+    printf '%s\n' '{"schema_version":1,"purpose":"DNS grant for colleague.","username":"dns-adm","service":"dns-cli","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/usr/local/bin/dns-cli","args":["reload"]}]}' >"${CI_HOME}/behalf.json"
     _outb=$(HOME="${CI_HOME}" SUDOER_CLI_ALLOW_TEST_ROOTS=1 sh "${SCRIPT}" --json --queue-root "${_q}" add-sudoer-request --file "${CI_HOME}/behalf.json" 2>/dev/null)
     assert_eq "TP-SR-17 behalf submit exit 0" 0 "$?"
     assert_contains "TP-SR-17 request_id uses B" "${_outb}" "dns-cli-dns-adm-add-"
@@ -545,7 +551,7 @@ EOF
         _pq="${CI_HOME}/pendingq"
         mkdir -p "${_pq}/sudoer-request" "${_pq}/sudoer-approved" "${_pq}/sudoer-rejected"
         _rid="sudoer-20260815-webservice-${_u}-add-1.json"
-        printf '%s\n' '{"schema_version":1,"purpose":"int-06 one-off reject","username":"'"${_u}"'","service":"webservice","action":"add","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/true","args":[]}]}' \
+        printf '%s\n' '{"schema_version":1,"purpose":"int-06 one-off reject","username":"'"${_u}"'","service":"webservice","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/true","args":[]}]}' \
             >"${_pq}/sudoer-request/${_rid}"
         _err=$(printf 'n\n' | HOME="${CI_HOME}" TTY=1 SUDOER_CLI_ALLOW_TEST_ROOTS=1 \
             sh "${SCRIPT}" --queue-root "${_pq}" interactive 2>&1)
@@ -598,6 +604,9 @@ EOF
         sed -n '/^sr_json_format_fence_die()/,/^}/p' "${SCRIPT}"
         sed -n '/^sr_dest_fence_unknown_keys()/,/^}/p' "${SCRIPT}"
         sed -n '/^sr_json_format_fence_or_die()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_path_is_well_known()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_well_known_fence_die()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_cmds_require_well_known()/,/^}/p' "${SCRIPT}"
         sed -n '/^sr_dest_fence_or_die()/,/^}/p' "${SCRIPT}"
         printf '%s\n' "id=\"\$1\"; path=\"\$2\""
         printf '%s\n' 'sr_dest_fence_or_die "${path}" "${id}"'
@@ -616,7 +625,7 @@ EOF
     assert_contains "TP-SR-FENCE-03 action mismatch words" "${_ferr}" "name says add but the JSON action is remove"
     assert_contains "TP-SR-FENCE-03 action code" "${_ferr}" "CODE:field_mismatch"
     # Filename subject alice, JSON username bob — MUST NOT fence
-    printf '%s\n' '{"schema_version":1,"purpose":"grant for bob","username":"bob","service":"webservice","action":"add","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/true","args":[]}]}' >"${_tfence}/bob.json"
+    printf '%s\n' '{"schema_version":1,"purpose":"grant for bob","username":"bob","service":"webservice","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/true","args":[]}]}' >"${_tfence}/bob.json"
     _ferr=$(sh "${_frunner}" "${_fid}" "${_tfence}/bob.json" 2>&1)
     assert_eq "TP-SR-FENCE-04 subject mismatch is not a fence" 0 "$?"
     assert_contains "TP-SR-FENCE-04 subject mismatch passes" "${_ferr}" "FENCE_OK"
@@ -671,6 +680,8 @@ EOF
   "username": "alice",
   "service": "webservice",
   "action": "add",
+  "submit_app": "dns-cli",
+  "submit_version": "1.12.0",
   "commands": [
     {
       "runas": "root",
@@ -702,6 +713,24 @@ EOF
     assert_contains "TP-SR-FENCE-11 command path kept" "${_stamped}" '"path": "/bin/true"'
     assert_not_contains "TP-SR-FENCE-11 no nested stamp" "${_stamped}" '{"submit_by":"bob","runas"'
 
+    # TP-SR-FENCE-13..15: submit_app / submit_version dest-owned; sibling name is not a fence
+    printf '%s\n' '{"schema_version":1,"purpose":"grant","username":"alice","service":"webservice","action":"add","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/true","args":[]}]}' >"${CI_HOME}/no-submit-app.json"
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" test-json-format --file "${CI_HOME}/no-submit-app.json" 2>&1)
+    assert_eq "TP-SR-FENCE-13 missing submit_app exit 1" 1 "$?"
+    assert_contains "TP-SR-FENCE-13 missing submit_app words" "${_err}" "submit_app"
+    printf '%s\n' '{"schema_version":1,"purpose":"grant","username":"alice","service":"webservice","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/true","args":[]}]}' >"${CI_HOME}/sibling-app.json"
+    _out=$(HOME="${CI_HOME}" sh "${SCRIPT}" test-json-format --file "${CI_HOME}/sibling-app.json" 2>/dev/null)
+    assert_eq "TP-SR-FENCE-14 sibling submit_app exit 0" 0 "$?"
+    assert_contains "TP-SR-FENCE-14 sibling well-formed" "${_out}" "JSON format is well-formed"
+    _encfn=$(sed -n '/^sr_json_encode_request()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-FENCE-15 encoder stamps submit_app" "${_encfn}" "submit_app"
+    assert_contains "TP-SR-FENCE-15 encoder stamps submit_version" "${_encfn}" "submit_version"
+    _ukfn=$(sed -n '/^sr_dest_fence_unknown_keys()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-FENCE-15 dest allowlist submit_app" "${_ukfn}" "submit_app"
+    assert_contains "TP-SR-FENCE-15 dest allowlist submit_version" "${_ukfn}" "submit_version"
+    _intfn=$(sed -n '/^sr_interactive()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-FENCE-15 interactive queued by" "${_intfn}" "queued by"
+
     # TP-SR-FENCE-12: interactive displays a fence match, then moves inbound → rejected
     if [ "$(id -u)" -eq 0 ]; then
         _fq="${CI_HOME}/fenceq"
@@ -721,6 +750,120 @@ EOF
         t_skip "TP-SR-FENCE-12 live interactive fence-to-rejected needs Type 1"
     fi
 
+    # TP-SR-WKBIN-01: golden login-hook-elev path is well-known
+    _fx="${TESTS_ROOT}/fixtures/login-hook-elev-dns-adm.json"
+    _out=$(HOME="${CI_HOME}" sh "${SCRIPT}" --json test-well-known-binary --file "${_fx}" 2>/dev/null)
+    assert_eq "TP-SR-WKBIN-01 login-hook-elev exit 0" 0 "$?"
+    assert_contains "TP-SR-WKBIN-01 well-known message" "${_out}" "well-known system binaries"
+    assert_contains "TP-SR-WKBIN-01 command name" "${_out}" '"command":"test-well-known-binary"'
+
+    # TP-SR-WKBIN-02: webservice nginx-ctl paths pass
+    printf '%s\n' '{"schema_version":1,"purpose":"nginx ctl","username":"alice","service":"webservice","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/systemctl","args":["reload","nginx"]},{"runas":"root","tags":["NOPASSWD"],"path":"/usr/bin/journalctl","args":["-u","nginx"]},{"runas":"root","tags":["NOPASSWD"],"path":"/usr/sbin/nginx","args":["-t"]}]}' >"${CI_HOME}/ngx-ctl.json"
+    _out=$(HOME="${CI_HOME}" sh "${SCRIPT}" test-well-known-binary --file "${CI_HOME}/ngx-ctl.json" 2>&1)
+    assert_eq "TP-SR-WKBIN-02 nginx-ctl exit 0" 0 "$?"
+    assert_contains "TP-SR-WKBIN-02 nginx-ctl pass" "${_out}" "well-known system binaries"
+
+    # TP-SR-WKBIN-03: nginx-cli managed global binary
+    printf '%s\n' '{"schema_version":1,"purpose":"nginx-cli request","username":"alice","service":"nginx-cli","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"nginx-adm","tags":["NOPASSWD"],"path":"/usr/local/bin/nginx-cli","args":["request"]}]}' >"${CI_HOME}/ngx-cli.json"
+    _out=$(HOME="${CI_HOME}" sh "${SCRIPT}" test-well-known-binary --file "${CI_HOME}/ngx-cli.json" 2>&1)
+    assert_eq "TP-SR-WKBIN-03 nginx-cli exit 0" 0 "$?"
+
+    # TP-SR-WKBIN-04: packaged certbot wrapper
+    printf '%s\n' '{"schema_version":1,"purpose":"certbot","username":"alice","service":"certbot","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/usr/bin/certbot","args":["renew"]}]}' >"${CI_HOME}/certbot.json"
+    _out=$(HOME="${CI_HOME}" sh "${SCRIPT}" test-well-known-binary --file "${CI_HOME}/certbot.json" 2>&1)
+    assert_eq "TP-SR-WKBIN-04 certbot exit 0" 0 "$?"
+
+    # TP-SR-WKBIN-05: CI gbin (dns-cli incident path class)
+    printf '%s\n' '{"schema_version":1,"kind":"login-hook-elev","purpose":"hook","username":"dns-adm","service":"dns-cli","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/home/leolio/prjs/dns-cli/.ci-homes/home.Nh7l39/gbin/dns-cli","args":["interactive"]}]}' >"${CI_HOME}/ci-gbin.json"
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" --json test-well-known-binary --file "${CI_HOME}/ci-gbin.json" 2>&1 >/dev/null)
+    assert_eq "TP-SR-WKBIN-05 ci-gbin exit 1" 1 "$?"
+    assert_contains "TP-SR-WKBIN-05 ci-gbin people words" "${_err}" "not a well-known system binary"
+    assert_contains "TP-SR-WKBIN-05 ci-gbin path" "${_err}" ".ci-homes"
+    assert_contains "TP-SR-WKBIN-05 ci-gbin code" "${_err}" '"code":"untrusted_path"'
+
+    # TP-SR-WKBIN-06: pip --user / USER_BIN
+    printf '%s\n' '{"schema_version":1,"purpose":"user certbot","username":"alice","service":"certbot","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/home/alice/.local/bin/certbot","args":["renew"]}]}' >"${CI_HOME}/user-certbot.json"
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" test-well-known-binary --file "${CI_HOME}/user-certbot.json" 2>&1 >/dev/null)
+    assert_eq "TP-SR-WKBIN-06 user-bin exit 1" 1 "$?"
+    assert_contains "TP-SR-WKBIN-06 user-bin words" "${_err}" ".local/bin/certbot"
+
+    # TP-SR-WKBIN-07: python interpreter
+    printf '%s\n' '{"schema_version":1,"purpose":"python -m certbot","username":"alice","service":"certbot","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/usr/bin/python3","args":["-m","certbot"]}]}' >"${CI_HOME}/py3.json"
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" test-well-known-binary --file "${CI_HOME}/py3.json" 2>&1 >/dev/null)
+    assert_eq "TP-SR-WKBIN-07 python3 exit 1" 1 "$?"
+    assert_contains "TP-SR-WKBIN-07 python3 path" "${_err}" "/usr/bin/python3"
+
+    # TP-SR-WKBIN-08: .. traversal
+    printf '%s\n' '{"schema_version":1,"purpose":"dotdot","username":"alice","service":"dns-cli","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/usr/local/bin/../home/alice/evil","args":["interactive"]}]}' >"${CI_HOME}/dotdot.json"
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" test-well-known-binary --file "${CI_HOME}/dotdot.json" 2>&1 >/dev/null)
+    assert_eq "TP-SR-WKBIN-08 dotdot exit 1" 1 "$?"
+    assert_contains "TP-SR-WKBIN-08 dotdot" "${_err}" "not a well-known system binary"
+
+    # TP-SR-WKBIN-09: dest fence runner (JSON format passes, well-known fails)
+    _wkrun="${CI_HOME}/wk-runner.sh"
+    {
+        printf '%s\n' 'sr_die() { printf "%s\n" "$1" >&2; printf "CODE:%s\n" "${2:-unknown}" >&2; [ -n "${3-}" ] && printf "Next: %s\n" "$3" >&2; exit 1; }'
+        printf '%s\n' 'sr_operator_cmd() { printf "%s" "sudoer-cli"; }'
+        printf '%s\n' 'util_mktemp() { mktemp "${TMPDIR:-/tmp}/sudoer-cli.XXXXXX"; }'
+        sed -n '/^sr_json_get_str()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_json_has_key()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_json_decode_to_fields()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_valid_service_name()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_split_service_user()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_parse_request_id()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_json_format_fence_die()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_dest_fence_unknown_keys()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_json_format_fence_or_die()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_path_is_well_known()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_well_known_fence_die()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_cmds_require_well_known()/,/^}/p' "${SCRIPT}"
+        sed -n '/^sr_dest_fence_or_die()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' "id=\"\$1\"; path=\"\$2\""
+        printf '%s\n' 'sr_dest_fence_or_die "${path}" "${id}"'
+        printf '%s\n' 'printf "FENCE_OK\n"'
+    } >"${_wkrun}"
+    _wkid="sudoer-20260821-dns-cli-dns-adm-add-1.json"
+    _err=$(sh "${_wkrun}" "${_wkid}" "${CI_HOME}/ci-gbin.json" 2>&1)
+    assert_eq "TP-SR-WKBIN-09 dest fence ci-gbin exit 1" 1 "$?"
+    assert_contains "TP-SR-WKBIN-09 dest no yes/no" "${_err}" "Dest will not ask yes/no"
+    assert_contains "TP-SR-WKBIN-09 dest untrusted" "${_err}" "CODE:untrusted_path"
+    _err=$(sh "${_wkrun}" "${_wkid}" "${_fx}" 2>&1)
+    assert_eq "TP-SR-WKBIN-09 dest golden exit 0" 0 "$?"
+    assert_contains "TP-SR-WKBIN-09 dest golden ok" "${_err}" "FENCE_OK"
+
+    # TP-SR-WKBIN-10: Type 0 submit refuses CI gbin
+    _err=$(HOME="${CI_HOME}" SUDOER_CLI_ALLOW_TEST_ROOTS=1 sh "${SCRIPT}" --json --queue-root "${_q}" add-sudoer-request --file "${CI_HOME}/ci-gbin.json" 2>&1 >/dev/null)
+    assert_eq "TP-SR-WKBIN-10 submit ci-gbin exit 1" 1 "$?"
+    assert_contains "TP-SR-WKBIN-10 submit code" "${_err}" '"code":"untrusted_path"'
+    assert_contains "TP-SR-WKBIN-10 submit do not queue" "${_err}" "Do not convert or queue"
+
+    # TP-SR-FT: Type 0 fence-test (closed dest fence list; --file or --dir corpus)
+    _ftdir="${TESTS_ROOT}/fixtures/fence-test"
+    _out=$(HOME="${CI_HOME}" sh "${SCRIPT}" --json fence-test --file "${_fx}" 2>/dev/null)
+    assert_eq "TP-SR-FT-01 golden --file exit 0" 0 "$?"
+    assert_contains "TP-SR-FT-01 no dest fence" "${_out}" "No dest fence matched"
+    assert_contains "TP-SR-FT-01 command fence-test" "${_out}" '"command":"fence-test"'
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" fence-test --file "${_ftdir}/match/not-object.json" 2>&1 >/dev/null)
+    assert_eq "TP-SR-FT-02 not-object exit 1" 1 "$?"
+    assert_contains "TP-SR-FT-02 not-object words" "${_err}" "not a grant JSON object"
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" --json fence-test --file "${_ftdir}/match/ci-homes-gbin.json" 2>&1 >/dev/null)
+    assert_eq "TP-SR-FT-03 ci-gbin exit 1" 1 "$?"
+    assert_contains "TP-SR-FT-03 ci-gbin code" "${_err}" '"code":"untrusted_path"'
+    assert_contains "TP-SR-FT-03 Next running ship unit" "${_err}" "${SCRIPT} fence-test --file"
+    assert_not_contains "TP-SR-FT-03 Next not global install" "${_err}" "/usr/local/bin/sudoer-cli"
+    _out=$(HOME="${CI_HOME}" sh "${SCRIPT}" --json fence-test --dir "${_ftdir}/pass" 2>/dev/null)
+    assert_eq "TP-SR-FT-04 pass corpus exit 0" 0 "$?"
+    assert_contains "TP-SR-FT-04 pass corpus files" "${_out}" '"files":"4"'
+    _out=$(HOME="${CI_HOME}" sh "${SCRIPT}" --json fence-test --dir "${_ftdir}/match" --expect-match 2>/dev/null)
+    assert_eq "TP-SR-FT-05 match corpus --expect-match exit 0" 0 "$?"
+    assert_contains "TP-SR-FT-05 all matched" "${_out}" "all matched a dest fence"
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" fence-test --dir "${_ftdir}/pass" --file "${_fx}" 2>&1 >/dev/null)
+    assert_eq "TP-SR-FT-06 xor --file and --dir exit 1" 1 "$?"
+    assert_contains "TP-SR-FT-06 xor words" "${_err}" "not both --file and --dir"
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" fence-test --expect-match --file "${_fx}" 2>&1 >/dev/null)
+    assert_eq "TP-SR-FT-07 --expect-match needs --dir exit 1" 1 "$?"
+    assert_contains "TP-SR-FT-07 expect-match words" "${_err}" "only valid with --dir"
+
     # TP-SR-06 dest name never *-remove
     _out=$(HOME="${CI_HOME}" SUDOER_CLI_ALLOW_TEST_ROOTS=1 sh "${SCRIPT}" --json --queue-root "${_q}" remove-sudoer-request --service webservice --purpose "Revoke my webservice sudoers grant; I no longer operate nginx." 2>/dev/null)
     assert_contains "TP-SR-06 remove dest not *-remove" "${_out}" '"dest":"/etc/sudoers.d/webservice-'"${_u}"'"'
@@ -733,7 +876,7 @@ EOF
 
     # Hyphenated service aligns with project-sudoers-file {{APP_NAME}}-{{TARGET_USER}}
     cat >"${CI_HOME}/fb.json" <<EOF
-{"schema_version":1,"purpose":"Allow this user to deposit folder-backup archives.","username":"${_u}","service":"folder-backup","action":"add","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/usr/bin/mkdir","args":["-p","/var/backup/folder-backup"]}]}
+{"schema_version":1,"purpose":"Allow this user to deposit folder-backup archives.","username":"${_u}","service":"folder-backup","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/usr/bin/mkdir","args":["-p","/var/backup/folder-backup"]}]}
 EOF
     _out=$(HOME="${CI_HOME}" SUDOER_CLI_ALLOW_TEST_ROOTS=1 sh "${SCRIPT}" --json --queue-root "${_q}" add-sudoer-request --file "${CI_HOME}/fb.json" 2>/dev/null)
     assert_eq "TP-SR-01 folder-backup submit exit 0" 0 "$?"

@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-class-software-dev.md  
-**Status**: Active (Version 1.9.1 – residual points at sudo-command REQ)  
+**Status**: Active (Version 1.9.5 – test-purpose vs operational verbs)  
 **Area**: class  
 **Key**: `requirement-class-software-dev`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -96,10 +96,10 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 ### 2.8 Dest fence conditions (review and convert)
 
 32. Every software-development project **MUST review** dest fencing conditions.  
-33. This product’s dest **Fence** is **incorrect JSON format** — independent Active `requirement-incorrect-json-format`. Dest table on `requirement-domain-sudoer-approval` **MUST** still print and **point** at that REQ.  
+33. This product’s dest **Fences** are **incorrect JSON format** (`requirement-incorrect-json-format`) and **well-known sudoer binary** (`requirement-well-known-sudoer-binary-fence`). Dest table on `requirement-domain-sudoer-approval` **MUST** still print and **point** at those REQs.  
 34. Dest **MUST NOT** fence rows stay on dest tables only.  
 35. **MUST NOT** invent a dest fence.  
-36. A dest Fence that is JSON format **MUST** name a Type 0 test subcommand on that fence REQ (and dual-mention it on the CLI-interface REQ). Dest review verbs **MUST NOT** count as that test. This product: `test-json-format`.
+36. When dest has any dest **Fence**, the product **MUST** ship Type 0 **`fence-test`** as a **test-purpose** verb: **unit test** of dest fence functions against a JSON **file location** in a **local test folder**. **MUST NOT** require `sudo` to run. The only allowed in-tool elev is wrapping **chmod** / **chown** of that folder (check before sudo). **MUST NOT** sudo otherwise. **MUST NOT** queue, dest-write, `setup`, or `approve`. Dest review / queue / host install **MUST NOT** count as that tester. Help **MUST** list test-purpose verbs **apart** from **operational** verbs. Dual mention: CLI-interface REQ **and** domain SSOT. This product: `fence-test --file tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json`. Per-row testers **MAY** also exist (`test-json-format`, `test-well-known-binary`) and are also test-purpose. Privilege Type 0 does **not** mean “unit test.”
 
 ### 2.9 Coding-style related requirement (MUST have)
 
@@ -144,7 +144,8 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | What is blocked vs must stay open | `requirement-privilege-prevention-set` | Closed prevention catalog; do not invent walls |
 | Domain sudoers-approval | `requirement-domain-sudoer-approval` | File-based JSON approval; dest fence table |
 | Actor / role / subject / approver consider | `requirement-actor-role-subject-approver` | Dest has approver — not residual None |
-| Dest fence: incorrect JSON format | `requirement-incorrect-json-format` | Independent Fence REQ; dest table still prints; Type 0 `test-json-format` |
+| Dest fence: incorrect JSON format | `requirement-incorrect-json-format` | Independent Fence REQ; dest table still prints; Type 0 `test-json-format`; list tester `fence-test` |
+| Dest fence: well-known sudoer binary | `requirement-well-known-sudoer-binary-fence` | Independent Fence REQ; dest table still prints; Type 0 `test-well-known-binary`; list tester `fence-test` |
 | Coding-style related REQ | `requirement-shell-script-coding` | **MUST**; specialize-in home for portable POSIX writing lessons; residual **points** |
 | In-tool sudo / chmod wrappers | `requirement-shell-sudo-command` | Sudo-wrapping function; check before sudo; chmod example |
 | Project layout / ship path | `requirement-project-folder` | `src/` + bin targets |
@@ -193,7 +194,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 7. Treat this file as server-maintenance allowlist law, or register an Active server-maintenance class file in parallel.  
 8. Invent a second primary language SSOT that contradicts peer modular/CLI requirements.  
 9. Skip the actor / role / subject / approver consider, or invent an extra approver.  
-10. Skip dest-fence review, leave a dest **Fence** as only a table cell, invent a dest fence, or leave a JSON-format dest Fence without Type 0 `test-json-format`.  
+10. Skip dest-fence review, leave a dest **Fence** as only a table cell, invent a dest fence, leave dest Fences without Type 0 `fence-test`, treat `sudo` / a sudoers fragment / the waiting folder as that tester, group testers with operational verbs in help, or `sudo` on a tester except wrapping chmod/chown of the local test folder.  
 11. Skip `requirement-shell-script-coding`, leave writing style only as residual “when present”, or treat portable coding lessons as product law because that file is missing.  
 12. Skip `requirement-shell-sudo-command` when the ship unit has in-tool sudo, or keep sudo-wrapping / check-before-sudo bodies only on the coding-style REQ.
 
@@ -213,7 +214,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | AC-6 | Ship unit identity (posix-sh single-file, local install) consistent with peer shell REQs |
 | AC-7 | Online install package **absent** from Active registry by design |
 | AC-8 | Actor / role / subject / approver considered (Active catalog REQ) |
-| AC-9 | Dest fence reviewed (independent REQ per **Fence**) |
+| AC-9 | Dest fence reviewed (independent REQ per **Fence**); dest Fences ship Type 0 **test-purpose** `fence-test` (local test folder; help listed apart from operational) |
 | AC-10 | Coding-style related REQ Active (`requirement-shell-script-coding`); residual **points**; specialize-in intention present |
 | AC-11 | Residual **points** at Active `requirement-shell-sudo-command` for sudo-wrapping / check before sudo |
 
@@ -240,7 +241,8 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | `requirement-privilege-prevention-set` | Closed catalog of what is blocked vs must stay open |
 | `requirement-domain-sudoer-approval` | File-based JSON approval |
 | `requirement-actor-role-subject-approver` | Five-column consider catalog |
-| `requirement-incorrect-json-format` | Dest Fence |
+| `requirement-incorrect-json-format` | Dest Fence: JSON format |
+| `requirement-well-known-sudoer-binary-fence` | Dest Fence: well-known sudoer binary |
 | `docs/requirements/index.md` | Registry SSOT |
 
 ---
@@ -260,9 +262,13 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | 2026-08-20 | Active 1.8.0 | Coding-style related REQ MUST (`requirement-shell-script-coding`); specialize-in home for portable lessons |
 | 2026-08-20 | Active 1.9.0 | Residual **points** at `requirement-shell-sudo-command` (sudo-wrapping function; check before sudo; chmod example) |
 | 2026-08-20 | Active 1.9.1 | Core-rule sections sequential: 2.6 dual policy · 2.7 ARSA · 2.8 dest fence · 2.9 coding-style · 2.10 Implementation Notes |
+| 2026-08-21 | Active 1.9.2 | Dest Fences: JSON format + well-known sudoer binary |
+| 2026-08-21 | Active 1.9.3 | Dest Fences ship Type 0 `fence-test` (`--file` / `--dir`) |
+| 2026-08-21 | Active 1.9.4 | `fence-test` is JSON-file verification: no sudo, no sudoers fragment, no queue |
+| 2026-08-21 | Active 1.9.5 | Test-purpose vs operational verbs; `fence-test` is a unit tester of a local test folder |
 
 ---
 
-**Last Updated**: 2026-08-20  
+**Last Updated**: 2026-08-21  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

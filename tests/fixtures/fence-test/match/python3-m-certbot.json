@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "purpose": "python -m certbot",
+  "username": "alice",
+  "service": "certbot",
+  "action": "add",
+  "submit_app": "dns-cli",
+  "submit_version": "1.12.0",
+  "commands": [
+    {
+      "runas": "root",
+      "tags": ["NOPASSWD"],
+      "path": "/usr/bin/python3",
+      "args": ["-m", "certbot"]
+    }
+  ]
+}

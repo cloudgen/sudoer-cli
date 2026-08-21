@@ -1,6 +1,6 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.13.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.16.0-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
@@ -46,6 +46,8 @@ approved   rejected
 |------|-----------------|---------------|
 | Convert | Turn a sudoers fragment into JSON. This does **not** put anything in the waiting folder. Use it to look at the grant before you queue it. | `sudoer-cli sudoers-to-json --file draft.sudoers --action add --purpose "..."` |
 | Test JSON | Check a grant JSON against the dest format fence without becoming root and without putting it in the waiting folder. | `sudoer-cli test-json-format --file request.json` |
+| Test command path | Check that each command is a well-known system binary (not a file under someone’s home). | `sudoer-cli test-well-known-binary --file request.json` |
+| Test dest fences | **Unit test** of a local test folder. Point at a JSON file. **No sudo** except wrap chmod/chown of that folder. Does not queue. | `sh src/sudoer-cli fence-test --file tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json` |
 | Submit | Hand that JSON to this program. It **chooses the filename** and writes it into `/var/sudoer-cli/sudoer-request/`. You still do not need to be root. | `sudoer-cli add-sudoer-request --file request.json` |
 | Wait | The file sits in the waiting folder. Anyone can drop a file in; they cannot list or steal someone else’s file. | `sudoer-cli list-approving` |
 | Decide | A host admin who already used password `sudo` (or `sudoer-adm`, or a real root login) re-reads the JSON and **moves** the file. Moving it *is* the decision. First-time setup must already have been run. | `sudo sudoer-cli interactive` |
@@ -61,7 +63,8 @@ Pretty-printed and compact JSON are the same grant. If the request looks incompl
 - **Unknown commands fail** (non-zero exit)
 - **CIAO / CIAO-Lite** defensive design
 - **Folder + JSON approval** — waiting folder, one JSON request, approver moves the file
-- **Convert, submit, list, and show without being root** — `sudoers-to-json`, `json-to-sudoers`, `test-json-format`, `add` / `update` / `remove-sudoer-request`, `list-approving` / `list-approved` / `list-rejected`, `show`
+- **Unit-test dest fences without sudo** — `fence-test --file PATH` is a **test-purpose** verb (local test folder; does not queue; does not need a sudoers file). Sample: `tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json`
+- **Convert, submit, list, and show without being root** — **operational** `sudoers-to-json`, `json-to-sudoers`, `add` / `update` / `remove-sudoer-request`, `list-approving` / `list-approved` / `list-rejected`, `show`. **Test-purpose** `test-json-format` / `test-well-known-binary` / `fence-test` are listed apart in help.
 - **First-time setup** (`sudo sudoer-cli setup`) creates `sudoer-adm` and the folders, then tells you how to queue a request as yourself. Approve and `interactive` work after that same password `sudo` — you do not have to log in as `sudoer-adm`. Never writes `/etc/passwd` or the main `/etc/sudoers`
 
 ## Quick Installation
@@ -178,6 +181,9 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
+2026-08-21 — version **1.16.0** (Type 0 stamps `submit_app` / `submit_version`; dest shows `queued by {app} {version}` before yes/no).
+2026-08-21 — version **1.15.3** (`fence-test` Next: uses checkout `src/sudoer-cli`, not a global install).
+2026-08-21 — version **1.15.2** (test-purpose vs operational verbs; help lists unit testers of a local test folder apart from convert/submit).
 2026-08-20 — version **1.13.0** (dest `interactive` shows a broken waiting file, does not ask yes/no, and moves it to the rejected folder).
 2026-08-20 — version **1.12.0** (dest `interactive` asks one yes/no per waiting file: yes accepts, no or Enter rejects; no skip or quit).
 2026-08-20 — version **1.11.0** (in-tool sudo goes through `util_sudo`; chmod checks owner first via `util_chmod` and does not `sudo chmod` when you already own the file).

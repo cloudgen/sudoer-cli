@@ -5,6 +5,47 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.16.0] - 2026-08-21
+
+### Added
+
+- Dest-owned JSON keys **`submit_app`** / **`submit_version`**: Type 0 add/update encode stamps live Config. Dest format-fences missing or non-string values on add/update. Dest **MUST NOT** fence if the values ≠ dest product or dest version (sibling `dns-cli` is dest-legal). Dest interactive prints `queued by {app} {version}` before yes/no. Closed-schema allowlist includes the keys. Domain **2.30.0**. Dest Fence **1.4.0**. **TP-SR-FENCE-13..15**. Ship unit **`VERSION="1.16.0"`**.
+
+## [1.15.3] - 2026-08-21
+
+### Changed
+
+- Test-purpose **`fence-test`** (and `test-json-format` / `test-well-known-binary`) **Next:** lines use the **running** ship unit (checkout `src/sudoer-cli`). They no longer point at a stale global binary. Still no install, no queue, no dest.
+- Ship unit **`VERSION="1.15.3"`**.
+
+## [1.15.2] - 2026-08-21
+
+### Changed
+
+- **Test-purpose** vs **operational** verbs. `fence-test` / `test-json-format` / `test-well-known-binary` are unit testers of a **local test folder**. Help lists them under **Unit test (local test folder)** apart from operational Type 0. Sudo wrap **only** chmod/chown of that folder (check before sudo). Domain **2.29.0**. Class **1.9.5**. CLI **3.8.2**. Portable **FC-M6** 1.4.0. **`LM-CLI-INTERFACE`** 1.8.0.
+- Ship unit **`VERSION="1.15.2"`**.
+
+## [1.15.1] - 2026-08-21
+
+### Changed
+
+- **`fence-test`** is JSON-file verification of dest fence functions. **No sudo.** **No sudoers fragment.** Does **not** queue. Help and examples use `--file tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json`. Portable **FC-M6** 1.3.0. Domain **2.28.0**. Class **1.9.4**. CLI **3.8.1**.
+- Ship unit **`VERSION="1.15.1"`**.
+
+## [1.15.0] - 2026-08-21
+
+### Added
+
+- Type 0 **`fence-test`**: run the **closed dest fence list** (JSON format, then well-known sudoer binary) without dest elev. `--file` xor stdin xor `--dir DIR`. `--dir` walks every regular `*.json` (continue after a match). `--expect-match` with `--dir` succeeds only when every file matches a dest Fence — agents add cases under `tests/fixtures/fence-test/{pass,match}/`. **TP-SR-FT-01..07** · **TP-CLI-16**. Portable **FC-M6**: any dest-Fence product ships this verb.
+- Ship unit **`VERSION="1.15.0"`**.
+
+## [1.14.0] - 2026-08-21
+
+### Added
+
+- Dest **Fence**: **well-known sudoer binary**. After JSON format, dest refuses add/update grants whose `commands[].path` is not under a closed system prefix (`/bin/`, `/sbin/`, `/usr/bin/`, `/usr/sbin/`, `/usr/libexec/`, `/usr/local/bin/`, `/usr/local/sbin/`, `/opt/gitlab/bin/`) or is an interpreter (`python3`, `env`, `pip`, …). Home trees, `~/.local/bin`, venvs, and `.ci-homes/…/gbin` fail closed (no yes/no, no dest write). Type 0 **`test-well-known-binary`**. Convert/submit fail the same match. Independent REQ `requirement-well-known-sudoer-binary-fence`. Term **`well-known-sudoer-binary-fence`**. **TP-SR-WKBIN-01..10** · **TP-CLI-15**. Incident **INC-20260821-001**.
+- Ship unit **`VERSION="1.14.0"`**.
+
 ## [1.13.0] - 2026-08-20
 
 ### Changed

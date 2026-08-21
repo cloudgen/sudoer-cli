@@ -1,12 +1,12 @@
 # What to review — sudoer-cli
 
-**Living checklist** (review plan). Product: **sudoer-cli** (Type 0 live; **Type 0 domain convert/submit/list/show/`test-json-format` routed**; Type 1 `setup` / `interactive` live).  
-**Class:** software-development · **one** Active domain SSOT (`requirement-domain-sudoer-approval` **2.25.0**) · **local-only** install channel.  
+**Living checklist** (review plan). Product: **sudoer-cli** (Type 0 live; **Type 0 operational** convert/submit/list/show **plus Type 0 test-purpose** `test-json-format`/`test-well-known-binary`/`fence-test` routed; Type 1 `setup` / `interactive` live).  
+**Class:** software-development · **one** Active domain SSOT (`requirement-domain-sudoer-approval` **2.29.0**) · **local-only** install channel.  
 **Always load first:** `reviews/lessons.md`  
-**Latest report:** `reviews/reports/2026-08-19-dest-fence.md` (dest Fence + OPEN-BEHALF). Prior: 2026-08-18 approve-actor-lock (T1-SECOND-LOCK). Fidelity: INC-20260817-001. Actor lock: INC-20260818-001.
+**Latest report:** `reviews/reports/2026-08-19-dest-fence.md` (dest Fence + OPEN-BEHALF). Prior: 2026-08-18 approve-actor-lock (T1-SECOND-LOCK). Fidelity: INC-20260817-001. Actor lock: INC-20260818-001. Cmnd identity: **INC-20260821-001** / **L-CMND-PATH-01**.
 
 **Last plan update:** 2026-08-20  
-**Ship unit VERSION:** 1.13.0  
+**Ship unit VERSION:** 1.14.0  
 **Suite baseline:** see `reviews/test-plan.md`
 
 ---
@@ -16,7 +16,7 @@
 | # | Check | Notes |
 |---|--------|--------|
 | P1 | Read `docs/requirements/index.md` | Class + shell + three-layer + LPU + **prevention-set 1.6.0** + **domain 2.25.0** + ARSA + dest Fence + coding-style + sudo-command |
-| P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.13.0**) |
+| P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.14.0**) |
 | P3 | Load `reviews/lessons.md` and re-check open L-* that still apply | Skip parent backup L-SUDOERS except **L-JSON-CMDS-01** |
 | P4 | Run `./tests/run.sh` | Record PASS/FAIL/SKIP; **must include TP-SR-14/15/16**, **TP-SR-PRIV-04** / **TP-ELEV-09** / **TP-PREV-03**, and **TP-SR-HOOK-01..04** |
 | P5 | Confirm install **channel** still local-only | No SCRIPT_URL product UX |
@@ -80,6 +80,8 @@
 | R20 | Dest `interactive` asks one-off yes/no (yes=approve, no/Enter=reject; no skip/quit; no three chained y/N) | **have** (1.12.0; domain 2.24.0; **TP-SR-INT-06**) |
 | R18 | OPEN-BEHALF: A may submit/remove for B; inbound and dest use B | **have** (1.8.1; **TP-SR-17** / **TP-SR-18**) |
 | R16 | After hook install, LPU can **read** `${LPU_HOME}/.profile` (not `root:root` `0600`); existence is not enough | **open** (checkout 1.8.1 + **TP-SR-HOOK-04**; host still `root:root` `0600`; global **1.8.0**; **L-HOOK-PROFILE-02**; INC-20260818-003 · INC-20260819-001) |
+| R22 | Dest apply of `login-hook-elev` does not install a `.ci-homes` / test-gbin Cmnd; live dest `/etc/sudoers.d/dns-cli-dns-adm` is `/usr/local/bin/dns-cli interactive`; visudo-pass ≠ identity | **have** dest Fence + **TP-SR-WKBIN-*** (1.14.0); **open** host dest file (**L-CMND-PATH-01**; INC-20260821-001) |
+| R23 | Type 0 `fence-test` is a **test-purpose** verb (unit test of a local test folder; `--file PATH`; no sudo except wrap chmod/chown of that folder; no queue). Help lists testers apart from operational. Sample `tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json` | **have** (1.15.2; **TP-SR-FT-01..07** · **TP-CLI-16**) |
 
 ## JSON re-encode / convert fidelity — review plan gate
 

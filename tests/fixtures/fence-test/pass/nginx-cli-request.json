@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "purpose": "Allow alice to submit nginx-cli config requests as nginx-adm.",
+  "username": "alice",
+  "service": "nginx-cli",
+  "action": "add",
+  "submit_app": "nginx-cli",
+  "submit_version": "0.9.0",
+  "commands": [
+    {
+      "runas": "nginx-adm",
+      "tags": ["NOPASSWD"],
+      "path": "/usr/local/bin/nginx-cli",
+      "args": ["request"]
+    }
+  ]
+}

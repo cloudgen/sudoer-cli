@@ -1,18 +1,17 @@
 {
   "schema_version": 1,
   "kind": "login-hook-elev",
-  "purpose": "Allow dns-adm login hook to run dns-cli interactive.",
+  "purpose": "Allow dns-adm login hook to run dns-cli interactive via sudo -n.",
   "username": "dns-adm",
   "service": "dns-cli",
   "action": "add",
   "submit_app": "dns-cli",
   "submit_version": "1.12.0",
-  "submit_by": "alice",
   "commands": [
     {
       "runas": "root",
       "tags": ["NOPASSWD"],
-      "path": "/usr/local/bin/dns-cli",
+      "path": "/home/leolio/prjs/dns-cli/.ci-homes/home.Nh7l39/gbin/dns-cli",
       "args": ["interactive"]
     }
   ]
