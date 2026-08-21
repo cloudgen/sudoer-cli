@@ -100,7 +100,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | **Primary executable** | `src/sudoer-cli` (POSIX `/bin/sh`, single-file ship unit) |
 | **Dispatcher** | `app_main` |
 | **Output SSOT** | `out_text` + wrappers (`out_info`, `out_success`, `out_warn`, `out_error`, `out_die`, `out_plain`, `out_json`, …) |
-| **Version SSOT** | `VERSION="1.16.0"` hard-assign in ship unit |
+| **Version SSOT** | `VERSION="1.17.0"` hard-assign in ship unit |
 | **Install paths** | Global: `GLOBAL_BIN` default `/usr/local/bin`; User: `USER_BIN` default `${HOME}/.local/bin` |
 | **Primary install story** | User bin: `~/.local/bin/sudoer-cli`; global `/usr/local/bin/sudoer-cli` for production F6 |
 | **Online channel env** | **Not product UX** (trimmed) |
@@ -260,6 +260,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | 2026-08-21 | Active 3.8.2 | Test-purpose vs operational verbs; help lists testers apart; `VERSION` 1.15.2 |
 | 2026-08-21 | Active 3.8.2 | Ship unit `VERSION` 1.15.3; test-purpose Next uses running checkout |
 | 2026-08-21 | Active 3.8.2 | Stay-honest Implementation Notes `VERSION` 1.16.0 |
+| 2026-08-21 | Active 3.8.2 | Stay-honest Implementation Notes `VERSION` 1.17.0 |
 
 ---
 

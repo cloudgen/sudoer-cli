@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..04, TP-SR-FENCE-01..15, TP-SR-INT-01..06)
+# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..04, TP-SR-FENCE-01..17, TP-SR-INT-01..06)
 # Primary REQ: requirement-domain-sudoer-approval.md
 # =============================================================================
 
@@ -745,7 +745,11 @@ EOF
     assert_contains "TP-SR-FENCE-15 dest allowlist submit_app" "${_ukfn}" "submit_app"
     assert_contains "TP-SR-FENCE-15 dest allowlist submit_version" "${_ukfn}" "submit_version"
     _intfn=$(sed -n '/^sr_interactive()/,/^}/p' "${SCRIPT}")
-    assert_contains "TP-SR-FENCE-15 interactive queued by" "${_intfn}" 'queued by ${SR_D_SUBMIT_APP} ${SR_D_SUBMIT_VERSION}'
+    assert_contains "TP-SR-FENCE-15 interactive queued by" "${_intfn}" 'queued by ${SR_D_SUBMIT_APP-} ${SR_D_SUBMIT_VERSION-}'
+    assert_contains "TP-SR-FENCE-16 interactive parent decode" "${_intfn}" "sr_json_decode_to_fields"
+    assert_contains "TP-SR-FENCE-16 interactive review warn" "${_intfn}" "sr_dest_review_warn"
+    _dffn=$(sed -n '/^sr_dest_fence_or_die()/,/^}/p' "${SCRIPT}")
+    assert_not_contains "TP-SR-WKBIN-09 dest fence not well-known die" "${_dffn}" "sr_cmds_require_well_known"
 
     # TP-SR-FENCE-12: interactive displays a fence match, then moves inbound → rejected
     if [ "$(id -u)" -eq 0 ]; then
@@ -762,8 +766,44 @@ EOF
         assert_not_contains "TP-SR-FENCE-12 live no Approve prompt" "${_ferr}" "Approve this request"
         assert_file_exists "TP-SR-FENCE-12 live moved to rejected" "${_fq}/sudoer-rejected/${_frid}"
         assert_file_missing "TP-SR-FENCE-12 live left inbound" "${_fq}/sudoer-request/${_frid}"
+
+        # TP-SR-FENCE-16: garbage then well-formed in one loop — prompt, no set -u crash
+        _f16="${CI_HOME}/fence16q"
+        mkdir -p "${_f16}/sudoer-request" "${_f16}/sudoer-approved" "${_f16}/sudoer-rejected"
+        _g16="sudoer-20260821-fence16test-${_u}-add-1.json"
+        _o16="sudoer-20260821-fence16test-${_u}-add-2.json"
+        printf '%s\n' 'not a grant JSON' >"${_f16}/sudoer-request/${_g16}"
+        printf '%s\n' '{"schema_version":1,"purpose":"fence16 ok","username":"'"${_u}"'","service":"webservice","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/true","args":[]}]}' \
+            >"${_f16}/sudoer-request/${_o16}"
+        _e16=$(printf 'n\n' | HOME="${CI_HOME}" TTY=1 SUDOER_CLI_ALLOW_TEST_ROOTS=1 \
+            sh "${SCRIPT}" --queue-root "${_f16}" interactive 2>&1)
+        assert_eq "TP-SR-FENCE-16 live exit 0" 0 "$?"
+        assert_not_contains "TP-SR-FENCE-16 live no set-u crash" "${_e16}" "parameter not set"
+        assert_contains "TP-SR-FENCE-16 live Approve prompt" "${_e16}" "Approve this request"
+        assert_file_exists "TP-SR-FENCE-16 live garbage rejected" "${_f16}/sudoer-rejected/${_g16}"
+        assert_file_exists "TP-SR-FENCE-16 live grant rejected by no" "${_f16}/sudoer-rejected/${_o16}"
+        assert_file_missing "TP-SR-FENCE-16 live grant left inbound" "${_f16}/sudoer-request/${_o16}"
+
+        # TP-SR-FENCE-17: missing submit_app — warn + ask, not dest-drain
+        _f17="${CI_HOME}/fence17q"
+        mkdir -p "${_f17}/sudoer-request" "${_f17}/sudoer-approved" "${_f17}/sudoer-rejected"
+        _r17="sudoer-20260821-fence17test-${_u}-add-1.json"
+        printf '%s\n' '{"schema_version":1,"purpose":"no stamp","username":"'"${_u}"'","service":"webservice","action":"add","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/true","args":[]}]}' \
+            >"${_f17}/sudoer-request/${_r17}"
+        _e17=$(printf 'n\n' | HOME="${CI_HOME}" TTY=1 SUDOER_CLI_ALLOW_TEST_ROOTS=1 \
+            sh "${SCRIPT}" --queue-root "${_f17}" interactive 2>&1)
+        assert_eq "TP-SR-FENCE-17 live exit 0" 0 "$?"
+        assert_contains "TP-SR-FENCE-17 live warn submit_app" "${_e17}" "no submit_app"
+        assert_contains "TP-SR-FENCE-17 live still ask" "${_e17}" "Dest will still ask yes/no"
+        assert_contains "TP-SR-FENCE-17 live Approve prompt" "${_e17}" "Approve this request"
+        assert_not_contains "TP-SR-FENCE-17 live not dest-drain sentence" "${_e17}" "Dest will not ask yes/no"
+        assert_not_contains "TP-SR-FENCE-17 live no set-u crash" "${_e17}" "parameter not set"
+        assert_file_exists "TP-SR-FENCE-17 live rejected after no" "${_f17}/sudoer-rejected/${_r17}"
+        assert_file_missing "TP-SR-FENCE-17 live left inbound" "${_f17}/sudoer-request/${_r17}"
     else
         t_skip "TP-SR-FENCE-12 live interactive fence-to-rejected needs Type 1"
+        t_skip "TP-SR-FENCE-16 live interactive after fence-pass needs Type 1"
+        t_skip "TP-SR-FENCE-17 live interactive missing submit_app needs Type 1"
     fi
 
     # TP-SR-WKBIN-01: golden login-hook-elev path is well-known
@@ -840,9 +880,9 @@ EOF
     } >"${_wkrun}"
     _wkid="sudoer-20260821-dns-cli-dns-adm-add-1.json"
     _err=$(sh "${_wkrun}" "${_wkid}" "${CI_HOME}/ci-gbin.json" 2>&1)
-    assert_eq "TP-SR-WKBIN-09 dest fence ci-gbin exit 1" 1 "$?"
-    assert_contains "TP-SR-WKBIN-09 dest no yes/no" "${_err}" "Dest will not ask yes/no"
-    assert_contains "TP-SR-WKBIN-09 dest untrusted" "${_err}" "CODE:untrusted_path"
+    assert_eq "TP-SR-WKBIN-09 dest fence ci-gbin exit 0" 0 "$?"
+    assert_contains "TP-SR-WKBIN-09 dest ci-gbin not dest Fence" "${_err}" "FENCE_OK"
+    assert_not_contains "TP-SR-WKBIN-09 dest ci-gbin no dest-drain" "${_err}" "Dest will not ask yes/no"
     _err=$(sh "${_wkrun}" "${_wkid}" "${_fx}" 2>&1)
     assert_eq "TP-SR-WKBIN-09 dest golden exit 0" 0 "$?"
     assert_contains "TP-SR-WKBIN-09 dest golden ok" "${_err}" "FENCE_OK"
@@ -852,6 +892,27 @@ EOF
     assert_eq "TP-SR-WKBIN-10 submit ci-gbin exit 1" 1 "$?"
     assert_contains "TP-SR-WKBIN-10 submit code" "${_err}" '"code":"untrusted_path"'
     assert_contains "TP-SR-WKBIN-10 submit do not queue" "${_err}" "Do not convert or queue"
+
+    # TP-SR-WKBIN-11: dest interactive warns on CI gbin and still asks
+    if [ "$(id -u)" -eq 0 ]; then
+        _w11="${CI_HOME}/wk11q"
+        mkdir -p "${_w11}/sudoer-request" "${_w11}/sudoer-approved" "${_w11}/sudoer-rejected"
+        _r11="sudoer-20260821-wkbin11-${_u}-add-1.json"
+        printf '%s\n' '{"schema_version":1,"kind":"login-hook-elev","purpose":"hook","username":"'"${_u}"'","service":"dns-cli","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/home/alice/prjs/dns-cli/.ci-homes/home.TEST/gbin/dns-cli","args":["interactive"]}]}' \
+            >"${_w11}/sudoer-request/${_r11}"
+        _e11=$(printf 'n\n' | HOME="${CI_HOME}" TTY=1 SUDOER_CLI_ALLOW_TEST_ROOTS=1 \
+            sh "${SCRIPT}" --queue-root "${_w11}" interactive 2>&1)
+        assert_eq "TP-SR-WKBIN-11 live exit 0" 0 "$?"
+        assert_contains "TP-SR-WKBIN-11 live warn path" "${_e11}" ".ci-homes"
+        assert_contains "TP-SR-WKBIN-11 live still ask" "${_e11}" "Dest will still ask yes/no"
+        assert_contains "TP-SR-WKBIN-11 live Approve prompt" "${_e11}" "Approve this request"
+        assert_not_contains "TP-SR-WKBIN-11 live not dest-drain" "${_e11}" "Dest will not ask yes/no"
+        assert_not_contains "TP-SR-WKBIN-11 live no set-u crash" "${_e11}" "parameter not set"
+        assert_file_exists "TP-SR-WKBIN-11 live rejected after no" "${_w11}/sudoer-rejected/${_r11}"
+        assert_file_missing "TP-SR-WKBIN-11 live left inbound" "${_w11}/sudoer-request/${_r11}"
+    else
+        t_skip "TP-SR-WKBIN-11 live interactive CI gbin warn needs Type 1"
+    fi
 
     # TP-SR-FT: Type 0 fence-test (closed dest fence list; --file or --dir corpus)
     _ftdir="${TESTS_ROOT}/fixtures/fence-test"

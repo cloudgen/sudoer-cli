@@ -11,7 +11,7 @@ Public product review surface (peer of `tests/`).
 | `index.md` | Report index |
 | `reports/` | Dated review run reports |
 
-**Ship unit:** `src/sudoer-cli` (**VERSION 1.16.0**)  
+**Ship unit:** `src/sudoer-cli` (**VERSION 1.17.0**)  
 **Suite:** `./tests/run.sh`  
 **Last suite baseline:** see `test-plan.md`
 

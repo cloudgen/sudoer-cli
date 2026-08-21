@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-incorrect-json-format.md  
-**Status**: Active (Version 1.4.0) — dest-owned `submit_app` / `submit_version`; MUST NOT fence sibling app or version  
+**Status**: Active (Version 1.5.0) — dest review warns on missing `submit_app` / `submit_version`; testers still require strings  
 **Area**: domain  
 **Key**: `requirement-incorrect-json-format`  
 **id**: RQ-INCORRECT-JSON-FORMAT  
@@ -21,7 +21,7 @@ This requirement is **one dest Fence**: **incorrect JSON format**. Dest `approve
 
 | Includes | Excludes |
 |----------|----------|
-| Not a regular file; not one JSON object; closed-schema fail; bad types/enums; basename grammar fail; basename **action** ≠ JSON `action`; missing / non-string `submit_app` / `submit_version` on add/update | Filename subject token ≠ JSON `username`; file owner; who submitted; missing dest-written `submit_by`; `submit_app` ≠ dest product; `submit_version` ≠ dest VERSION |
+| Not a regular file; not one JSON object; closed-schema fail; bad types/enums; basename grammar fail; basename **action** ≠ JSON `action` | Filename subject token ≠ JSON `username`; file owner; who submitted; missing dest-written `submit_by`; `submit_app` ≠ dest product; `submit_version` ≠ dest VERSION; missing `submit_app` / `submit_version` on dest **review** (warn, then ask). Type 0 testers / convert / new submit still require those strings. |
 
 | Surface | What you open | What for |
 |---------|---------------|----------|
@@ -39,7 +39,7 @@ This requirement is **one dest Fence**: **incorrect JSON format**. Dest `approve
 ## 2. Core Rules / Requirements (Mandatory)
 
 1. **MUST** name **exactly this** dest Fence: incorrect JSON format.  
-2. **MUST** match when **any** of: not a regular file; symlink; not one parseable JSON object; closed-schema fail (`schema_version`, unknown keys); invalid field types or enums; basename grammar fail; basename **action** ≠ JSON `action`.  
+2. **MUST** match when **any** of: not a regular file; symlink; not one parseable JSON object; closed-schema fail (`schema_version`, unknown keys); invalid field types or enums; basename grammar fail; basename **action** ≠ JSON `action`. Missing `submit_app` / `submit_version` on dest **review** is **not** this Fence (dest **MUST** warn, then ask). Type 0 `test-json-format` / `fence-test` / convert / new submit **MUST** still fail closed on missing or non-string values.  
 3. **MUST NOT** treat basename **subject token** ≠ JSON `username` as this Fence. User SSOT is the JSON field.  
 4. On match: dest **MUST** display the match in people/folder words (what happened / what it means / next). **MUST NOT** ask the approval question (one-off yes/no) for that file. Standalone `approve` / `reject` **MUST** fail closed with the same sentence; that file **stays inbound**.  
 4a. Dest `interactive` (including the login hook) **MUST**, **after** that display, move the file inbound → rejected (snapshot + LPU owner + mode `0640` + unlink inbound). **MUST NOT** dest-write `/etc/sudoers.d`. **MUST NOT** stamp `submit_by`. **MUST NOT** call standalone `reject` re-validate to drain it (that re-validate would fail closed and leave the file inbound).  
@@ -58,7 +58,7 @@ This requirement is **one dest Fence**: **incorrect JSON format**. Dest `approve
 | Maximal dest-stamped fixture | `tests/fixtures/maximal-dest-stamped-login-hook-elev.json` (all closed-schema keys including `submit_by`, `submit_app`, `submit_version`) |
 | Optional `kind` | Closed-schema allowlist includes `kind`. When present: `type-2-switch` or `login-hook-elev` |
 | Dest-written `submit_by` | Allowed key. Converted queue Unix owner. Type 0 **MUST NOT** plant it. Dest **MUST NOT** treat it as unknown |
-| Type 0 `submit_app` / `submit_version` | Allowed keys. Live Config stamp. Required on add/update. Dest **MUST NOT** dest-write. Dest **MUST NOT** fence if value ≠ dest identity |
+| Type 0 `submit_app` / `submit_version` | Allowed keys. Live Config stamp. Required on Type 0 add/update and testers. Dest **MUST NOT** dest-write. Dest **MUST NOT** fence if value ≠ dest identity. Dest **review** missing stamp: **warn**, then ask (**INC-20260821-002**) |
 | Typical machine codes | `invalid_json`, `schema_version`, `field_mismatch`, `invalid_name`, `not_regular` |
 | Display | Operator `[ERROR]` in people/folder words; JSON `message` same sentence |
 | Interactive on match | Display first, then archive inbound → rejected. Standalone approve/reject stay inbound |
@@ -89,7 +89,8 @@ This requirement is **one dest Fence**: **incorrect JSON format**. Dest `approve
 7. Dest-write `/etc/sudoers.d` on a fence match.  
 8. Ask yes/no, or move, **before** the display.  
 9. Treat Type 0 `submit_app` / `submit_version` as unknown, or fence dest because those values ≠ dest identity.  
-10. Dest-write `submit_app` / `submit_version`, or leave Type 0 add/update without those strings.
+10. Dest-write `submit_app` / `submit_version`, or leave Type 0 add/update without those strings.  
+11. Dest-drain a waiting add/update in `interactive` solely because `submit_app` / `submit_version` is missing (**INC-20260821-002**).
 
 ## Design-time verification
 
@@ -110,6 +111,8 @@ This requirement is **one dest Fence**: **incorrect JSON format**. Dest `approve
 | **TP-SR-FENCE-13** | `tests/test_domain_sr.sh` | have |
 | **TP-SR-FENCE-14** | `tests/test_domain_sr.sh` | have |
 | **TP-SR-FENCE-15** | `tests/test_domain_sr.sh` | have |
+| **TP-SR-FENCE-16** | `tests/test_domain_sr.sh` | have |
+| **TP-SR-FENCE-17** | `tests/test_domain_sr.sh` | have |
 
 **Matrix:** `reviews/requirement-test-matrix.md`  
 **Map:** `reviews/test-plan.md`.
@@ -125,6 +128,6 @@ This requirement is **one dest Fence**: **incorrect JSON format**. Dest `approve
 | `requirement-shell-cli-interface` | Dual mention of `test-json-format` |
 | `requirement-domain-sudoer-approval` | Dual mention of Type 0 `fence-test` (closed dest fence list) |
 
-**Last Updated**: 2026-08-21 (1.4.0 dest-owned submit_app / submit_version)  
+**Last Updated**: 2026-08-21 (1.5.0 dest review warns on missing stamp; testers still require strings)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

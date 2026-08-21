@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-class-software-dev.md  
-**Status**: Active (Version 1.9.5 – test-purpose vs operational verbs)  
+**Status**: Active (Version 1.9.6 – dest Fence is JSON format; well-known is dest warn + testers fail closed)  
 **Area**: class  
 **Key**: `requirement-class-software-dev`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -96,7 +96,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 ### 2.8 Dest fence conditions (review and convert)
 
 32. Every software-development project **MUST review** dest fencing conditions.  
-33. This product’s dest **Fences** are **incorrect JSON format** (`requirement-incorrect-json-format`) and **well-known sudoer binary** (`requirement-well-known-sudoer-binary-fence`). Dest table on `requirement-domain-sudoer-approval` **MUST** still print and **point** at those REQs.  
+33. This product’s dest **Fence** is **incorrect JSON format** (`requirement-incorrect-json-format`). **Well-known sudoer binary** (`requirement-well-known-sudoer-binary-fence`) is dest **warn then ask** plus convert/submit/tester fail-closed. Dest table on `requirement-domain-sudoer-approval` **MUST** still print and **point** at those REQs.  
 34. Dest **MUST NOT** fence rows stay on dest tables only.  
 35. **MUST NOT** invent a dest fence.  
 36. When dest has any dest **Fence**, the product **MUST** ship Type 0 **`fence-test`** as a **test-purpose** verb: **unit test** of dest fence functions against a JSON **file location** in a **local test folder**. **MUST NOT** require `sudo` to run. The only allowed in-tool elev is wrapping **chmod** / **chown** of that folder (check before sudo). **MUST NOT** sudo otherwise. **MUST NOT** queue, dest-write, `setup`, or `approve`. Dest review / queue / host install **MUST NOT** count as that tester. Help **MUST** list test-purpose verbs **apart** from **operational** verbs. Dual mention: CLI-interface REQ **and** domain SSOT. This product: `fence-test --file tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json`. Per-row testers **MAY** also exist (`test-json-format`, `test-well-known-binary`) and are also test-purpose. Privilege Type 0 does **not** mean “unit test.”
@@ -129,7 +129,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | **Architectures supported** | any arch with POSIX sh and the external tools the script invokes |
 | **Git surface** | used when product is published |
 | **Ship unit / install** | yes — `src/sudoer-cli` → `${USER_BIN}/sudoer-cli` (default `~/.local/bin/sudoer-cli`); **local-only** install (no online channel) |
-| **Product version SSOT** | `VERSION="1.16.0"` hard-assign in `src/sudoer-cli` |
+| **Product version SSOT** | `VERSION="1.17.0"` hard-assign in `src/sudoer-cli` |
 | **Bootstrap origin** | Historical **cli-template**. This product is **sudoer-cli**. No live parent ship unit. |
 
 **Residual ownership table:**
@@ -145,7 +145,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | Domain sudoers-approval | `requirement-domain-sudoer-approval` | File-based JSON approval; dest fence table |
 | Actor / role / subject / approver consider | `requirement-actor-role-subject-approver` | Dest has approver — not residual None |
 | Dest fence: incorrect JSON format | `requirement-incorrect-json-format` | Independent Fence REQ; dest table still prints; Type 0 `test-json-format`; list tester `fence-test` |
-| Dest fence: well-known sudoer binary | `requirement-well-known-sudoer-binary-fence` | Independent Fence REQ; dest table still prints; Type 0 `test-well-known-binary`; list tester `fence-test` |
+| Dest fence: well-known sudoer binary | `requirement-well-known-sudoer-binary-fence` | Dest **warn then ask**; testers/convert fail closed; dest table still prints; Type 0 `test-well-known-binary`; list tester `fence-test` |
 | Coding-style related REQ | `requirement-shell-script-coding` | **MUST**; specialize-in home for portable POSIX writing lessons; residual **points** |
 | In-tool sudo / chmod wrappers | `requirement-shell-sudo-command` | Sudo-wrapping function; check before sudo; chmod example |
 | Project layout / ship path | `requirement-project-folder` | `src/` + bin targets |
@@ -242,7 +242,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | `requirement-domain-sudoer-approval` | File-based JSON approval |
 | `requirement-actor-role-subject-approver` | Five-column consider catalog |
 | `requirement-incorrect-json-format` | Dest Fence: JSON format |
-| `requirement-well-known-sudoer-binary-fence` | Dest Fence: well-known sudoer binary |
+| `requirement-well-known-sudoer-binary-fence` | Well-known binary: dest warn + testers/convert fail closed |
 | `docs/requirements/index.md` | Registry SSOT |
 
 ---
@@ -266,6 +266,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | 2026-08-21 | Active 1.9.3 | Dest Fences ship Type 0 `fence-test` (`--file` / `--dir`) |
 | 2026-08-21 | Active 1.9.4 | `fence-test` is JSON-file verification: no sudo, no sudoers fragment, no queue |
 | 2026-08-21 | Active 1.9.5 | Test-purpose vs operational verbs; `fence-test` is a unit tester of a local test folder |
+| 2026-08-21 | Active 1.9.6 | Dest Fence is JSON format; well-known is dest warn + testers fail closed; VERSION 1.17.0 |
 
 ---
 

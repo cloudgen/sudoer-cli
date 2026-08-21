@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-well-known-sudoer-binary-fence.md  
-**Status**: Active (Version 1.1.1 – testers are test-purpose verbs)  
+**Status**: Active (Version 1.2.0 – dest review warns then asks; testers/convert still fail closed)  
 **Area**: domain  
 **Key**: `requirement-well-known-sudoer-binary-fence`  
 **id**: RQ-WELL-KNOWN-SUDOER-BINARY-FENCE  
@@ -7,11 +7,11 @@
 
 ## 1. Purpose
 
-This requirement is **one dest Fence**: **well-known sudoer binary**. Dest `approve` / `reject` / `interactive` **MUST** fail closed when any add/update `commands[].path` is not a well-known system binary (no dest write) and **MUST NOT** ask yes/no for that file. Dest `interactive` **MUST** display the match and **then** move that inbound file to the rejected queue. The dest fence table on `requirement-domain-sudoer-approval.md` **MUST** still print this row and **point here**. Convert and submit **MUST** fail closed on the same match so a home-tree or interpreter path is not queued. This Fence **MUST NOT** be folded into incorrect JSON format.
+This requirement is the **well-known sudoer binary** checker. Convert, Type 0 submit add/update, and Type 0 testers **MUST** fail closed when any add/update `commands[].path` is not a well-known system binary (no queue). Dest `interactive` / `approve` / `reject` **MUST NOT** dest-drain or fail closed on that match: dest **MUST** warn in people/folder words, then **ask** the approval question. The dest table on `requirement-domain-sudoer-approval.md` **MUST** still print this row and **point here**. This checker **MUST NOT** be folded into incorrect JSON format. **INC-20260821-002**.
 
 ### 1.1 Human-facing
 
-**In one sentence:** If a waiting grant would let sudo run a program that lives in a normal user’s files (or run the Python interpreter itself), dest review says so in plain words, does not ask you to accept it, and moves that file to the rejected folder.
+**In one sentence:** If a grant would let sudo run a program that lives in a normal user’s files (or run the Python interpreter itself), convert/submit/testers refuse to queue it; dest review **warns** and still asks yes/no.
 
 | Box | Meaning | Example |
 |-----|---------|---------|
@@ -26,20 +26,20 @@ This requirement is **one dest Fence**: **well-known sudoer binary**. Dest `appr
 | Surface | What you open | What for |
 |---------|---------------|----------|
 | `/var/sudoer-cli/sudoer-request` | waiting folder | inbound files |
-| `src/sudoer-cli` | ship unit | dest fail-closed copy |
+| `src/sudoer-cli` | ship unit | convert/tester fail-closed; dest review warn |
 
 | You do… | What it means | What you type |
 |---------|---------------|---------------|
 | Test command paths | Check the grant against this Fence without becoming root and without putting it in the waiting folder. | `sudoer-cli test-well-known-binary --file request.json` |
 | Test every dest fence | Run the closed dest fence list (this Fence after JSON format) on one file or a folder of cases. | `sudoer-cli fence-test --file request.json` |
-| Review a home-tree grant | Dest shows the path is not a well-known system binary. It does not ask yes/no. The file goes to the rejected folder. | `sudo sudoer-cli interactive` |
+| Review a home-tree grant | Dest **warns** that the path is not a well-known system binary. Dest **still asks** yes/no. | `sudo sudoer-cli interactive` |
 | Fix and re-queue | Point `commands[].path` at a system binary such as `/usr/local/bin/dns-cli` or `/usr/sbin/nginx`. | `sudoer-cli add-sudoer-request --file request.json` |
 
 ---
 
 ## 2. Core Rules / Requirements (Mandatory)
 
-1. **MUST** name **exactly this** dest Fence: well-known sudoer binary.  
+1. **MUST** name **exactly this** checker: well-known sudoer binary. Dest table **MUST** print the row. On dest **review** this row is **warn, then ask** — not dest-drain.  
 2. **MUST** run **after** the incorrect-JSON-format Fence (need a well-formed `commands[]`).  
 3. **MUST NOT** run on `action=remove` (no commands).  
 4. **MUST** match when **any** `commands[].path`:
@@ -49,7 +49,7 @@ This requirement is **one dest Fence**: **well-known sudoer binary**. Dest `appr
 5. When the named path **exists** and `realpath` is available, dest **MUST** re-check the resolved path against the same rules (symlink to a home tree is a match). A **missing** path is not a pass: the string rules still apply.  
 6. **MUST NOT** use live `[ -w file ]` as the match (a gone home path is still plantable after dest write).  
 7. **MUST NOT** add open `/opt/`, `/snap/bin/`, `/home/`, `/etc/nginx/`, `/var/www/`, or `/usr/lib/python3/` as trusted prefixes in v1. `/opt/gitlab/bin/` is the only `/opt/` leaf (dest `gitlab` family). Revising the closed prefix list is a versioned change of this REQ.  
-8. On match: dest **MUST** display the match in people/folder words (what happened / what it means / next). **MUST NOT** ask the approval question for that file. Standalone `approve` / `reject` **MUST** fail closed with the same sentence; that file **stays inbound**. Dest `interactive` **MUST**, after that display, move inbound → rejected (same archive contract as the JSON-format Fence). **MUST NOT** dest-write `/etc/sudoers.d`.  
+8. On match: dest **MUST** display the match in people/folder words as a **warning**. Dest **MUST** then ask the approval question. Standalone `approve` / `reject` **MUST NOT** fail closed on this match (human already decided, or will decide). Dest `interactive` **MUST NOT** dest-drain on this match. Dest-write still requires visudo on rendered text after **yes**. **INC-20260821-002**.  
 9. Convert (`sudoers-to-json` / `json-to-sudoers`) and Type 0 submit add/update **MUST** fail closed on the same match (no queue).  
 10. Machine code **MUST** be `untrusted_path` (not `invalid_json`).  
 11. **MUST** ship Type 0 **test-purpose** `test-well-known-binary` (stdin **xor** `--file PATH`; unit test of a **local test folder**). Dest review verbs **MUST NOT** count as that tester. Dual mention: this file **and** `requirement-shell-cli-interface`. Invocation: `sudoer-cli test-well-known-binary --file request.json`. The closed dest fence **list** tester is Type 0 **test-purpose** **`fence-test`** (JSON **file location** in a local test folder; **MUST NOT** require `sudo` to run; sudo wrap **only** chmod/chown of that folder; **MUST NOT** require a sudoers fragment or the waiting folder). Help **MUST** list testers apart from operational verbs. Dual mention: `requirement-domain-sudoer-approval` **and** `requirement-shell-cli-interface`. Sample: `tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json`. Invocation: `sudoer-cli fence-test --file tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json`.  
@@ -69,18 +69,18 @@ This requirement is **one dest Fence**: **well-known sudoer binary**. Dest `appr
 | Fence examples | `.ci-homes/…/gbin/dns-cli` · `~/.local/bin/certbot` · `…/.venv/bin/certbot` · `/usr/bin/python3` · `/usr/bin/env` · `/usr/local/bin/../home/…/x` |
 | Typical machine code | `untrusted_path` |
 | Display | Operator `[ERROR]` in people/folder words; JSON `message` same sentence |
-| Incident | Live dest applied a gone `.ci-homes` gbin (**INC-20260821-001**). This Fence is the dest refuse. |
+| Incident | Live dest applied a gone `.ci-homes` gbin (**INC-20260821-001**). Dest auto-reject without yes/no is **INC-20260821-002**. Convert/submit/testers still refuse; dest **warns** then asks. |
 
 ### 2.x Why This Requirement Exists (Direct CIAO Alignment)
 
 - **CIAO Principle 1 – Caution**: NOPASSWD of a user-writable path is replace-after-approve.  
 - **CIAO Principle 10 – Least privilege**: sudo must run packaged / global managed binaries, not a checkout or venv.  
-- **CIAO Principle 16 – Interactive**: Fence before the approval question; drain inbound after display.  
+- **CIAO Principle 16 – Interactive**: Warn before the approval question; dest does not steal yes/no.  
 - **CIAO Principle 21 – Dual policies**: Closed prefix list + interpreter basename; no unpublished extra refuse.
 
 ## 3. Design Principles (CIAO / CIAO-Lite)
 
-- **Caution**: Fail closed on home-tree / interpreter Cmnds.  
+- **Caution**: Convert/submit/testers fail closed on home-tree / interpreter Cmnds. Dest warns.  
 - **Intentional**: One Fence, one file; allowlist of well-known prefixes, not a `/home/` denylist.  
 - **Anti-fragile**: Convert and submit fail the same match; Type 0 tester without dest elev.  
 - **Over-protect**: Interpreters (`python3`, `env`) fail even under `/usr/bin/`.
@@ -90,7 +90,7 @@ This requirement is **one dest Fence**: **well-known sudoer binary**. Dest `appr
 **Future AI assistants, Grok, or maintainers MUST NOT**:
 
 1. Fold this Fence into incorrect JSON format.  
-2. Ask yes/no on a match.  
+2. Dest-drain a waiting grant on this match, or skip the warning (**INC-20260821-002**).  
 3. Treat file owner or who submitted as this Fence.  
 4. Delete the dest table row that points here.  
 5. Use `[ -w path ]` as the match, or treat a missing path as trusted.  
@@ -98,7 +98,7 @@ This requirement is **one dest Fence**: **well-known sudoer binary**. Dest `appr
 7. Treat dest `approve` / `reject` / `interactive` as the Type 0 tester.  
 8. Leave this Fence without Type 0 `test-well-known-binary`.  
 8b. Treat dest review as `fence-test`, or leave dest Fences without Type 0 `fence-test`.  
-9. Dest-write `/etc/sudoers.d` on a match.
+9. Dest-write `/etc/sudoers.d` **without** a human yes after the warning.
 
 ## Design-time verification
 
@@ -114,6 +114,7 @@ This requirement is **one dest Fence**: **well-known sudoer binary**. Dest `appr
 | **TP-SR-WKBIN-08** | `tests/test_domain_sr.sh` | have |
 | **TP-SR-WKBIN-09** | `tests/test_domain_sr.sh` | have |
 | **TP-SR-WKBIN-10** | `tests/test_domain_sr.sh` | have |
+| **TP-SR-WKBIN-11** | `tests/test_domain_sr.sh` | have |
 | **TP-CLI-15** | `tests/test_cli.sh` | have |
 | **TP-SR-FT-01..07** | `tests/test_domain_sr.sh` | have |
 | **TP-CLI-16** | `tests/test_cli.sh` | have |
@@ -132,6 +133,6 @@ This requirement is **one dest Fence**: **well-known sudoer binary**. Dest `appr
 | `requirement-domain-sudoer-approval` | Dual mention of Type 0 `fence-test` (closed dest fence list) |
 | `src/sudoer-cli` | Ship unit |
 
-**Last Updated**: 2026-08-21  
+**Last Updated**: 2026-08-21 (1.2.0 dest review warns then asks; testers/convert fail closed)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

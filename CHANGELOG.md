@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.17.0] - 2026-08-21
+
+### Changed
+
+- Dest `interactive` **warns then asks** on a waiting grant whose `submit_app` / `submit_version` is missing or whose Cmnd is not a well-known system binary (home / `.ci-homes` gbin / interpreter). Dest **does not** dest-drain those files without yes/no. Type 0 testers, convert, and new submit still fail closed. Domain **2.31.0**. Dest JSON-format Fence **1.5.0**. Well-known checker **1.2.0**. **INC-20260821-002**. **TP-SR-FENCE-16/17** · **TP-SR-WKBIN-11**. Ship unit **`VERSION="1.17.0"`**.
+
+### Fixed
+
+- Dest `interactive` no longer dies `SR_D_SUBMIT_APP: parameter not set` after a subshell Fence check (`set -u`). Parent re-decodes; `queued by` uses `${SR_D_SUBMIT_APP-}`.
+
 ## [1.16.0] - 2026-08-21
 
 ### Added

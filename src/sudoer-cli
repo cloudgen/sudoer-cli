@@ -36,7 +36,7 @@
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
 # APP NAME: hard-assign APP_NAME="sudoer-cli"
-# VERSION: hard-assign VERSION="1.16.0"
+# VERSION: hard-assign VERSION="1.17.0"
 #
 # =============================================================================
 
@@ -53,7 +53,7 @@ APP_NAME="sudoer-cli"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
 : "${DESCRIPTION:=POSIX /bin/sh CLI: lifecycle plus sudoers-request convert/submit/list/show/test-json-format/test-well-known-binary/fence-test. Type 1 setup creates sudoer-adm; approve/reject require euid 0.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.16.0"
+VERSION="1.17.0"
 : "${VERSION:=1.0.0}"
 # Repository identity SSOT (git host owner/repo for project-repository alignment).
 # Install remains local-only: SCRIPT_URL stays empty (no online curl|sh channel).
@@ -2767,10 +2767,13 @@ sr_json_format_fence_or_die() {
             "${_jf_next}" "${_jf_mode}"
         { [ "${SR_D_HAS_CMDS}" -eq 1 ] && [ -n "${SR_D_CMDS}" ]; } || sr_json_format_fence_die "${_jf_who} is an add/update request with no commands." "invalid_json" \
             "${_jf_next}" "${_jf_mode}"
-        [ -n "${SR_D_SUBMIT_APP}" ] || sr_json_format_fence_die "${_jf_who} has no submit_app (which CLI queued it)." "invalid_json" \
-            "${_jf_next}" "${_jf_mode}"
-        [ -n "${SR_D_SUBMIT_VERSION}" ] || sr_json_format_fence_die "${_jf_who} has no submit_version (which CLI version queued it)." "invalid_json" \
-            "${_jf_next}" "${_jf_mode}"
+        # Dest review warns (sr_dest_review_warn). Testers / convert still fail closed.
+        if [ "${_jf_mode}" != "dest" ]; then
+            [ -n "${SR_D_SUBMIT_APP}" ] || sr_json_format_fence_die "${_jf_who} has no submit_app (which CLI queued it)." "invalid_json" \
+                "${_jf_next}" "${_jf_mode}"
+            [ -n "${SR_D_SUBMIT_VERSION}" ] || sr_json_format_fence_die "${_jf_who} has no submit_version (which CLI version queued it)." "invalid_json" \
+                "${_jf_next}" "${_jf_mode}"
+        fi
     fi
 }
 
@@ -2846,10 +2849,40 @@ sr_dest_fence_or_die() {
     sr_parse_request_id "${_fid}"
     _body=$(cat "${_fp}")
     sr_json_format_fence_or_die "${_body}" "${_next}" "dest" "${_fid}"
-    _wk_act="${SR_D_ACT:-${SR_ID_ACT}}"
-    if [ "${_wk_act}" != "remove" ]; then
-        sr_cmds_require_well_known "${SR_D_CMDS}" "dest" "${_next}"
+}
+
+# Dest review warn (not a dest Fence). Missing stamp / untrusted Cmnd: human still decides.
+# ALIGNMENT: requirement-domain-sudoer-approval.md · requirement-well-known-sudoer-binary-fence.md
+# INC-20260821-002
+sr_dest_review_warn() {
+    : "${SR_D_ACT:=}"
+    : "${SR_D_SUBMIT_APP:=}"
+    : "${SR_D_SUBMIT_VERSION:=}"
+    : "${SR_D_CMDS:=}"
+    : "${SR_ID_ACT:=}"
+    _rw_act="${SR_D_ACT}"
+    if [ -z "${_rw_act}" ]; then
+        _rw_act="${SR_ID_ACT}"
     fi
+    if [ "${_rw_act}" = "remove" ]; then
+        return 0
+    fi
+    if [ -z "${SR_D_SUBMIT_APP}" ]; then
+        out_warn "This waiting file has no submit_app (which CLI queued it). Dest will still ask yes/no."
+    fi
+    if [ -z "${SR_D_SUBMIT_VERSION}" ]; then
+        out_warn "This waiting file has no submit_version (which CLI version queued it). Dest will still ask yes/no."
+    fi
+    [ -n "${SR_D_CMDS}" ] || return 0
+    _wktf=$(util_mktemp)
+    printf '%s' "${SR_D_CMDS}" >"${_wktf}"
+    while IFS='|' read -r _wrn _wtg _wp _wa || [ -n "${_wp-}" ]; do
+        [ -n "${_wp}" ] || continue
+        if ! sr_path_is_well_known "${_wp}"; then
+            out_warn "This grant names a command that is not a well-known system binary ('${_wp}'). A normal user can change a program under their own files and sudo would still run it. Dest will still ask yes/no."
+        fi
+    done <"${_wktf}"
+    rm -f "${_wktf}"
 }
 
 sr_test_json_format() {
@@ -3053,6 +3086,7 @@ sr_approve() {
     _path="${_in}/${_id}"
     [ -f "${_path}" ] || sr_die "not in request queue: ${_id}" "not_found"
     sr_dest_fence_or_die "${_path}" "${_id}"
+    sr_dest_review_warn
     _priv=$(mktemp "${TMPDIR:-/tmp}/sr-apr.XXXXXX")
     if ! cp "${_path}" "${_priv}"; then
         rm -f "${_priv}"
@@ -3193,11 +3227,15 @@ sr_interactive() {
             fi
             continue
         fi
+        # Fence decode ran in a subshell. Parent must decode again (INC-20260821-002).
+        _ibody=$(cat "${_in}/${_bn}")
+        sr_json_decode_to_fields "${_ibody}"
+        sr_dest_review_warn
         if [ -n "${_orig_owner}" ]; then
             sr_stamp_submit_by "${_in}/${_bn}" "${_orig_owner}"
         fi
-        if [ -n "${SR_D_SUBMIT_APP}" ] || [ -n "${SR_D_SUBMIT_VERSION}" ]; then
-            out_plain "queued by ${SR_D_SUBMIT_APP} ${SR_D_SUBMIT_VERSION}"
+        if [ -n "${SR_D_SUBMIT_APP-}" ] || [ -n "${SR_D_SUBMIT_VERSION-}" ]; then
+            out_plain "queued by ${SR_D_SUBMIT_APP-} ${SR_D_SUBMIT_VERSION-}"
         fi
         SR_OPERAND="${_bn}"
         sr_show

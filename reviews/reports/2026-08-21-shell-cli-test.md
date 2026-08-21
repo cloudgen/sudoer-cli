@@ -95,6 +95,7 @@
 | `reviews/test-plan.md` | TP map |
 | `requirement-incorrect-json-format` 1.4.0 | dest-owned keys |
 | INC-20260821-001 | CI-home Cmnd path |
+| INC-20260821-002 | Dest interactive dest-drain / `SR_D_SUBMIT_APP` set -u (after this review; **TP-SR-FENCE-15** grep missed it) |
 
 **Written by:** Review + Implement (council session)
 **Review status:** Findings closed

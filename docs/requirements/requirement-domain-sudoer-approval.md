@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-domain-sudoer-approval.md  
-**Status**: Active (Version 2.30.0) — dest-owned `submit_app` / `submit_version`; MUST NOT fence sibling app or version  
+**Status**: Active (Version 2.31.0) — dest review warns then asks on missing stamp / untrusted Cmnd; testers still fail closed  
 **Area**: domain  
 **Key**: `requirement-domain-sudoer-approval`  
 **id**: RQ-DOMAIN-SUDOER-APPROVAL  
@@ -99,13 +99,13 @@ Dest `approve` / `reject` / `interactive` **MUST** run this list **before** the 
 | Condition | Dest approve / reject / interactive |
 |-----------|--------------------------------------|
 | Incorrect JSON format | **Fence** — fail closed (no dest write, no yes/no). Interactive: display **then** move to rejected. Standalone approve/reject: stay inbound. Independent REQ: `requirement-incorrect-json-format` |
-| Well-known sudoer binary | **Fence** — fail closed when any add/update `commands[].path` is not a well-known system binary (home tree, venv, interpreter). Interactive: display **then** move to rejected. Standalone approve/reject: stay inbound. Independent REQ: `requirement-well-known-sudoer-binary-fence` |
+| Well-known sudoer binary | **Warn, then ask** — dest `interactive` **MUST** warn when any add/update `commands[].path` is not a well-known system binary, then **ask** yes/no. **MUST NOT** dest-drain. Standalone approve/reject **MUST NOT** fail closed on this match. Convert / submit / testers **MUST** still fail closed (no queue). Independent REQ: `requirement-well-known-sudoer-binary-fence`. **INC-20260821-002** |
 | File-ownership | **MUST NOT** fence — dest takes ownership as `sudoer-adm` |
 | Who submitted / dest self-scope (A≠B) | **MUST NOT** fence |
 | JSON `username` ≠ `sudoer-adm` | **MUST NOT** fence |
 | Filename subject token ≠ JSON `username` | **MUST NOT** fence — user SSOT is the JSON field |
 | Dest-written `submit_by` / missing `submit_by` | **MUST NOT** fence |
-| `submit_app` ≠ dest `APP_NAME` / `submit_version` ≠ dest `VERSION` | **MUST NOT** fence — Type 0 stamps live Config; sibling submitters and mixed versions are dest-legal JSON. Missing / non-string on add/update is incorrect JSON format |
+| `submit_app` ≠ dest `APP_NAME` / `submit_version` ≠ dest `VERSION` | **MUST NOT** fence — Type 0 stamps live Config; sibling submitters and mixed versions are dest-legal JSON. Missing stamp on dest **review**: **warn**, then ask. Type 0 testers / convert / new submit still require strings. **INC-20260821-002** |
 
 **MUST NOT** add a dest inbound fence that is not on this table.
 
@@ -214,7 +214,7 @@ Closed `schema_version` **1**. POSIX `/bin/sh` codec (`util_json_escape` + const
 **add / update — required:** `schema_version`, `purpose`, `username`, `service`, `action`, non-empty `commands[]`, `submit_app`, `submit_version`.  
 Each command: absolute `path`; `args` string array; `runas` default `root`; `tags` v1 `NOPASSWD` only.  
 **Optional `kind`:** `type-2-switch` or `login-hook-elev`. Unknown `kind` → `invalid_json`.  
-**`submit_app` / `submit_version`:** Type 0 submit **MUST** stamp live Config `APP_NAME` / `VERSION` (overwrite on queue). Dest-known non-empty strings. Dest **MUST NOT** dest-write them. Dest **MUST NOT** fence if `submit_app` ≠ `sudoer-cli` or `submit_version` ≠ dest `VERSION`. Missing / non-string on add/update → `invalid_json`. Display before yes/no: `queued by {submit_app} {submit_version}`.
+**`submit_app` / `submit_version`:** Type 0 submit **MUST** stamp live Config `APP_NAME` / `VERSION` (overwrite on queue). Dest-known non-empty strings. Dest **MUST NOT** dest-write them. Dest **MUST NOT** fence if `submit_app` ≠ `sudoer-cli` or `submit_version` ≠ dest `VERSION`. Missing / non-string on Type 0 testers / convert / new submit → `invalid_json`. Dest **review** missing stamp: **warn**, then ask. Display before yes/no: `queued by {submit_app} {submit_version}` when present.
 
 **Dest-written `submit_by`:** original Unix owner of the waiting file **before** dest took ownership. Dest `interactive` **MUST** read that owner first, take ownership as `sudoer-adm`, format-check, and **if** the JSON is well-formed **MUST** write `submit_by` to that owner. Type 0 submit **MUST NOT** include `submit_by`. Dest **MUST NOT** fence if `submit_by` is present or missing. User SSOT stays JSON `username`.
 
@@ -239,7 +239,7 @@ Unknown keys anywhere → `invalid_json`. Closed-schema allowlist: `schema_versi
   "service": "webservice",
   "action": "add",
   "submit_app": "sudoer-cli",
-  "submit_version": "1.16.0",
+  "submit_version": "1.17.0",
   "commands": [
     {
       "runas": "root",
@@ -447,12 +447,12 @@ Session `SUDOER_CLI_HOOK_RAN` **MUST** prevent a second `interactive` if both lo
 3. Prompt only through `prompt_*`. **MUST NOT** ad-hoc `read`. `--force` **MUST NOT** auto-approve. The id walk **MUST NOT** redirect stdin over those prompts (`prompt_yes_no` reads fd 0). Walk ids on another fd.  
 4. Resolve queues once. Type 1 **MAY** readdir inbound. Consider only regular, non-symlink files whose basename matches the request grammar.  
 5. Empty inbound → human note (or JSON success) and exit **0**. Do not hang.  
-6. For each pending id (basename sort): **fence first** (`requirement-incorrect-json-format`, then `requirement-well-known-sudoer-binary-fence`). If a fence **matches**: display the match in people/folder words; **MUST NOT** ask the approval question; **then** move inbound → rejected (snapshot + LPU owner + mode `0640` + unlink inbound; **MUST NOT** dest-write `/etc/sudoers.d`; **MUST NOT** stamp `submit_by`; **MUST NOT** call standalone `reject` re-validate). Continue to the next file. If **no** fence: show purpose + body (same contract as `show`); ask the **approval question** (term `approval-question`): **one-off yes/no** via **one** `prompt_yes_no`. **Yes** = approve. **No** (including Enter) = reject. **MUST NOT** offer skip / quit / maybe. **MUST NOT** chain Approve then Reject then Quit as three `(y/N)` questions.  
+6. For each pending id (basename sort): **fence first** (`requirement-incorrect-json-format` — garbage JSON / symlink / action mismatch). If a fence **matches**: display the match in people/folder words; **MUST NOT** ask the approval question; **then** move inbound → rejected (snapshot + LPU owner + mode `0640` + unlink inbound; **MUST NOT** dest-write `/etc/sudoers.d`; **MUST NOT** stamp `submit_by`; **MUST NOT** call standalone `reject` re-validate). Continue to the next file. If **no** fence: **warn** on missing `submit_app` / `submit_version` and on a Cmnd that is not a well-known system binary (`requirement-well-known-sudoer-binary-fence`); show purpose + body (same contract as `show`); print `queued by {submit_app} {submit_version}` when those strings are present (expand under `set -u` only with defaults — **INC-20260821-002**); ask the **approval question** (term `approval-question`): **one-off yes/no** via **one** `prompt_yes_no`. **Yes** = approve. **No** (including Enter) = reject. **MUST NOT** offer skip / quit / maybe. **MUST NOT** chain Approve then Reject then Quit as three `(y/N)` questions. **MUST NOT** dest-drain a waiting grant solely for missing stamp or untrusted Cmnd.  
 7. **yes** / **no** **MUST** run the same re-validate + dest/move as the standalone `approve` / `reject` verbs. Remaining inbound files stay in this loop (no quit). Direct `approve` / `reject` with a request id stay **non-interactive**.  
 8. A validate failure on one id **MUST NOT** abort the rest; emit the error and continue.  
 9. Empty argv **MUST NOT** reach this handler.
 
-The handler is **live**. Non-TTY / `--json` / `--quiet` fail closed `confirm_required`. `--force` does **not** auto-approve. Each unfenced id uses **one** `prompt_yes_no` (default no = reject). Each fenced id is displayed, then archived to rejected, with no prompt.
+The handler is **live**. Non-TTY / `--json` / `--quiet` fail closed `confirm_required`. `--force` does **not** auto-approve. Each unfenced id uses **one** `prompt_yes_no` (default no = reject), including after a **warn** on missing stamp or untrusted Cmnd. Each JSON-format fenced id is displayed, then archived to rejected, with no prompt.
 
 #### Warnings (not hard reject)
 
@@ -488,7 +488,7 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | **Hook marker** | `# BEGIN sudoer-cli login hook` … `# END sudoer-cli login hook` |
 | **Hook env** | `SUDOER_CLI_HOOK_RAN` |
 | **Hook command** | `sudo -n /usr/local/bin/sudoer-cli interactive` |
-| **Approval question** | One-off yes/no (`prompt_yes_no "Approve this request"`). Yes = approve. No / Enter = reject. No skip / quit / maybe. Term `approval-question`. Fence match: no question; display then rejected. |
+| **Approval question** | One-off yes/no (`prompt_yes_no "Approve this request"`). Yes = approve. No / Enter = reject. No skip / quit / maybe. Term `approval-question`. JSON-format Fence match: no question; display then rejected. Missing stamp / untrusted Cmnd: warn, then ask. |
 | **`.profile` create** | Missing → write source-bashrc sample (`# BEGIN sudoer-cli profile source-bashrc`). Existing never overwritten. |
 | **Routed now** | Type 0 **operational** convert/submit/list/show/print-sudoers; Type 0 **test-purpose** `test-json-format`/`test-well-known-binary`/`fence-test`; Type 1 `setup`/`remove-lpu`/`approve`/`reject`/`interactive` live |
 | **`fence-test` sample JSON** | `tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json` — `--file` that path; test-purpose; sudo wrap only chmod/chown of the local test folder; does not queue |
@@ -547,7 +547,9 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 26. Offer skip / quit / maybe on dest review, or chain Approve then Reject then Quit as three `(y/N)` questions. The approval question is one-off yes/no.  
 27. Leave a dest **Fence** match in inbound after `interactive` displayed it, dest-write `/etc/sudoers.d` on that match, ask yes/no on it, or move it **before** the display.  
 28. Treat `fence-test` as needing `sudo`, a sudoers fragment, dest review, host install, or the waiting folder. Input is a JSON **file location**.  
-29. Treat a **test-purpose** verb (`fence-test`, `test-json-format`, `test-well-known-binary`) as **operational** (queue, dest-write, `setup`, `approve`), mix testers into operational help grouping, or `sudo` except wrapping **chmod** / **chown** of the **local test folder** (check before sudo).
+29. Treat a **test-purpose** verb (`fence-test`, `test-json-format`, `test-well-known-binary`) as **operational** (queue, dest-write, `setup`, `approve`), mix testers into operational help grouping, or `sudo` except wrapping **chmod** / **chown** of the **local test folder** (check before sudo).  
+30. Dest-drain a waiting grant in `interactive` solely because `submit_app` / `submit_version` is missing or a Cmnd is not a well-known system binary. Warn, then ask (**INC-20260821-002**).  
+31. Expand unset `SR_D_SUBMIT_APP` / `SR_D_SUBMIT_VERSION` in the `interactive` parent after a subshell Fence check (`set -u` crash).
 
 **Violating this rule is a critical domain-SSOT / privilege regression.**
 
@@ -570,7 +572,7 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | `docs/requirements/requirement-shell-cli-zero-arguments.md` | Empty argv ≠ `interactive` |
 | `docs/requirements/requirement-actor-role-subject-approver.md` | Five-column consider catalog |
 | `docs/requirements/requirement-incorrect-json-format.md` | Dest Fence: JSON format |
-| `docs/requirements/requirement-well-known-sudoer-binary-fence.md` | Dest Fence: well-known sudoer binary |
+| `docs/requirements/requirement-well-known-sudoer-binary-fence.md` | Well-known binary: dest warn + testers/convert fail closed |
 | `src/sudoer-cli` | Ship unit |
 
 ## Design-time verification
@@ -618,8 +620,11 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | **TP-SR-FENCE-11** | `tests/test_domain_sr.sh` | have | Dest `submit_by` stamp first `{` only |
 | **TP-SR-FENCE-09..10** | `tests/test_domain_sr.sh` | have | dest-written `submit_by` accepted; Type 0 must not plant it |
 | **TP-SR-FENCE-12** | `tests/test_domain_sr.sh` | have | Interactive fence match: display then move to rejected; no yes/no; no dest write |
-| **TP-SR-FENCE-13..15** | `tests/test_domain_sr.sh` | have | `submit_app` / `submit_version` required on add; sibling name is not a fence; Type 0 encoder stamps |
-| **TP-SR-WKBIN-01..10** | `tests/test_domain_sr.sh` | have | Well-known sudoer binary Fence (dns / nginx / certbot / interpreter / home gbin) |
+| **TP-SR-FENCE-13..15** | `tests/test_domain_sr.sh` | have | `submit_app` / `submit_version` required on testers/convert; sibling name is not a fence; Type 0 encoder stamps |
+| **TP-SR-FENCE-16** | `tests/test_domain_sr.sh` | have | Interactive: well-formed grant after a Fence-match in the same loop reaches yes/no; no `set -u` crash |
+| **TP-SR-FENCE-17** | `tests/test_domain_sr.sh` | have | Interactive: missing `submit_app` warns then asks (not dest-drain) |
+| **TP-SR-WKBIN-01..10** | `tests/test_domain_sr.sh` | have | Well-known checker: testers/convert fail closed (dns / nginx / certbot / interpreter / home gbin) |
+| **TP-SR-WKBIN-11** | `tests/test_domain_sr.sh` | have | Interactive: `.ci-homes` gbin warns then asks |
 | **TP-SR-FT-01..07** | `tests/test_domain_sr.sh` | have | Type 0 `fence-test` `--file` / `--dir` corpus |
 
 **Matrix:** `reviews/requirement-test-matrix.md`  
@@ -662,6 +667,7 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | 2026-08-21 | Active 2.28.0 | `fence-test` is JSON-file verification: **no sudo**, **no sudoers fragment**, **no queue**. Sample `tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json` |
 | 2026-08-21 | Active 2.29.0 | **Test-purpose** vs **operational** verbs. Testers target a local test folder; sudo wrap only chmod/chown of that folder. Help lists testers apart. Protection 29. |
 | 2026-08-21 | Active 2.30.0 | Dest-owned `submit_app` / `submit_version`; Type 0 stamps live Config; MUST NOT fence sibling app or version; **TP-SR-FENCE-13..15** |
+| 2026-08-21 | Active 2.31.0 | Dest review **warns then asks** on missing stamp / untrusted Cmnd; testers/convert still fail closed; **TP-SR-FENCE-16/17** · **TP-SR-WKBIN-11**; **INC-20260821-002** |
 
 ---
 

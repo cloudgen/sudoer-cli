@@ -1,6 +1,6 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.16.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.17.0-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
@@ -181,6 +181,7 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
+2026-08-21 — version **1.17.0** (dest `interactive` warns then asks on missing stamp / untrusted Cmnd; no `set -u` crash after Fence pass).
 2026-08-21 — version **1.16.0** (Type 0 stamps `submit_app` / `submit_version`; dest shows `queued by {app} {version}` before yes/no).
 2026-08-21 — version **1.15.3** (`fence-test` Next: uses checkout `src/sudoer-cli`, not a global install).
 2026-08-21 — version **1.15.2** (test-purpose vs operational verbs; help lists unit testers of a local test folder apart from convert/submit).

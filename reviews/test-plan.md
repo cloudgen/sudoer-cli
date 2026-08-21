@@ -3,9 +3,9 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.16.0  
-**Last plan update:** 2026-08-21 (1.16.0 dest-owned `submit_app` / `submit_version`; **TP-SR-FENCE-13..15** rows)  
-**Last suite run:** PASS=427 FAIL=0 SKIP=3 (2026-08-21; 1.16.0 dest-owned stamps; live Type 1 skipped)  
+**Product VERSION:** 1.17.0  
+**Last plan update:** 2026-08-21 (1.17.0 dest warn-then-ask; **TP-SR-FENCE-16/17** · **TP-SR-WKBIN-11**)  
+**Last suite run:** PASS=430 FAIL=0 SKIP=6 (2026-08-21; 1.17.0 dest warn-then-ask; live Type 1 skipped)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)
@@ -124,6 +124,8 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-FENCE-13 | Add/update missing or non-string `submit_app` / `submit_version` → `invalid_json` | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
 | TP-SR-FENCE-14 | Sibling `submit_app` (`dns-cli`) is dest-legal JSON (not a fence) | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
 | TP-SR-FENCE-15 | Type 0 convert/submit stamps live Config; inbound overwrite of sibling app/version; dest allowlist; interactive `queued by {app} {version}` | `tests/test_domain_sr.sh` | requirement-incorrect-json-format · domain | **have** |
+| TP-SR-FENCE-16 | Interactive: well-formed grant after a JSON-format Fence-match in the same loop reaches yes/no; no `SR_D_SUBMIT_APP` `set -u` crash | `tests/test_domain_sr.sh` | requirement-incorrect-json-format · domain · INC-20260821-002 | **have** |
+| TP-SR-FENCE-17 | Interactive: missing `submit_app` warns then asks (not dest-drain) | `tests/test_domain_sr.sh` | requirement-incorrect-json-format · domain · INC-20260821-002 | **have** |
 | TP-SR-WKBIN-01 | Type 0 `test-well-known-binary` accepts login-hook-elev fixture (`/usr/local/bin/dns-cli`) | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |
 | TP-SR-WKBIN-02 | webservice nginx-ctl paths (`systemctl` / `journalctl` / `/usr/sbin/nginx`) pass | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |
 | TP-SR-WKBIN-03 | `/usr/local/bin/nginx-cli request` passes | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |
@@ -134,6 +136,7 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-WKBIN-08 | `/usr/local/bin/../home/…` fences | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |
 | TP-SR-WKBIN-09 | dest fence runner: CI gbin fail-closed (no yes/no); golden fixture pass | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |
 | TP-SR-WKBIN-10 | Type 0 submit refuses CI gbin | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence | **have** |
+| TP-SR-WKBIN-11 | Dest interactive warns on `.ci-homes` gbin and still asks yes/no | `tests/test_domain_sr.sh` | requirement-well-known-sudoer-binary-fence · INC-20260821-002 | **have** |
 | TP-CLI-15 | `test-well-known-binary` is routed (xor fail is not unknown) | `tests/test_cli.sh` | requirement-shell-cli-interface | **have** |
 | TP-SR-FT-01 | Type 0 `fence-test --file` accepts login-hook-elev fixture | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-SR-FT-02 | `fence-test --file` not-a-JSON-object → fail closed | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
