@@ -3,9 +3,9 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.17.0  
-**Last plan update:** 2026-08-21 (1.17.0 dest warn-then-ask; **TP-SR-FENCE-16/17** · **TP-SR-WKBIN-11**)  
-**Last suite run:** PASS=430 FAIL=0 SKIP=6 (2026-08-21; 1.17.0 dest warn-then-ask; live Type 1 skipped)  
+**Product VERSION:** 1.17.1  
+**Last plan update:** 2026-08-26 (1.17.1 json-to-sudoers visudo-legal args; **TP-SR-19..21**)  
+**Last suite run:** PASS=445 FAIL=0 SKIP=6 (2026-08-26; 1.17.1 visudo-legal convert; live Type 1 skipped)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)
@@ -25,7 +25,7 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | Trimmed parent verbs fail closed | have | TP-CLI-13 |
 | Local install / idempotent / uninstall / mode 0755 | have | TP-LC-01..10 |
 | Backup / restore | n/a | Absent by design (not a backup product) |
-| Domain sudoers-request (convert / submit / queues) | have | **TP-SR-01..18** + **TP-SR-PRIV-01..04** + **TP-SR-FENCE-01..15** — `tests/test_domain_sr.sh` |
+| Domain sudoers-request (convert / submit / queues) | have | **TP-SR-01..21** + **TP-SR-PRIV-01..04** + **TP-SR-FENCE-01..17** — `tests/test_domain_sr.sh` |
 | Privilege prevention set (closed block vs must-remain-open) | have | **TP-PREV-01..03** (aliases of PRIV-03 / SR-03 / PRIV-04) |
 | Routed convert known; junk still unknown | have | **TP-CLI-14** |
 | no-retest-tty (measure `[ -t` outside functions) | have | **TP-ELEV-07** |
@@ -109,6 +109,9 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-16 | pretty folder-backup backup+restore keeps both verbs | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval 2.15.0 | **have** |
 | TP-SR-17 | JSON `username` B (`dns-adm`) + service `dns-cli` → request_id and dest use B (not last-hyphen `adm`) | `tests/test_domain_sr.sh` | domain · OPEN-BEHALF · ARSA | **have** |
 | TP-SR-18 | `remove-sudoer-request --file` for B keeps JSON `username` / dest B | `tests/test_domain_sr.sh` | domain · OPEN-BEHALF | **have** |
+| TP-SR-19 | json-to-sudoers `--ownership user:group` → escaped colon; visudo Pass | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
+| TP-SR-20 | json-to-sudoers `--ownership *` keeps star; visudo Pass | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
+| TP-SR-21 | visudo reject says “visudo rejected”; quotes syntax; Next json-to-sudoers; no “host validation” | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-SR-FENCE-01 | `interactive` / `approve` / `reject` call dest Fence **before** `prompt_yes_no` | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
 | TP-SR-FENCE-02 | Isolated fence: not a JSON object → fail closed, people words, no yes/no | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
 | TP-SR-FENCE-03 | Isolated fence: basename action ≠ JSON action → `field_mismatch` | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |

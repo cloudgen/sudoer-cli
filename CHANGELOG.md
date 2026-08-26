@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.17.1] - 2026-08-26
+
+### Fixed
+
+- `json-to-sudoers` (and dest-write visudo) backslash-escapes sudoers-special Cmnd args (`:` `#` `,`) so grants such as `--ownership user:group` convert to visudo-legal text. A trailing `*` operand is not expanded as a shell glob. Domain **2.32.0**. **TP-SR-19** · **TP-SR-20**.
+- When visudo still rejects the text, the operator error is **`visudo rejected this grant`**, quotes visudo’s syntax line, and says the sudoers file would be illegal. It no longer says “host validation”. **TP-SR-21**. Submit add/update now runs the same visudo check before queueing.
+
+### Changed
+
+- Domain leftover **Self-scope** (on-behalf must fail) dropped — A may submit for B (**OPEN-BEHALF**). Worked samples are `alice` / `webservice` (no session login). Class **1.9.7**. CLI **3.8.3**. Bootstrap **5.2.0**. Prevention **1.6.1**. **INC-20260821-002** closed in checkout (warn then ask). Domain **2.34.0**.
+- Human-intro and glossary dest teach pages match dest law: JSON-format Fence dest-drains; well-known is dest **warn then ask**; this dest is **sudoer-cli** (`sudoer-adm`), not DNS; A may file for B. README Decide names the same split.
+
 ## [1.17.0] - 2026-08-21
 
 ### Changed

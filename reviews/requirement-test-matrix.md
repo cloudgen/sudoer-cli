@@ -1,7 +1,7 @@
 # Requirement ↔ test matrix — sudoer-cli
 
-**Updated:** 2026-08-21 (1.17.0 dest warn-then-ask; FENCE-16/17 · WKBIN-11)  
-**Product VERSION:** 1.17.0  
+**Updated:** 2026-08-26 (1.17.1 json-to-sudoers visudo-legal args; TP-SR-19..21)  
+**Product VERSION:** 1.17.1  
 **Suite:** `tests/run.sh`
 
 | Requirement key | Area | TP families | Coverage notes |
@@ -27,7 +27,7 @@
 | requirement-actor-role-subject-approver | architecture | TP-SR-17, TP-SR-18, TP-SR-PRIV-04 | Catalog only; dest still has Approver; A may file for B |
 | requirement-incorrect-json-format | domain | **TP-SR-FENCE-01..17**, **TP-SR-FT-01..07** | Dest Fence before yes/no; Type 0 `test-json-format`; list tester `fence-test`; dest-written `submit_by`; dest-owned `submit_app` / `submit_version`; Type 0 must not plant `submit_by`; pretty stamp first `{` only; garbage JSON display-then-rejected; missing stamp dest **warn then ask** **FENCE-17**; no `set -u` crash **FENCE-16** |
 | requirement-well-known-sudoer-binary-fence | domain | **TP-SR-WKBIN-01..11**, **TP-CLI-15**, **TP-SR-FT-01..07** | Closed system prefixes + no interpreter; Type 0 `test-well-known-binary`; list tester `fence-test`; convert/submit fail closed; dest interactive **warn then ask** **WKBIN-11**; nginx / certbot / dns-cli / gitlab-ctl |
-| requirement-domain-sudoer-approval | domain | **TP-SR-01..18**, **TP-SR-PRIV-01..04**, **TP-CLI-14**, **TP-CLI-15**, **TP-CLI-16**, **TP-SR-INT-01..06**, **TP-SR-HOOK-01..04**, **TP-SR-FENCE-01..17**, **TP-SR-WKBIN-01..11**, **TP-SR-FT-01..07**, **TP-SR-Q-01..03** | Type 0 convert/submit/`test-json-format`/`test-well-known-binary`/`fence-test` **have**; dest-written `submit_by`; dest-owned `submit_app` / `submit_version` **FENCE-13..17**; pretty `commands[]` fidelity **14/15/16**; A-for-B **17/18**; dest Fence **FENCE-*** · **WKBIN-*** · **FT-***; interactive fence → rejected **FENCE-12**; warn-then-ask **FENCE-17** / **WKBIN-11**; one-off approval-question **INT-06**; elevated sudoer may approve; hook `.profile`; rc owned by LPU |
+| requirement-domain-sudoer-approval | domain | **TP-SR-01..21**, **TP-SR-PRIV-01..04**, **TP-CLI-14**, **TP-CLI-15**, **TP-CLI-16**, **TP-SR-INT-01..06**, **TP-SR-HOOK-01..04**, **TP-SR-FENCE-01..17**, **TP-SR-WKBIN-01..11**, **TP-SR-FT-01..07**, **TP-SR-Q-01..03** | Type 0 convert/submit/`test-json-format`/`test-well-known-binary`/`fence-test` **have**; dest-written `submit_by`; dest-owned `submit_app` / `submit_version` **FENCE-13..17**; pretty `commands[]` fidelity **14/15/16**; A-for-B **17/18**; visudo-legal convert **19/20**; visudo fail names visudo **21**; dest Fence **FENCE-*** · **WKBIN-*** · **FT-***; interactive fence → rejected **FENCE-12**; warn-then-ask **FENCE-17** / **WKBIN-11**; one-off approval-question **INT-06**; elevated sudoer may approve; hook `.profile`; rc owned by LPU |
 
 **Absent by design (no TP Core):** online-install, remote self-management, automatic channel checksum, folder-archive backup/restore.
 

@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..04, TP-SR-FENCE-01..17, TP-SR-INT-01..06)
+# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..04, TP-SR-FENCE-01..17, TP-SR-INT-01..06, TP-SR-19..21)
 # Primary REQ: requirement-domain-sudoer-approval.md
 # =============================================================================
 
@@ -139,6 +139,50 @@ run_test_domain_sr() {
     _fbback=$(cat "${CI_HOME}/fb-pretty.sudoers")
     assert_contains "TP-SR-16 pretty backup verb" "${_fbback}" "folder-backup backup"
     assert_contains "TP-SR-16 pretty restore verb" "${_fbback}" "folder-backup restore"
+
+    # TP-SR-19 / 20 — json-to-sudoers must emit visudo-legal text for colon args and *
+    _u=$(id -un)
+    cat >"${CI_HOME}/own-colon.json" <<EOF
+{"schema_version":1,"purpose":"Allow take-ownership of a ram project folder.","username":"${_u}","service":"take-ownership","action":"add","submit_app":"sudoer-cli","submit_version":"${PRODUCT_VERSION}","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/usr/local/bin/take-ownership","args":["action","--path","/dev/shm/genesis-template","--ownership","alice:ops"]},{"runas":"root","tags":["NOPASSWD"],"path":"/usr/local/bin/take-ownership","args":["--json","action","--path","/dev/shm/genesis-template","--ownership","alice:ops"]}]}
+EOF
+    HOME="${CI_HOME}" sh "${SCRIPT}" json-to-sudoers --file "${CI_HOME}/own-colon.json" --out "${CI_HOME}/own-colon.sudoers" >/dev/null 2>&1
+    assert_eq "TP-SR-19 colon json-to-sudoers exit 0" 0 "$?"
+    _ownc=$(cat "${CI_HOME}/own-colon.sudoers")
+    assert_contains "TP-SR-19 escaped colon in sudoers" "${_ownc}" 'alice\:ops'
+    visudo -cf "${CI_HOME}/own-colon.sudoers" >/dev/null 2>&1
+    assert_eq "TP-SR-19 visudo -cf on converted text" 0 "$?"
+    # Control: the same grant without backslash-escape is illegal sudoers (why convert must escape).
+    printf '%s ALL=(root) NOPASSWD: /usr/local/bin/take-ownership --ownership alice:ops\n' "${_u}" >"${CI_HOME}/own-colon-raw.sudoers"
+    visudo -cf "${CI_HOME}/own-colon-raw.sudoers" >/dev/null 2>&1
+    _raw_ec=$?
+    if [ "${_raw_ec}" -eq 0 ]; then _raw_ec=0; else _raw_ec=1; fi
+    assert_eq "TP-SR-19 unescaped colon visudo fail" 1 "${_raw_ec}"
+    HOME="${CI_HOME}" sh "${SCRIPT}" sudoers-to-json --file "${CI_HOME}/own-colon.sudoers" --action add --service take-ownership --out "${CI_HOME}/own-colon.round.json" >/dev/null 2>&1
+    assert_eq "TP-SR-19 colon round-trip json exit 0" 0 "$?"
+    _ownr=$(cat "${CI_HOME}/own-colon.round.json")
+    assert_contains "TP-SR-19 round-trip JSON has unescaped colon" "${_ownr}" '"alice:ops"'
+
+    cat >"${CI_HOME}/own-star.json" <<EOF
+{"schema_version":1,"purpose":"Allow take-ownership of a ram project folder.","username":"${_u}","service":"take-ownership","action":"add","submit_app":"sudoer-cli","submit_version":"${PRODUCT_VERSION}","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/usr/local/bin/take-ownership","args":["action","--path","/dev/shm/genesis-template","--ownership","*"]},{"runas":"root","tags":["NOPASSWD"],"path":"/usr/local/bin/take-ownership","args":["--json","action","--path","/dev/shm/genesis-template","--ownership","*"]}]}
+EOF
+    HOME="${CI_HOME}" sh "${SCRIPT}" json-to-sudoers --file "${CI_HOME}/own-star.json" --out "${CI_HOME}/own-star.sudoers" >/dev/null 2>&1
+    assert_eq "TP-SR-20 star json-to-sudoers exit 0" 0 "$?"
+    _owns=$(cat "${CI_HOME}/own-star.sudoers")
+    assert_contains "TP-SR-20 star operand" "${_owns}" "--ownership *"
+    visudo -cf "${CI_HOME}/own-star.sudoers" >/dev/null 2>&1
+    assert_eq "TP-SR-20 visudo -cf on star grant" 0 "$?"
+
+    # TP-SR-21 visudo fail: operator copy names visudo, not "host validation"
+    cat >"${CI_HOME}/own-baduser.json" <<EOF
+{"schema_version":1,"purpose":"visudo reject user.","username":"x y","service":"take-ownership","action":"add","submit_app":"sudoer-cli","submit_version":"${PRODUCT_VERSION}","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/usr/local/bin/take-ownership","args":["action","--path","/dev/shm/genesis-template","--ownership","*"]}]}
+EOF
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" json-to-sudoers --file "${CI_HOME}/own-baduser.json" --out "${CI_HOME}/own-baduser.sudoers" 2>&1 >/dev/null)
+    assert_eq "TP-SR-21 visudo fail exit 1" 1 "$?"
+    assert_contains "TP-SR-21 visudo rejected" "${_err}" "visudo rejected"
+    assert_contains "TP-SR-21 quotes visudo syntax" "${_err}" "syntax"
+    assert_contains "TP-SR-21 Next json-to-sudoers" "${_err}" "json-to-sudoers"
+    assert_not_contains "TP-SR-21 no host validation jargon" "${_err}" "host validation"
+    assert_not_contains "TP-SR-21 no host-checker jargon" "${_err}" "host sudoers checker"
 
     # TP-SR-08 remove purpose-only
     printf '%s\n' '{"purpose":"Revoke my webservice sudoers grant; I no longer operate nginx."}' >"${CI_HOME}/rm.json"

@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-privilege-prevention-set.md  
-**Status**: Active (Version 1.6.0)  
+**Status**: Active (Version 1.6.1)  
 **Area**: architecture  
 **Key**: `requirement-privilege-prevention-set`  
 **id**: RQ-PRIVILEGE-PREVENTION-SET  
@@ -149,7 +149,7 @@ These steps are **hard to undo**. They stay **allowed** after elev. The extra ga
 | **Ship unit** | `src/sudoer-cli` |
 | **LPU** | `sudoer-adm` (UID/GID `1776`, create home `/etc/sudoer-adm`; public queues `/var/{{APP_NAME}}/`) |
 | **F6 file** | `/etc/sudoers.d/sudoer-adm` = `sudoer-adm ALL=(root) NOPASSWD: /usr/local/bin/sudoer-cli` (Type 1 copy/overwrite/remove exception) |
-| **Grant dest** | `/etc/sudoers.d/{{service}}-{{username}}` (worked: `/etc/sudoers.d/folder-backup-leolio`) |
+| **Grant dest** | `/etc/sudoers.d/{{service}}-{{username}}` (worked: `/etc/sudoers.d/webservice-alice`) |
 | **Usual bootstrap** | `sudo src/sudoer-cli setup` or `sudo sudoer-cli setup` (password `sudo` OK) |
 | **Test-roots flag** | `SUDOER_CLI_ALLOW_TEST_ROOTS=1` |
 | **Absent flags** | There is **no** `LIVE_LPU` flag, **no** `SUDOER_CLI_LIVE_LPU_TEST`, **no** Gap on create |
@@ -237,9 +237,10 @@ These steps are **hard to undo**. They stay **allowed** after elev. The extra ga
 | 2026-08-18 | Active 1.4.0 | Drop PREV-APPR-ACTOR (second lock). OPEN-SUDOER-APPR. LSU never `useradd`. **TP-PREV-03** |
 | 2026-08-18 | Active 1.5.0 | Drop PREV-BEHALF and Type 1 `owner_mismatch`. Approve/reject are not submitter/owner walls. |
 | 2026-08-18 | Active 1.6.0 | **OPEN-BEHALF**: A may submit for B; filename uses B. Helpful checks are file integrity, not A=B. |
+| 2026-08-26 | Active 1.6.1 | Worked grant dest `webservice-alice` (no session login) |
 
 ---
 
-**Last Updated**: 2026-08-18  
+**Last Updated**: 2026-08-26  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

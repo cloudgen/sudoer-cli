@@ -36,7 +36,7 @@
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
 # APP NAME: hard-assign APP_NAME="sudoer-cli"
-# VERSION: hard-assign VERSION="1.17.0"
+# VERSION: hard-assign VERSION="1.17.1"
 #
 # =============================================================================
 
@@ -53,7 +53,7 @@ APP_NAME="sudoer-cli"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
 : "${DESCRIPTION:=POSIX /bin/sh CLI: lifecycle plus sudoers-request convert/submit/list/show/test-json-format/test-well-known-binary/fence-test. Type 1 setup creates sudoer-adm; approve/reject require euid 0.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.17.0"
+VERSION="1.17.1"
 : "${VERSION:=1.0.0}"
 # Repository identity SSOT (git host owner/repo for project-repository alignment).
 # Install remains local-only: SCRIPT_URL stays empty (no online curl|sh channel).
@@ -1720,6 +1720,17 @@ sr_write_payload() {
     printf '%s\n' "${_payload}"
 }
 
+# Last updated: 2026-08-26 — escape sudoers-special chars in one Cmnd arg (colon is visudo syntax).
+sr_sudoers_escape_arg() {
+    printf '%s' "$1" | sed 's/\\/\\\\/g; s/:/\\:/g; s/#/\\#/g; s/,/\\,/g'
+}
+
+# Last updated: 2026-08-26 — inverse of sr_sudoers_escape_arg for text→JSON.
+sr_sudoers_unescape_arg() {
+    printf '%s' "$1" | sed 's/\\:/:/g; s/\\#/#/g; s/\\,/,/g; s/\\\\/\\/g'
+}
+
+# Last updated: 2026-08-26 — visudo -cf; operator copy names visudo (not "host validation").
 sr_visudo_text() {
     _vt="$1"
     if ! command -v visudo >/dev/null 2>&1; then
@@ -1728,15 +1739,24 @@ sr_visudo_text() {
     fi
     _vf=$(mktemp "${TMPDIR:-/tmp}/sudoer-visudo.XXXXXX") || sr_die "mktemp failed" "visudo_fail"
     printf '%s\n' "${_vt}" >"${_vf}"
-    if ! visudo -cf "${_vf}" >/dev/null 2>&1; then
+    _visudo_err=$(visudo -cf "${_vf}" 2>&1)
+    _visudo_ec=$?
+    if [ "${_visudo_ec}" -ne 0 ]; then
         rm -f "${_vf}"
         _cmd=$(sr_operator_cmd)
         if [ -n "${SR_FILE-}" ]; then
             _next="${_cmd} json-to-sudoers --file ${SR_FILE}"
         else
-            _next="${_cmd} help"
+            _next="${_cmd} json-to-sudoers --file request.json"
         fi
-        sr_die "The sudoers text failed host validation. Do not approve this grant. Fix the spec and convert again." "visudo_fail" \
+        _visudo_one=$(printf '%s\n' "${_visudo_err}" | sed '/^$/d' | head -n 1)
+        # Drop visudo's temp path (may include storage basename); keep "N:M: syntax error".
+        _visudo_one=$(printf '%s' "${_visudo_one}" | sed 's|^[^:][^:]*:||')
+        if [ -n "${_visudo_one}" ]; then
+            sr_die "visudo rejected this grant. visudo said: ${_visudo_one}. That means the sudoers file would be illegal. Do not approve it. Fix the grant, then convert again with json-to-sudoers until visudo accepts it." "visudo_fail" \
+                "${_next}"
+        fi
+        sr_die "visudo rejected this grant. That means the sudoers file would be illegal. Do not approve it. Fix the grant, then convert again with json-to-sudoers until visudo accepts it." "visudo_fail" \
             "${_next}"
     fi
     rm -f "${_vf}"
@@ -1781,11 +1801,13 @@ sr_json_encode_request() {
         [ "${_je_tags}" = "NOPASSWD" ] && _je_tagjson='["NOPASSWD"]'
         _je_argjson="["
         _je_af=1
+        set -f
         for _je_a in ${_je_args}; do
             [ "${_je_af}" -eq 1 ] || _je_argjson="${_je_argjson},"
             _je_argjson="${_je_argjson}\"$(util_json_escape "${_je_a}")\""
             _je_af=0
         done
+        set +f
         _je_argjson="${_je_argjson}]"
         _obj=$(printf '{"runas":"%s","tags":%s,"path":"%s","args":%s}' \
             "$(util_json_escape "${_je_runas:-root}")" \
@@ -1800,8 +1822,6 @@ sr_json_encode_request() {
         fi
     done <"${_tf}"
     rm -f "${_tf}"
-    : "${APP_NAME:=sudoer-cli}"
-    : "${VERSION:=1.16.0}"
     printf '{"schema_version":1,"purpose":"%s","username":"%s","service":"%s","action":"%s","submit_app":"%s","submit_version":"%s","commands":[%s]}' \
         "$(util_json_escape "${_je_purpose}")" \
         "$(util_json_escape "${_je_user}")" \
@@ -1866,9 +1886,29 @@ sr_parse_sudoers() {
         case "${_ln}" in
             *NOPASSWD:*) _tags="NOPASSWD" ;;
         esac
-        _rest=$(printf '%s' "${_ln}" | sed 's/.*:[[:space:]]*//')
+        # Split after NOPASSWD: (not the last colon — args may contain \: ).
+        case "${_ln}" in
+            *NOPASSWD:*)
+                _rest=$(printf '%s' "${_ln}" | sed 's/.*NOPASSWD:[[:space:]]*//')
+                ;;
+            *)
+                _rest=$(printf '%s' "${_ln}" | sed 's/.*)[[:space:]]*//')
+                ;;
+        esac
         _path=$(printf '%s' "${_rest}" | awk '{print $1}')
         _args=$(printf '%s' "${_rest}" | awk '{ $1=""; sub(/^ /,""); print }')
+        _uargs=""
+        set -f
+        for _aa in ${_args}; do
+            _ua=$(sr_sudoers_unescape_arg "${_aa}")
+            if [ -n "${_uargs}" ]; then
+                _uargs="${_uargs} ${_ua}"
+            else
+                _uargs="${_ua}"
+            fi
+        done
+        set +f
+        _args="${_uargs}"
         case "${_path}" in
             /*) ;;
             *) sr_die "Cmnd must be absolute: ${_path}" "invalid_name" ;;
@@ -1896,8 +1936,19 @@ sr_render_sudoers() {
         [ -n "${_path}" ] || continue
         _tagp=""
         [ "${_tags}" = "NOPASSWD" ] && _tagp="NOPASSWD: "
-        if [ -n "${_args}" ]; then
-            printf '%s ALL=(%s) %s%s %s\n' "${_rr_user}" "${_runas}" "${_tagp}" "${_path}" "${_args}"
+        _esc_args=""
+        set -f
+        for _ra in ${_args}; do
+            _ea=$(sr_sudoers_escape_arg "${_ra}")
+            if [ -n "${_esc_args}" ]; then
+                _esc_args="${_esc_args} ${_ea}"
+            else
+                _esc_args="${_ea}"
+            fi
+        done
+        set +f
+        if [ -n "${_esc_args}" ]; then
+            printf '%s ALL=(%s) %s%s %s\n' "${_rr_user}" "${_runas}" "${_tagp}" "${_path}" "${_esc_args}"
         else
             printf '%s ALL=(%s) %s%s\n' "${_rr_user}" "${_runas}" "${_tagp}" "${_path}"
         fi
@@ -2566,6 +2617,8 @@ sr_submit() {
         _user="${SR_D_USER:-${_me}}"
         _js=$(sr_json_encode_request "${SR_D_PURPOSE}" "${_user}" "${_svc}" "${_act}" "${SR_D_CMDS}")
     fi
+    _txt=$(sr_render_sudoers "${_purpose:-${SR_D_PURPOSE}}" "${_user}" "${_act}" "${SR_P_CMDS:-${SR_D_CMDS}}")
+    sr_visudo_text "${_txt}"
     _id=$(sr_alloc_request_id "${_user}" "${_svc}" "${_act}")
     printf '%s\n' "${_js}" >"${SUDOER_QUEUE_REQUEST}/${_id}"
     sr_restrict_submitted_file "${SUDOER_QUEUE_REQUEST}/${_id}"

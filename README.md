@@ -1,6 +1,6 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.17.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.17.1-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
@@ -50,7 +50,7 @@ approved   rejected
 | Test dest fences | **Unit test** of a local test folder. Point at a JSON file. **No sudo** except wrap chmod/chown of that folder. Does not queue. | `sh src/sudoer-cli fence-test --file tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json` |
 | Submit | Hand that JSON to this program. It **chooses the filename** and writes it into `/var/sudoer-cli/sudoer-request/`. You still do not need to be root. | `sudoer-cli add-sudoer-request --file request.json` |
 | Wait | The file sits in the waiting folder. Anyone can drop a file in; they cannot list or steal someone else’s file. | `sudoer-cli list-approving` |
-| Decide | A host admin who already used password `sudo` (or `sudoer-adm`, or a real root login) re-reads the JSON and **moves** the file. Moving it *is* the decision. First-time setup must already have been run. | `sudo sudoer-cli interactive` |
+| Decide | A host admin who already used password `sudo` (or `sudoer-adm`, or a real root login) re-reads the JSON. If the JSON is broken, dest says so, does **not** ask, and moves the file to rejected. If a command lives under someone’s home (or the queue stamp is missing), dest **warns** and still asks yes/no. Moving a valid file *is* the decision. First-time setup must already have been run. | `sudo sudoer-cli interactive` |
 | Live grant | Only after accept: a fragment at `/etc/sudoers.d/<service>-<subject>` (for example `folder-backup-bob` when the JSON `username` is bob). This program never writes `/etc/passwd` or the main `/etc/sudoers` file. | (the approve path) |
 
 Pretty-printed and compact JSON are the same grant. If the request looks incomplete (it lists more commands than could be read), **do not approve it** — fix the file and convert or submit again.
@@ -181,7 +181,7 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
-2026-08-21 — version **1.17.0** (dest `interactive` warns then asks on missing stamp / untrusted Cmnd; no `set -u` crash after Fence pass).
+2026-08-26 — version **1.17.1** (`json-to-sudoers` visudo-legal args; visudo fail names visudo, not “host validation”).
 2026-08-21 — version **1.16.0** (Type 0 stamps `submit_app` / `submit_version`; dest shows `queued by {app} {version}` before yes/no).
 2026-08-21 — version **1.15.3** (`fence-test` Next: uses checkout `src/sudoer-cli`, not a global install).
 2026-08-21 — version **1.15.2** (test-purpose vs operational verbs; help lists unit testers of a local test folder apart from convert/submit).

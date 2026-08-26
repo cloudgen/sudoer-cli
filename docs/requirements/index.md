@@ -2,14 +2,14 @@
 
 **Product:** sudoer-cli (POSIX `/bin/sh` local self-managed CLI — Type 0 lifecycle **and** Type 0 domain convert/submit live; Type 1 `setup` / `interactive` live)  
 **Workspace state:** Specialized product law (left genesis); **software-development** class; historical origin **cli-template** (no live parent ship unit). Online / Type O **absent**.  
-**Updated:** 2026-08-21
+**Updated:** 2026-08-26
 
 | ID / key | Title | Area | Status | Path | Updated |
 |----------|-------|------|--------|------|---------|
-| requirement-class-software-dev | Software-development class law + residual stack (posix-sh, local-only); ARSA + dest-fence + **coding-style** + **sudo-command** pointers; dest Fences ship Type 0 **test-purpose** `fence-test` (local test folder) | class | Active (1.9.6) | `requirement-class-software-dev.md` | 2026-08-21 |
-| requirement-bootstrap-chain | Historical origin cli-template; this product is sudoer-cli (no live parent ship unit) | architecture | Active (5.1.0) | `requirement-bootstrap-chain.md` | 2026-08-14 |
+| requirement-class-software-dev | Software-development class law + residual stack (posix-sh, local-only); ARSA + dest-fence + **coding-style** + **sudo-command** pointers; dest Fences ship Type 0 **test-purpose** `fence-test` (local test folder) | class | Active (1.9.7) | `requirement-class-software-dev.md` | 2026-08-26 |
+| requirement-bootstrap-chain | Historical origin cli-template; this product is sudoer-cli (no live parent ship unit); exactly one Active domain SSOT | architecture | Active (5.2.0) | `requirement-bootstrap-chain.md` | 2026-08-26 |
 | requirement-project-folder | Project layout (`src/`), install bins; LPU home / `/etc/{{username}}/` are host paths | architecture | Active (3.1.0) | `requirement-project-folder.md` | 2026-08-14 |
-| requirement-shell-cli-interface | Shell CLI interface (Type 0 lifecycle + Type 0 operational convert/submit + Type 0 **test-purpose** `test-json-format` / `test-well-known-binary` / `fence-test`; Type 1 any-elevated approve) | shell | Active (3.8.2) | `requirement-shell-cli-interface.md` | 2026-08-21 |
+| requirement-shell-cli-interface | Shell CLI interface (Type 0 lifecycle + Type 0 operational convert/submit + Type 0 **test-purpose** `test-json-format` / `test-well-known-binary` / `fence-test`; Type 1 any-elevated approve) | shell | Active (3.8.3) | `requirement-shell-cli-interface.md` | 2026-08-26 |
 | requirement-shell-cli-zero-arguments | Empty argv Type N help (interactive ≠ empty argv) | shell | Active (1.1.0) | `requirement-shell-cli-zero-arguments.md` | 2026-08-13 |
 | requirement-shell-local-self-management | Local install / uninstall / where-is-me; **mode 0755** multi-user | shell | Active (1.4.0) | `requirement-shell-local-self-management.md` | 2026-08-13 |
 | requirement-shell-output-requirements | Central `out_*` output SSOT; colors consume `TTY`; operator fatals include `Next:` | shell | Active (1.1.1) | `requirement-shell-output-requirements.md` | 2026-08-14 |
@@ -23,11 +23,11 @@
 | requirement-shell-temp-file-system | Scratch **leaves**: `mktemp`; no `$$` paths; cleanup | shell | Active (1.0.0) | `requirement-shell-temp-file-system.md` | 2026-08-14 |
 | requirement-three-layer-privilege-model | Type 0/1 map; Type 0 **test-purpose** testers vs **operational** Type 0; F6 extra path; any elevated sudoer may approve; sudo-wrapping / check before sudo | architecture | Active (1.14.1) | `requirement-three-layer-privilege-model.md` | 2026-08-21 |
 | requirement-least-privilege-user | sudoer-adm F1–F7; home create `/etc/sudoer-adm`; F5 `/var/{{APP_NAME}}/` 3773 + F4 views; LSU never `useradd`; hook checks/creates `~/.profile`; rc owned by LPU | architecture | Active (1.13.0) | `requirement-least-privilege-user.md` | 2026-08-18 |
-| requirement-privilege-prevention-set | Closed catalog; OPEN-SUDOER-APPR; OPEN-DECIDE; OPEN-BEHALF; no PREV-BEHALF | architecture | Active (1.6.0) | `requirement-privilege-prevention-set.md` | 2026-08-18 |
+| requirement-privilege-prevention-set | Closed catalog; OPEN-SUDOER-APPR; OPEN-DECIDE; OPEN-BEHALF; no PREV-BEHALF | architecture | Active (1.6.1) | `requirement-privilege-prevention-set.md` | 2026-08-26 |
 | requirement-actor-role-subject-approver | Actor / role / subject / submitter / approver catalog (dest has approver) | architecture | Active (1.0.0) | `requirement-actor-role-subject-approver.md` | 2026-08-19 |
 | requirement-incorrect-json-format | Dest **Fence**: incorrect JSON format (independent REQ; dest table still prints; Type 0 **test-purpose** `test-json-format`; dest-written `submit_by`; dest-owned `submit_app` / `submit_version`; dest review missing stamp is warn-then-ask; garbage JSON display-then-rejected) | domain | Active (1.5.0) | `requirement-incorrect-json-format.md` | 2026-08-21 |
 | requirement-well-known-sudoer-binary-fence | Well-known sudoer binary (closed system prefixes + no interpreter Cmnd; dest **warn then ask**; Type 0 testers/convert fail closed; Type 0 **test-purpose** `test-well-known-binary`; list tester `fence-test`) | domain | Active (1.2.0) | `requirement-well-known-sudoer-binary-fence.md` | 2026-08-21 |
-| requirement-domain-sudoer-approval | **Domain SSOT** — A may submit for B; filename uses B; human decides via one-off yes/no; dest fence table; Type 0 **test-purpose** `fence-test` / `test-json-format` / `test-well-known-binary`; dest-owned `submit_app` / `submit_version`; dest-written `submit_by`; JSON-format fence match → rejected; missing stamp / untrusted Cmnd warn then ask; submit `/var/{{APP_NAME}}/sudoer-request`; hook checks `~/.profile`; rc owned by LPU | domain | Active (2.31.0) | `requirement-domain-sudoer-approval.md` | 2026-08-21 |
+| requirement-domain-sudoer-approval | **Domain SSOT** — A may submit for B; filename uses B; human decides via one-off yes/no; dest fence table; Type 0 **test-purpose** `fence-test` / `test-json-format` / `test-well-known-binary`; dest-owned `submit_app` / `submit_version`; dest-written `submit_by`; JSON-format fence match → rejected; missing stamp / untrusted Cmnd warn then ask; json-to-sudoers visudo-legal args (`\:`); visudo fail names visudo; leftover Self-scope dropped (OPEN-BEHALF); worked samples `alice` / `webservice`; §1.1 Decide names warn-then-ask; submit `/var/{{APP_NAME}}/sudoer-request`; hook checks `~/.profile`; rc owned by LPU | domain | Active (2.34.0) | `requirement-domain-sudoer-approval.md` | 2026-08-26 |
 
 ## Intentionally absent
 

@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-bootstrap-chain.md  
-**Status**: Active (Version 5.1.0)  
+**Status**: Active (Version 5.2.0)  
 **Area**: architecture  
 **Key**: `requirement-bootstrap-chain`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -99,7 +99,7 @@ These are **this product’s** structural contracts. Descendants inherit them. T
 | Concern | Value |
 |---------|---------|
 | `APP_NAME` | `sudoer-cli` |
-| `VERSION` | `1.0.0` (product version SSOT in ship unit) |
+| `VERSION` | `1.17.1` (product version SSOT in ship unit) |
 | Primary install story | Local copy from running ship unit → `${USER_BIN}` (default `~/.local/bin`) |
 | README one-liner | **No** `curl \| sh` channel claim |
 
@@ -108,7 +108,7 @@ These are **this product’s** structural contracts. Descendants inherit them. T
 | Item | Value |
 |------|--------|
 | **Product** | `sudoer-cli` |
-| **Workspace** | `/home/leolio/prjs/sudoer-cli` |
+| **Workspace** | `{{PROJECTS_ROOT}}/{{PROJECT_BASENAME}}` |
 | **Role** | Specialized from cli-template. Not a child of selfmanaged or folder-backup. |
 | **Related (not origin)** | `selfmanaged`, `folder-backup` — do not overwrite; do not maintain this product from them |
 
@@ -123,9 +123,9 @@ These are **this product’s** structural contracts. Descendants inherit them. T
 ## 3. Design Principles (CIAO / CIAO-Lite)
 
 - **Caution:** Do not invent host `setup` or other OS-mutating verbs to fill the product name.  
-- **Intentional:** Type 0 bootstrap/template origin only. Domain SSOT stays absent.  
-- **Anti-fragile:** This origin stays intact so descendants can specialize from it.  
-- **Over-protect:** Registry lists online and domain surfaces as absent by design.
+- **Intentional:** Type 0 architecture from cli-template **plus** exactly one Active domain SSOT (`requirement-domain-sudoer-approval`).  
+- **Anti-fragile:** Historical origin stays in git; do not reverse-copy this ship unit onto cli-template.  
+- **Over-protect:** Registry lists online install as absent by design. **MUST NOT** register a second Active `requirement-domain-*`.
 
 ---
 
@@ -189,9 +189,10 @@ These are **this product’s** structural contracts. Descendants inherit them. T
 | 2026-08-13 | Active 4.0.0 | **This product is hop 0.** No live parent. selfmanaged and folder-backup are not origins. |
 | 2026-08-13 | Active 5.0.0 | Specialize A→B: this product is **sudoer-cli**; cli-template is historical origin. |
 | 2026-08-14 | Active 5.1.0 | Type 1 `setup` live; dest install on authorized `approve`; `interactive` loop Gap |
+| 2026-08-26 | Active 5.2.0 | Exactly one Active domain SSOT; workspace `{{PROJECTS_ROOT}}/{{PROJECT_BASENAME}}`; VERSION notes **1.17.1** |
 
 ---
 
-**Last Updated**: 2026-08-14  
+**Last Updated**: 2026-08-26  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-domain-sudoer-approval.md  
-**Status**: Active (Version 2.31.0) — dest review warns then asks on missing stamp / untrusted Cmnd; testers still fail closed  
+**Status**: Active (Version 2.34.0) — leftover Self-scope dropped (OPEN-BEHALF); dest §1.1 Decide names warn-then-ask  
 **Area**: domain  
 **Key**: `requirement-domain-sudoer-approval`  
 **id**: RQ-DOMAIN-SUDOER-APPROVAL  
@@ -37,7 +37,7 @@ Privilege types and F6 Cmnds are owned by `requirement-three-layer-privilege-mod
 | Convert | Turn sudoers text into JSON. Nothing is queued yet. | `sudoer-cli sudoers-to-json --file draft.sudoers --action add --purpose "…"` |
 | Test dest fences | Point at a JSON file. No `sudo`. Does not queue. | `sh src/sudoer-cli fence-test --file tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json` |
 | Submit | This program names the file and writes it into the waiting folder. | `sudoer-cli add-sudoer-request --file request.json` |
-| Decide | If the JSON is broken, dest says so, does not ask, and moves the file to rejected. If it is valid, **one** yes/no: yes accepts, no (or Enter) declines. No skip or quit. | `sudo sudoer-cli interactive` |
+| Decide | If the JSON is broken, dest says so, does not ask, and moves the file to rejected. If a command is not a well-known system binary, or the queue stamp is missing, dest **warns** and still asks. If it is valid, **one** yes/no: yes accepts, no (or Enter) declines. No skip or quit. | `sudo sudoer-cli interactive` |
 
 ---
 
@@ -226,8 +226,8 @@ Unknown keys anywhere → `invalid_json`. Closed-schema allowlist: `schema_versi
 
 **Codec fidelity (sacred):** Pretty-printed and compact JSON are the same grant. `sr_json_decode_to_fields` / convert / submit re-encode **MUST** keep every `commands[]` object (`path`, `args`, `runas`, `tags`). A splitter that only matches the token `},{` is non-compliant (`}, {` and `},\n{` are legal). After decode, object count **MUST** equal input `"path"` count; mismatch → `invalid_json`. Silent last-`args`-wins is forbidden. `purpose` and `[OK] request_id=` are **not** completeness. Suites **MUST** include a pretty multi-command fixture, not only encoder output (INC-20260817-001).
 
-**Worked sample basename:** `sudoer-20260814-folder-backup-leolio-add-1.json`  
-**Worked dest:** `/etc/sudoers.d/folder-backup-leolio`
+**Worked sample basename:** `sudoer-20260814-webservice-alice-add-1.json`  
+**Worked dest:** `/etc/sudoers.d/webservice-alice`
 
 **add / update sample body:**
 
@@ -239,7 +239,7 @@ Unknown keys anywhere → `invalid_json`. Closed-schema allowlist: `schema_versi
   "service": "webservice",
   "action": "add",
   "submit_app": "sudoer-cli",
-  "submit_version": "1.17.0",
+  "submit_version": "1.17.1",
   "commands": [
     {
       "runas": "root",
@@ -305,6 +305,8 @@ Canonical rendered line:
 {{username}} ALL=({{runas}}) {{tags:}} {{path}} {{args…}}
 ```
 
+`json-to-sudoers` **MUST** emit that text dual and **MUST** run `visudo -cf` on a private copy (same as convert/submit/approve). Cmnd **args** that contain sudoers-special characters (`:`, `#`, `,`, `\`) **MUST** be backslash-escaped so visudo can parse them (`user\:group`). A trailing sudoers `*` operand **MUST NOT** be expanded as a shell glob. If visudo rejects the text, dest **MUST** fail closed with an operator-readable error that says **visudo rejected this grant**, quotes visudo’s syntax line, and states that the sudoers file would be illegal (not “host validation”). **MUST NOT** dest-write. **TP-SR-19** · **TP-SR-20** · **TP-SR-21**.
+
 **Paired text dual** for the add sample above:
 
 ```text
@@ -333,9 +335,9 @@ Reject: User `ALL`, Cmnd `ALL`, other usernames, `#include`, `Defaults`, aliases
 
 All Cmnds must map to the **same** service. Mixed or unknown → `unknown_service`. `--service` may pin but **MUST NOT** widen the catalog. New services require a revision of this requirement.
 
-#### Self-scope
+#### On-behalf (OPEN-BEHALF)
 
-Filename username, file owner login, and every body User spec **MUST** be equal. On-behalf-of **MUST** fail at submit and again at approve.
+Type 0 **MAY** submit a grant for another login **B**. The allocated filename and JSON `username` use **B**. File owner **MAY** be A. Dest **MUST NOT** fail `owner_mismatch` or `self_scope` because A≠B. Machine code `self_scope` remains for forbidden User `ALL` / multiple User specs in convert — not for A≠B. **OPEN-BEHALF** / **OPEN-DECIDE**.
 
 #### Queue path resolve
 
@@ -483,8 +485,8 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | **Default archives** | `/var/{{APP_NAME}}/sudoer-approved` (0700), `/var/{{APP_NAME}}/sudoer-rejected` (0700) |
 | **Approver views (F4)** | `${LPU_HOME}/sudoer-request` → public request; same for approved/rejected |
 | **Sidecar** | `~/.local/state/sudoer-cli/submitted.ids` |
-| **Worked basename** | `sudoer-20260814-folder-backup-leolio-add-1.json` |
-| **Worked dest** | `/etc/sudoers.d/folder-backup-leolio` |
+| **Worked basename** | `sudoer-20260814-webservice-alice-add-1.json` |
+| **Worked dest** | `/etc/sudoers.d/webservice-alice` |
 | **Hook marker** | `# BEGIN sudoer-cli login hook` … `# END sudoer-cli login hook` |
 | **Hook env** | `SUDOER_CLI_HOOK_RAN` |
 | **Hook command** | `sudo -n /usr/local/bin/sudoer-cli interactive` |
@@ -615,6 +617,9 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | **TP-SR-14** | `tests/test_domain_sr.sh` | have | pretty add-sample JSON → all three Cmnd lines |
 | **TP-SR-15** | `tests/test_domain_sr.sh` | have | pretty add-sample submit inbound keeps all three `path`s |
 | **TP-SR-16** | `tests/test_domain_sr.sh` | have | pretty folder-backup `backup`+`restore` JSON keeps both verbs |
+| **TP-SR-19** | `tests/test_domain_sr.sh` | have | json-to-sudoers `--ownership user:group` → escaped `user\:group`; visudo -cf Pass |
+| **TP-SR-20** | `tests/test_domain_sr.sh` | have | json-to-sudoers `--ownership *` keeps star operand; visudo -cf Pass |
+| **TP-SR-21** | `tests/test_domain_sr.sh` | have | visudo reject says “visudo rejected”; quotes syntax; Next json-to-sudoers; no “host validation” |
 | **TP-SR-FENCE-01..04** | `tests/test_domain_sr.sh` | have | dest Fence before yes/no; isolated dest checks |
 | **TP-SR-FENCE-05..08** | `tests/test_domain_sr.sh` | have | Type 0 `test-json-format` + login-hook-elev fixture |
 | **TP-SR-FENCE-11** | `tests/test_domain_sr.sh` | have | Dest `submit_by` stamp first `{` only |
@@ -668,9 +673,12 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | 2026-08-21 | Active 2.29.0 | **Test-purpose** vs **operational** verbs. Testers target a local test folder; sudo wrap only chmod/chown of that folder. Help lists testers apart. Protection 29. |
 | 2026-08-21 | Active 2.30.0 | Dest-owned `submit_app` / `submit_version`; Type 0 stamps live Config; MUST NOT fence sibling app or version; **TP-SR-FENCE-13..15** |
 | 2026-08-21 | Active 2.31.0 | Dest review **warns then asks** on missing stamp / untrusted Cmnd; testers/convert still fail closed; **TP-SR-FENCE-16/17** · **TP-SR-WKBIN-11**; **INC-20260821-002** |
+| 2026-08-26 | Active 2.32.0 | json-to-sudoers visudo-legal Cmnd args (`\:`); visudo fail names visudo; submit visudo; **TP-SR-19..21** |
+| 2026-08-26 | Active 2.33.0 | Drop leftover Self-scope (A≠B is **OPEN-BEHALF**, not a dest fence). Worked samples `alice` / `webservice`. |
+| 2026-08-26 | Active 2.34.0 | §1.1 Decide: dest **warns** on home-tree Cmnd / missing stamp, then still asks. |
 
 ---
 
-**Last Updated**: 2026-08-21  
+**Last Updated**: 2026-08-26  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

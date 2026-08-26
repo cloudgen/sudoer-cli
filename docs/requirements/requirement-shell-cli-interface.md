@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-interface.md  
-**Status**: Active (Version 3.8.2)  
+**Status**: Active (Version 3.8.3)  
 **Area**: shell  
 **Key**: `requirement-shell-cli-interface`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -100,7 +100,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | **Primary executable** | `src/sudoer-cli` (POSIX `/bin/sh`, single-file ship unit) |
 | **Dispatcher** | `app_main` |
 | **Output SSOT** | `out_text` + wrappers (`out_info`, `out_success`, `out_warn`, `out_error`, `out_die`, `out_plain`, `out_json`, …) |
-| **Version SSOT** | `VERSION="1.17.0"` hard-assign in ship unit |
+| **Version SSOT** | `VERSION="1.17.1"` hard-assign in ship unit |
 | **Install paths** | Global: `GLOBAL_BIN` default `/usr/local/bin`; User: `USER_BIN` default `${HOME}/.local/bin` |
 | **Primary install story** | User bin: `~/.local/bin/sudoer-cli`; global `/usr/local/bin/sudoer-cli` for production F6 |
 | **Online channel env** | **Not product UX** (trimmed) |
@@ -261,9 +261,10 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | 2026-08-21 | Active 3.8.2 | Ship unit `VERSION` 1.15.3; test-purpose Next uses running checkout |
 | 2026-08-21 | Active 3.8.2 | Stay-honest Implementation Notes `VERSION` 1.16.0 |
 | 2026-08-21 | Active 3.8.2 | Stay-honest Implementation Notes `VERSION` 1.17.0 |
+| 2026-08-26 | Active 3.8.3 | Stay-honest Implementation Notes `VERSION` 1.17.1 |
 
 ---
 
-**Last Updated**: 2026-08-21  
+**Last Updated**: 2026-08-26  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-class-software-dev.md  
-**Status**: Active (Version 1.9.6 – dest Fence is JSON format; well-known is dest warn + testers fail closed)  
+**Status**: Active (Version 1.9.7 – dest Fence is JSON format; well-known is dest warn + testers fail closed; VERSION 1.17.1)  
 **Area**: class  
 **Key**: `requirement-class-software-dev`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -129,7 +129,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | **Architectures supported** | any arch with POSIX sh and the external tools the script invokes |
 | **Git surface** | used when product is published |
 | **Ship unit / install** | yes — `src/sudoer-cli` → `${USER_BIN}/sudoer-cli` (default `~/.local/bin/sudoer-cli`); **local-only** install (no online channel) |
-| **Product version SSOT** | `VERSION="1.17.0"` hard-assign in `src/sudoer-cli` |
+| **Product version SSOT** | `VERSION="1.17.1"` hard-assign in `src/sudoer-cli` |
 | **Bootstrap origin** | Historical **cli-template**. This product is **sudoer-cli**. No live parent ship unit. |
 
 **Residual ownership table:**
@@ -267,9 +267,10 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | 2026-08-21 | Active 1.9.4 | `fence-test` is JSON-file verification: no sudo, no sudoers fragment, no queue |
 | 2026-08-21 | Active 1.9.5 | Test-purpose vs operational verbs; `fence-test` is a unit tester of a local test folder |
 | 2026-08-21 | Active 1.9.6 | Dest Fence is JSON format; well-known is dest warn + testers fail closed; VERSION 1.17.0 |
+| 2026-08-26 | Active 1.9.7 | Stay-honest Implementation Notes `VERSION` 1.17.1 |
 
 ---
 
-**Last Updated**: 2026-08-21  
+**Last Updated**: 2026-08-26  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).
