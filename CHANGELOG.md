@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.18.0] - 2026-09-03
+
+### Added
+
+- **Login-hook-symlink:** after `setup` (or a global `install`) copies `/usr/local/bin/sudoer-cli`, create `/usr/local/bin/sudoer-cli-hook` when that name is missing. Do not overwrite a retargeted name. Test-mode does not write live `/usr/local/bin`. Domain **2.36.0**. LPU **1.14.0**. Three-layer **1.15.0**. **TP-SR-HOOK-05**.
+- **Default CLI main menu style** printers: `util_app_ident` (bold name, italic version) and `out_menu_choice` (TTY gray italic explain). A numbered main menu is **not** claimed (empty argv stays help). Output **1.3.0**. **TP-CLI-17**.
+
+### Changed
+
+- Login `.bashrc` heal uses `sudo -n /usr/local/bin/sudoer-cli-hook interactive`. An old `/usr/local/bin/sudoer-cli` hook line is rewritten; a missing hook block is planted. F6 Table A also grants the hook name. Ship unit **`VERSION="1.18.0"`**.
+
 ## [1.17.1] - 2026-08-26
 
 ### Fixed
@@ -16,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Domain leftover **Self-scope** (on-behalf must fail) dropped — A may submit for B (**OPEN-BEHALF**). Worked samples are `alice` / `webservice` (no session login). Class **1.9.7**. CLI **3.8.3**. Bootstrap **5.2.0**. Prevention **1.6.1**. **INC-20260821-002** closed in checkout (warn then ask). Domain **2.34.0**.
 - Human-intro and glossary dest teach pages match dest law: JSON-format Fence dest-drains; well-known is dest **warn then ask**; this dest is **sudoer-cli** (`sudoer-adm`), not DNS; A may file for B. README Decide names the same split.
+- Independent REQ **`requirement-sudoers-file`** owns the grant sudoers file: text dual, Cmnd arg escape (`\:` `\#` `\,`), `visudo -cf` on a private copy, visudo-fail copy that names visudo. Domain SSOT **points**. visudo reject is **not** a dest Fence. Domain **2.35.0**. Class **1.9.8**. CLI **3.8.4**. Prevention **1.6.2**. Three-layer **1.14.2**. **TP-SR-19..21**.
+- Aligned grant sudoers-file law to the portable sudoer-file text dual: stay-honest sibling service grants (not own-binary-only); re-encode fidelity; visudo-legal args; operator-readable visudo-fail slots. Output REQ **1.2.0** names the same fatal slots. **TP-SR-19..21**.
 
 ## [1.17.0] - 2026-08-21
 

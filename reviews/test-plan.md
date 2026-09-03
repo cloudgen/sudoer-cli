@@ -3,9 +3,9 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.17.1  
-**Last plan update:** 2026-08-26 (1.17.1 json-to-sudoers visudo-legal args; **TP-SR-19..21**)  
-**Last suite run:** PASS=445 FAIL=0 SKIP=6 (2026-08-26; 1.17.1 visudo-legal convert; live Type 1 skipped)  
+**Product VERSION:** 1.18.0  
+**Last plan update:** 2026-09-03 (login-hook-symlink **TP-SR-HOOK-05**; default-cli-main-menu-style **TP-CLI-17**)  
+**Last suite run:** PASS=466 FAIL=0 SKIP=6 (2026-09-03; 1.18.0 login-hook-symlink + menu-style printers; live Type 1 skipped)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)
@@ -93,13 +93,13 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 |-------|--------|-------|------------------------|--------|
 | TP-SR-01 | Basename `sudoer-DATE-service-user-action-n.json` | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-SR-02 | Request JSON schema; remove = purpose only | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
-| TP-SR-03 | sudoers ↔ JSON; visudo on private copy | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
+| TP-SR-03 | sudoers ↔ JSON; visudo on private copy | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval · requirement-sudoers-file | **have** |
 | TP-SR-04 | `--queue-root` / per-dir resolve; reject relative | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-SR-05 | Submit (A may name B); print `request_id` | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-SR-06 | Dest `{{service}}-{{user}}`; never `*-remove` | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
-| TP-SR-07 | REQ add sample JSON → three canonical sudoers lines | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
-| TP-SR-08 | REQ remove sample JSON → `# Purpose:` only | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
-| TP-SR-09 | REQ add sudoers sample → JSON `service=webservice` | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
+| TP-SR-07 | REQ add sample JSON → three canonical sudoers lines | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval · requirement-sudoers-file | **have** |
+| TP-SR-08 | REQ remove sample JSON → `# Purpose:` only | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval · requirement-sudoers-file | **have** |
+| TP-SR-09 | REQ add sudoers sample → JSON `service=webservice` | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval · requirement-sudoers-file | **have** |
 | TP-SR-10 | Mixed nginx + gitlab-ctl → `unknown_service` | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-SR-11 | Remove JSON with `commands` → `remove_extra_fields` | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-SR-12 | Relative `--queue-root` → `invalid_name` | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
@@ -109,9 +109,9 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-16 | pretty folder-backup backup+restore keeps both verbs | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval 2.15.0 | **have** |
 | TP-SR-17 | JSON `username` B (`dns-adm`) + service `dns-cli` → request_id and dest use B (not last-hyphen `adm`) | `tests/test_domain_sr.sh` | domain · OPEN-BEHALF · ARSA | **have** |
 | TP-SR-18 | `remove-sudoer-request --file` for B keeps JSON `username` / dest B | `tests/test_domain_sr.sh` | domain · OPEN-BEHALF | **have** |
-| TP-SR-19 | json-to-sudoers `--ownership user:group` → escaped colon; visudo Pass | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
-| TP-SR-20 | json-to-sudoers `--ownership *` keeps star; visudo Pass | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
-| TP-SR-21 | visudo reject says “visudo rejected”; quotes syntax; Next json-to-sudoers; no “host validation” | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
+| TP-SR-19 | json-to-sudoers `--ownership user:group` → escaped colon; visudo Pass | `tests/test_domain_sr.sh` | requirement-sudoers-file | **have** |
+| TP-SR-20 | json-to-sudoers `--ownership *` keeps star; visudo Pass | `tests/test_domain_sr.sh` | requirement-sudoers-file | **have** |
+| TP-SR-21 | visudo reject says “visudo rejected”; quotes syntax; Next json-to-sudoers; no “host validation” | `tests/test_domain_sr.sh` | requirement-sudoers-file | **have** |
 | TP-SR-FENCE-01 | `interactive` / `approve` / `reject` call dest Fence **before** `prompt_yes_no` | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
 | TP-SR-FENCE-02 | Isolated fence: not a JSON object → fail closed, people words, no yes/no | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
 | TP-SR-FENCE-03 | Isolated fence: basename action ≠ JSON action → `field_mismatch` | `tests/test_domain_sr.sh` | requirement-incorrect-json-format | **have** |
@@ -149,6 +149,7 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-FT-06 | `fence-test --dir` xor `--file` fail closed | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-SR-FT-07 | `--expect-match` without `--dir` fail closed | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-CLI-16 | `fence-test` is routed (xor fail is not unknown) | `tests/test_cli.sh` | requirement-shell-cli-interface | **have** |
+| TP-CLI-17 | default-cli-main-menu-style printers: TTY bold/italic ident + gray italic explain; off-TTY plain (menu not claimed) | `tests/test_cli.sh` | requirement-shell-output-requirements · requirement-shell-cli-interface | **have** |
 | TP-SR-PRIV-01 | Type 1 verbs: non-root fail-closed, no `/etc` write | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval · three-layer | **have** |
 | TP-SR-PRIV-02 | Bootstrap `setup` is any euid 0 (not `sudo -n`, not `sudoer-adm`); approve still requires euid 0 | `tests/test_domain_sr.sh` | requirement-three-layer-privilege-model · domain | **have** |
 | TP-SR-PRIV-04 | Approve gate has no exclusive-`sudoer-adm` actor lock; setup prints submit next-step | `tests/test_domain_sr.sh` | prevention-set OPEN-SUDOER-APPR · domain | **have** |
@@ -163,6 +164,7 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-HOOK-02 | Existing `.profile` is not overwritten | `tests/test_domain_sr.sh` | domain | **have** |
 | TP-SR-HOOK-03 | Created `.profile` sources `.bashrc` (markers) | `tests/test_domain_sr.sh` | domain | **have** |
 | TP-SR-HOOK-04 | After create/rewrite, `.profile` / `.bashrc` `chown` the LPU (fail-closed) | `tests/test_domain_sr.sh` | domain · LPU | **have** |
+| TP-SR-HOOK-05 | Login-hook-symlink: create when missing; do not overwrite; heal rewrites old product-binary `sudo -n` line; F6 grants hook; test-mode skips live `/usr/local/bin` | `tests/test_domain_sr.sh` | domain · LPU · three-layer | **have** |
 | TP-SR-Q-01 | Public `/var` queues + 3773/0700/0755 | `tests/test_domain_sr.sh` | domain · LPU | **have** |
 | TP-SR-Q-02 | Submit 0640; approve snapshot archive; owner check | `tests/test_domain_sr.sh` | domain | **have** |
 | TP-SR-Q-03 | F7 removes public `/var/{{APP_NAME}}/` children | `tests/test_domain_sr.sh` | domain · LPU | **have** |

@@ -18,7 +18,7 @@ Used for **install staging** (`mktemp` under the isolated root). Not a durable b
 |-----|---------|---------|
 | You / this login | Convert/submit without choosing a host cache path | `sudoer-cli sudoers-to-json --file draft.sudoers --action add --purpose "…"` |
 | The other role | Waiting folder is not this resolver | `/var/sudoer-cli/sudoer-request` |
-| Not this file | How a leaf file is created (`mktemp`) | `requirement-shell-temp-file-system` |
+| Not this file | How a leaf file is created (`mktemp`); grant visudo body | `requirement-shell-temp-file-system` · `requirement-sudoers-file` |
 
 | Includes | Excludes |
 |----------|----------|

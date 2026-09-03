@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-interface.md  
-**Status**: Active (Version 3.8.3)  
+**Status**: Active (Version 3.9.0)  
 **Area**: shell  
 **Key**: `requirement-shell-cli-interface`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -100,9 +100,10 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | **Primary executable** | `src/sudoer-cli` (POSIX `/bin/sh`, single-file ship unit) |
 | **Dispatcher** | `app_main` |
 | **Output SSOT** | `out_text` + wrappers (`out_info`, `out_success`, `out_warn`, `out_error`, `out_die`, `out_plain`, `out_json`, …) |
-| **Version SSOT** | `VERSION="1.17.1"` hard-assign in ship unit |
+| **Version SSOT** | `VERSION="1.18.0"` hard-assign in ship unit |
 | **Install paths** | Global: `GLOBAL_BIN` default `/usr/local/bin`; User: `USER_BIN` default `${HOME}/.local/bin` |
-| **Primary install story** | User bin: `~/.local/bin/sudoer-cli`; global `/usr/local/bin/sudoer-cli` for production F6 |
+| **Primary install story** | User bin: `~/.local/bin/sudoer-cli`; global `/usr/local/bin/sudoer-cli` for production F6; login-hook-symlink `/usr/local/bin/sudoer-cli-hook` after global copy |
+| **Default CLI main menu** | **Not claimed.** Empty argv stays Type N help. Look printers live on output REQ (`util_app_ident` / `out_menu_choice`; **TP-CLI-17**) |
 | **Online channel env** | **Not product UX** (trimmed) |
 | **Type 1 / Type 2 commands** | Type 1 **routed, fail closed** without euid 0; setup = any admin sudo (live useradd/F6/hook); approve = same elev (F6 extra); Type 2 **not used** |
 | **Dedicated system user** | `sudoer-adm` (authorizer; see LPU REQ) |
@@ -119,8 +120,8 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | `version` | Type 0 | `app_version` | Local `VERSION` only; no network |
 | `about` | Type 0 | `app_about` | Diagnostics: install presence, paths, user, shell, TTY, storage, **resolved queue paths**; **no** channel one-liner; **no** backup/restore fields |
 | `help` | Type 0 | `app_help` | Full usage in human mode; short JSON note in JSON mode |
-| `sudoers-to-json` | Type 0 | `sr_sudoers_to_json` | Named here; behavior on domain SSOT |
-| `json-to-sudoers` | Type 0 | `sr_json_to_sudoers` | Named here; behavior on domain SSOT |
+| `sudoers-to-json` | Type 0 | `sr_sudoers_to_json` | Named here; text dual / visudo on `requirement-sudoers-file`; convert catalog on domain SSOT |
+| `json-to-sudoers` | Type 0 | `sr_json_to_sudoers` | Named here; text dual / visudo on `requirement-sudoers-file`; convert catalog on domain SSOT |
 | `test-json-format` | Type 0 **test-purpose** | `sr_test_json_format` | Named here; Fence body on `requirement-incorrect-json-format`. Unit test; local test folder. |
 | `test-well-known-binary` | Type 0 **test-purpose** | `sr_test_well_known_binary` | Named here; Fence body on `requirement-well-known-sudoer-binary-fence`. Unit test; local test folder. |
 | `fence-test` | Type 0 **test-purpose** | `sr_fence_test` | Named here; JSON-file verification on `requirement-domain-sudoer-approval` (unit test; local test folder; sudo wrap only chmod/chown of that folder; no queue) |
@@ -132,7 +133,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | `list-approving` / `list-approved` / `list-rejected` | Type 0 | `sr_list` | Named here; behavior on domain SSOT |
 | `list-approving --orphans` | Type 1 | `sr_list_orphans` | Named here; fail-closed without euid 0 |
 | `show` | Type 0 | `sr_show` | Named here; behavior on domain SSOT |
-| `setup` / `remove-lpu` | Type 1 | `lpu_setup` / `lpu_remove` | Named here; Type map on three-layer; F1–F7 on LPU REQ |
+| `setup` / `remove-lpu` | Type 1 | `lpu_setup` / `lpu_remove` | Named here; Type map on three-layer; F1–F7 on LPU REQ. After global copy: create `/usr/local/bin/sudoer-cli-hook` when missing; heal LPU `.bashrc` to that name |
 | `approve` / `reject` | Type 1 | `sr_approve` / `sr_reject` | Named here; dest Fence then dest write |
 | `interactive` | Type 1 | `sr_interactive` | Named here; one-off yes/no on domain SSOT |
 
@@ -219,6 +220,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | `requirement-shell-output-requirements` | `out_*` |
 | `requirement-bootstrap-chain` | Historical origin |
 | `requirement-domain-sudoer-approval` | File-based JSON approval + verb catalog (Type 0 routed; Type 1 setup live) |
+| `requirement-sudoers-file` | Dual mention of convert visudo / Cmnd arg escape |
 | `requirement-incorrect-json-format` | Dual mention of Type 0 `test-json-format` |
 | `requirement-well-known-sudoer-binary-fence` | Dual mention of Type 0 `test-well-known-binary` |
 | `requirement-domain-sudoer-approval` | Dual mention of Type 0 `fence-test` |
@@ -233,6 +235,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | TP family / ID | Suite | Status | Note |
 |----------------|-------|--------|------|
 | **TP-CLI-01..16** | `tests/test_cli.sh` | have | includes stripped-verb fail-closed + convert / `test-json-format` / `test-well-known-binary` / `fence-test` routed |
+| **TP-CLI-17** | `tests/test_cli.sh` | have | default-cli-main-menu-style printers (menu not claimed) |
 | **TP-LC-*** | `tests/test_local_lifecycle.sh` | have | lifecycle |
 | **TP-SR-PRIV-03** | `tests/test_domain_sr.sh` | have | live setup body (static) |
 
@@ -262,9 +265,11 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | 2026-08-21 | Active 3.8.2 | Stay-honest Implementation Notes `VERSION` 1.16.0 |
 | 2026-08-21 | Active 3.8.2 | Stay-honest Implementation Notes `VERSION` 1.17.0 |
 | 2026-08-26 | Active 3.8.3 | Stay-honest Implementation Notes `VERSION` 1.17.1 |
+| 2026-08-26 | Active 3.8.4 | Convert verbs **point** at `requirement-sudoers-file` (text dual / visudo) |
+| 2026-09-03 | Active 3.9.0 | Login-hook-symlink after global copy; default main menu **not** claimed; look printers **TP-CLI-17**; `VERSION` 1.18.0 |
 
 ---
 
-**Last Updated**: 2026-08-26  
+**Last Updated**: 2026-09-03  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

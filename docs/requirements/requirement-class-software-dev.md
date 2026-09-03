@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-class-software-dev.md  
-**Status**: Active (Version 1.9.7 – dest Fence is JSON format; well-known is dest warn + testers fail closed; VERSION 1.17.1)  
+**Status**: Active (Version 1.9.9 – residual points at grant sudoers-file REQ; VERSION 1.18.0)  
 **Area**: class  
 **Key**: `requirement-class-software-dev`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -129,7 +129,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | **Architectures supported** | any arch with POSIX sh and the external tools the script invokes |
 | **Git surface** | used when product is published |
 | **Ship unit / install** | yes — `src/sudoer-cli` → `${USER_BIN}/sudoer-cli` (default `~/.local/bin/sudoer-cli`); **local-only** install (no online channel) |
-| **Product version SSOT** | `VERSION="1.17.1"` hard-assign in `src/sudoer-cli` |
+| **Product version SSOT** | `VERSION="1.18.0"` hard-assign in `src/sudoer-cli` |
 | **Bootstrap origin** | Historical **cli-template**. This product is **sudoer-cli**. No live parent ship unit. |
 
 **Residual ownership table:**
@@ -143,6 +143,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | Privilege / LPU / Type map | `requirement-three-layer-privilege-model` · `requirement-least-privilege-user` | Do not duplicate |
 | What is blocked vs must stay open | `requirement-privilege-prevention-set` | Closed prevention catalog; do not invent walls |
 | Domain sudoers-approval | `requirement-domain-sudoer-approval` | File-based JSON approval; dest fence table |
+| Grant sudoers file | `requirement-sudoers-file` | Text dual; Cmnd arg escape; visudo -cf; visudo-fail copy; **not** a dest Fence; domain points |
 | Actor / role / subject / approver consider | `requirement-actor-role-subject-approver` | Dest has approver — not residual None |
 | Dest fence: incorrect JSON format | `requirement-incorrect-json-format` | Independent Fence REQ; dest table still prints; Type 0 `test-json-format`; list tester `fence-test` |
 | Dest fence: well-known sudoer binary | `requirement-well-known-sudoer-binary-fence` | Dest **warn then ask**; testers/convert fail closed; dest table still prints; Type 0 `test-well-known-binary`; list tester `fence-test` |
@@ -240,6 +241,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | `requirement-least-privilege-user` | F1–F7 |
 | `requirement-privilege-prevention-set` | Closed catalog of what is blocked vs must stay open |
 | `requirement-domain-sudoer-approval` | File-based JSON approval |
+| `requirement-sudoers-file` | Grant sudoers file: Cmnd arg escape, visudo -cf, visudo-fail copy |
 | `requirement-actor-role-subject-approver` | Five-column consider catalog |
 | `requirement-incorrect-json-format` | Dest Fence: JSON format |
 | `requirement-well-known-sudoer-binary-fence` | Well-known binary: dest warn + testers/convert fail closed |
@@ -268,9 +270,11 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | 2026-08-21 | Active 1.9.5 | Test-purpose vs operational verbs; `fence-test` is a unit tester of a local test folder |
 | 2026-08-21 | Active 1.9.6 | Dest Fence is JSON format; well-known is dest warn + testers fail closed; VERSION 1.17.0 |
 | 2026-08-26 | Active 1.9.7 | Stay-honest Implementation Notes `VERSION` 1.17.1 |
+| 2026-08-26 | Active 1.9.8 | Residual **points** at `requirement-sudoers-file` (grant text dual, Cmnd escape, visudo) |
+| 2026-09-03 | Active 1.9.9 | Stay-honest Implementation Notes `VERSION` 1.18.0 (login-hook-symlink) |
 
 ---
 
-**Last Updated**: 2026-08-26  
+**Last Updated**: 2026-09-03  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

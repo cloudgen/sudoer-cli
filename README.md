@@ -1,6 +1,6 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.17.1-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.18.0-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
@@ -15,7 +15,7 @@ This program lets a normal login **ask for a sudo grant for themselves** by putt
 
 Where the program is **installed** is still **both**:
 - **your user bin** → `~/.local/bin/sudoer-cli` (ordinary login)
-- **the system bin** → `/usr/local/bin/sudoer-cli` (needs root / `--global`) — later required so `sudoer-adm` can run the program without a password
+- **the system bin** → `/usr/local/bin/sudoer-cli` (needs root / `--global`) — later required so `sudoer-adm` can run the program without a password. Global setup also creates `/usr/local/bin/sudoer-cli-hook` (a symlink) and plants that name in the approver’s `.bashrc`.
 
 There is **no** online install (`curl|sh`). “Local” vs “global” here means **which directory the binary lives in**, not online vs offline.
 
@@ -181,6 +181,7 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
+2026-09-03 — version **1.18.0** (login-hook-symlink `/usr/local/bin/sudoer-cli-hook`; setup heals old `.bashrc` hook path; default-cli-main-menu-style printers).
 2026-08-26 — version **1.17.1** (`json-to-sudoers` visudo-legal args; visudo fail names visudo, not “host validation”).
 2026-08-21 — version **1.16.0** (Type 0 stamps `submit_app` / `submit_version`; dest shows `queued by {app} {version}` before yes/no).
 2026-08-21 — version **1.15.3** (`fence-test` Next: uses checkout `src/sudoer-cli`, not a global install).

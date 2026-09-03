@@ -25,6 +25,7 @@
 # - requirement-actor-role-subject-approver.md
 # - requirement-incorrect-json-format.md
 # - requirement-well-known-sudoer-binary-fence.md
+# - requirement-sudoers-file.md
 # - requirement-domain-sudoer-approval.md
 # - requirement-shell-script-coding.md
 # - requirement-shell-sudo-command.md
@@ -36,7 +37,7 @@
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
 # APP NAME: hard-assign APP_NAME="sudoer-cli"
-# VERSION: hard-assign VERSION="1.17.1"
+# VERSION: hard-assign VERSION="1.18.0"
 #
 # =============================================================================
 
@@ -53,7 +54,7 @@ APP_NAME="sudoer-cli"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
 : "${DESCRIPTION:=POSIX /bin/sh CLI: lifecycle plus sudoers-request convert/submit/list/show/test-json-format/test-well-known-binary/fence-test. Type 1 setup creates sudoer-adm; approve/reject require euid 0.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.17.1"
+VERSION="1.18.0"
 : "${VERSION:=1.0.0}"
 # Repository identity SSOT (git host owner/repo for project-repository alignment).
 # Install remains local-only: SCRIPT_URL stays empty (no online curl|sh channel).
@@ -161,9 +162,10 @@ out_text() {
             ;;
     esac
 
-    local RED='' GREEN='' YELLOW='' BLUE='' NC=''
+    local RED='' GREEN='' YELLOW='' BLUE='' DESC='' NC=''
     [ "${TTY:-0}" -eq 1 ] && [ "${QUIET}" -eq 0 ] && [ "${JSON}" -eq 0 ] && {
-        RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
+        RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+        BLUE='\033[0;34m'; DESC='\033[3;37m'; NC='\033[0m'
     }
 
     case "${level}" in
@@ -174,6 +176,10 @@ out_text() {
         out_success) printf "${GREEN}[OK]${NC} %s\n" "${msg}" ;;
         plain)       printf "%s\n" "${msg}" ;;
         plain_n)     printf "%s" "${msg}" ;;
+        menu_choice)
+            # Number + name unstyled; explain italic + light gray (default-cli-main-menu-style).
+            printf '%s. %s: %b%s%b\n' "${3-}" "${4-}" "${DESC}" "${5-}" "${NC}"
+            ;;
         *)           printf "%s\n" "${msg}" ;;
     esac
 }
@@ -402,6 +408,25 @@ out_msg_n() { out_text plain_n "$*"; }
 # Last reviewed: 29 April 2026
 # =============================================================================
 out_empty_line() { out_text plain ""; }
+
+# Numbered menu row. TTY: explain is italic + light gray (SGR 3+37). Off-TTY / JSON: plain.
+# requirement-shell-output-requirements.md — default-cli-main-menu-style.
+out_menu_choice() { out_text menu_choice "" "${1-}" "${2-}" "${3-}"; }
+
+# SSOT REMARK (pipeline): identity token string for capture; not a product banner.
+# TTY: SGR 1 bold name, SGR 3 italic version. Off-TTY / JSON: plain APP_NAME(VERSION).
+# MUST NOT $() a read helper. requirement-shell-output-requirements.md
+util_app_ident() {
+    : "${APP_NAME:=app}"
+    : "${VERSION:=0.0.0}"
+    : "${TTY:=0}"
+    : "${JSON:=0}"
+    if [ "${TTY}" -eq 1 ] && [ "${JSON}" -eq 0 ]; then
+        printf '\033[1m%s\033[0m(\033[3m%s\033[0m)' "${APP_NAME}" "${VERSION}"
+        return 0
+    fi
+    printf '%s(%s)' "${APP_NAME}" "${VERSION}"
+}
 
 
 # =============================================================================
@@ -1372,6 +1397,9 @@ inst_local_install() {
                     "status" "already_installed" \
                     "mode" "${INST_MANAGED_MODE}"
             fi
+            if [ "${_target_dir}" = "${GLOBAL_BIN}" ]; then
+                lpu_ensure_login_hook_symlink
+            fi
             return 0
         fi
     fi
@@ -1421,6 +1449,9 @@ inst_local_install() {
     fi
 
     out_success "Installed ${APP_NAME} to ${_target}"
+    if [ "${_target_dir}" = "${GLOBAL_BIN}" ]; then
+        lpu_ensure_login_hook_symlink
+    fi
     if [ "${_target_dir}" = "${USER_BIN}" ]; then
         # Best-effort PATH integration for user bin (function, not external)
         path_add_shell 2>/dev/null || true
@@ -1556,7 +1587,7 @@ app_version() {
     if [ "${JSON}" -eq 1 ]; then
         out_json "version" "" "app" "${APP_NAME}" "version" "${VERSION}"
     else
-        out_info "${APP_NAME} version ${VERSION}"
+        out_info "$(util_app_ident)"
     fi
 }
 
@@ -1630,7 +1661,7 @@ app_about() {
 
     [ "${QUIET}" -eq 1 ] && return 0
 
-    out_info "=== ${APP_NAME} ${VERSION} - About / Diagnostics ==="
+    out_info "$(util_app_ident) — About / Diagnostics"
     out_empty_line
     if [ "${_installed}" = "true" ]; then
         out_success "${APP_NAME} is properly installed."
@@ -1721,6 +1752,7 @@ sr_write_payload() {
 }
 
 # Last updated: 2026-08-26 — escape sudoers-special chars in one Cmnd arg (colon is visudo syntax).
+# ALIGNMENT: requirement-sudoers-file.md
 sr_sudoers_escape_arg() {
     printf '%s' "$1" | sed 's/\\/\\\\/g; s/:/\\:/g; s/#/\\#/g; s/,/\\,/g'
 }
@@ -1731,6 +1763,7 @@ sr_sudoers_unescape_arg() {
 }
 
 # Last updated: 2026-08-26 — visudo -cf; operator copy names visudo (not "host validation").
+# ALIGNMENT: requirement-sudoers-file.md
 sr_visudo_text() {
     _vt="$1"
     if ! command -v visudo >/dev/null 2>&1; then
@@ -2210,10 +2243,7 @@ sr_json_to_sudoers() {
 }
 
 sr_print_sudoers() {
-    _gb="${GLOBAL_BIN:-/usr/local/bin}"
-    _lpu="sudoer-adm"
-    _txt=$(printf '# %s F6 Table A — production global binary\n%s ALL=(root) NOPASSWD: %s/%s\n' \
-        "${APP_NAME}" "${_lpu}" "${_gb}" "${APP_NAME}")
+    _txt=$(lpu_f6_text)
     if [ -n "${SR_OUT-}" ]; then
         sr_write_payload "${_txt}"
         return 0
@@ -2229,9 +2259,7 @@ sr_print_sudoers() {
 sr_print_sudoers_install_script() {
     _script=$(mktemp "${TMPDIR:-/tmp}/${APP_NAME}.XXXXXX") || sr_die "mktemp failed" "invalid_name"
     _draft=$(mktemp "${TMPDIR:-/tmp}/${APP_NAME}.XXXXXX") || sr_die "mktemp failed" "invalid_name"
-    _gb="${GLOBAL_BIN:-/usr/local/bin}"
-    printf '# %s F6 Table A\n%s ALL=(root) NOPASSWD: %s/%s\n' \
-        "${APP_NAME}" "sudoer-adm" "${_gb}" "${APP_NAME}" >"${_draft}"
+    lpu_f6_text >"${_draft}"
     {
         printf '#!/bin/sh\nset -u\n'
         printf 'DRAFT="%s"\nINST="/etc/sudoers.d/sudoer-adm"\n' "${_draft}"
@@ -3387,6 +3415,35 @@ lpu_collision_check() {
     fi
 }
 
+# Login-hook-symlink: stable ${GLOBAL_BIN}/${APP_NAME}-hook → product binary.
+# Create only when the name is absent. Do not overwrite a retargeted name.
+# Test-mode MUST NOT write live /usr/local/bin.
+# ALIGNMENT: requirement-domain-sudoer-approval.md · requirement-least-privilege-user.md
+lpu_ensure_login_hook_symlink() {
+    : "${APP_NAME:=sudoer-cli}"
+    _gb="${GLOBAL_BIN:-/usr/local/bin}"
+    _bin="${_gb}/${APP_NAME}"
+    _hook="${_gb}/${APP_NAME}-hook"
+    if [ "${SUDOER_CLI_ALLOW_TEST_ROOTS:-0}" = "1" ]; then
+        case "${_gb}" in
+            /usr/local/bin|/usr/local/bin/)
+                return 0
+                ;;
+        esac
+    fi
+    if [ ! -e "${_bin}" ] && [ ! -L "${_bin}" ]; then
+        return 0
+    fi
+    if [ -e "${_hook}" ] || [ -L "${_hook}" ]; then
+        return 0
+    fi
+    if ! ln -s "${_bin}" "${_hook}"; then
+        sr_die "cannot create ${_hook} as a symlink to ${_bin}" "authz" \
+            "sudo ln -s ${_bin} ${_hook}"
+    fi
+    out_info "Login-hook symlink ${_hook} -> ${_bin}"
+}
+
 lpu_ensure_global_bin() {
     _gb="${GLOBAL_BIN:-/usr/local/bin}"
     LPU_GLOBAL_BIN="${_gb}/${APP_NAME}"
@@ -3398,6 +3455,7 @@ lpu_ensure_global_bin() {
             _want=$(grep '^VERSION="' "${_src}" 2>/dev/null | head -n1 | cut -d'"' -f2)
         fi
         if [ -n "${_have}" ] && [ -n "${_want}" ] && [ "${_have}" = "${_want}" ]; then
+            lpu_ensure_login_hook_symlink
             return 0
         fi
         # Stale global binary. Replace from this ship unit so the login hook matches this VERSION.
@@ -3424,13 +3482,15 @@ lpu_ensure_global_bin() {
         sr_die "installed ${LPU_GLOBAL_BIN} is not executable" "authz"
     fi
     out_info "Installed global binary ${LPU_GLOBAL_BIN} (required for F6)"
+    lpu_ensure_login_hook_symlink
 }
 
 lpu_f6_text() {
     lpu_defaults
     _gb="${GLOBAL_BIN:-/usr/local/bin}"
-    printf '# %s F6 Table A — production global binary\n%s ALL=(root) NOPASSWD: %s/%s\n' \
-        "${APP_NAME}" "${LPU_USER}" "${_gb}" "${APP_NAME}"
+    printf '# %s F6 Table A — production global binary + login-hook-symlink\n' "${APP_NAME}"
+    printf '%s ALL=(root) NOPASSWD: %s/%s\n' "${LPU_USER}" "${_gb}" "${APP_NAME}"
+    printf '%s ALL=(root) NOPASSWD: %s/%s-hook\n' "${LPU_USER}" "${_gb}" "${APP_NAME}"
 }
 
 lpu_f6_path() {
@@ -3531,7 +3591,7 @@ lpu_own_user_rc() {
 
 lpu_hook_text() {
     lpu_defaults
-    _bin="${GLOBAL_BIN:-/usr/local/bin}/${APP_NAME}"
+    _bin="${GLOBAL_BIN:-/usr/local/bin}/${APP_NAME}-hook"
     printf '%s\n' "${LPU_HOOK_BEGIN}"
     printf '%s\n' "if [ -z \"\${SUDOER_CLI_HOOK_RAN-}\" ] \\"
     printf '%s\n' "  && [ -n \"\${PS1-}\" ] \\"
@@ -3541,7 +3601,7 @@ lpu_hook_text() {
     printf '%s\n' "  && [ -z \"\${SSH_ORIGINAL_COMMAND-}\" ]; then"
     printf '%s\n' "  SUDOER_CLI_HOOK_RAN=1"
     printf '%s\n' "  export SUDOER_CLI_HOOK_RAN"
-    printf '%s\n' "  sudo -n ${_bin} interactive \\"   # lpu-hook-rc (specified F6 -n)
+    printf '%s\n' "  sudo -n ${_bin} interactive \\"   # lpu-hook-rc (login-hook-symlink; specified F6 -n)
     printf '%s\n' "    || printf '%s\\n' \"${APP_NAME}: interactive hook skipped\" >&2"
     printf '%s\n' "fi"
     printf '%s\n' "${LPU_HOOK_END}"
@@ -3712,6 +3772,7 @@ lpu_setup() {
         out_success "LPU ${LPU_USER} ready (uid ${LPU_UID}, home ${LPU_HOME})"
         out_info "F6 $(lpu_f6_path)"
         out_info "Global binary ${LPU_GLOBAL_BIN}"
+        out_info "Login-hook symlink ${GLOBAL_BIN:-/usr/local/bin}/${APP_NAME}-hook"
         _cmd=$(sr_operator_cmd)
         out_info "Next: as yourself (not ${LPU_USER}), ${_cmd} add-sudoer-request --file request.json"
         out_info "Then this sudo is the approval: sudo ${_cmd} interactive"

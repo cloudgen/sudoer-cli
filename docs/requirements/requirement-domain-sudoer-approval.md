@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-domain-sudoer-approval.md  
-**Status**: Active (Version 2.34.0) — leftover Self-scope dropped (OPEN-BEHALF); dest §1.1 Decide names warn-then-ask  
+**Status**: Active (Version 2.36.0) — login-hook-symlink; grant sudoers file points at `requirement-sudoers-file`  
 **Area**: domain  
 **Key**: `requirement-domain-sudoer-approval`  
 **id**: RQ-DOMAIN-SUDOER-APPROVAL  
@@ -9,7 +9,7 @@
 
 This requirement is the **single current domain SSOT** for sudoers-request approval: the **file-based JSON approval** machine (§2.0), specialized subcommands, request basename, JSON/text conversion, queue-path resolve, help items, and about items.
 
-Privilege types and F6 Cmnds are owned by `requirement-three-layer-privilege-model.md`. LPU identity is owned by `requirement-least-privilege-user.md`. What Type 0 / Type 1 **block** vs what must stay open after elev is owned by `requirement-privilege-prevention-set.md`. Live Type 0 dispatcher catalog is owned by `requirement-shell-cli-interface.md` (lifecycle) **plus** the Type 0 domain verbs in §2.1.
+Privilege types and F6 Cmnds are owned by `requirement-three-layer-privilege-model.md`. LPU identity is owned by `requirement-least-privilege-user.md`. What Type 0 / Type 1 **block** vs what must stay open after elev is owned by `requirement-privilege-prevention-set.md`. Live Type 0 dispatcher catalog is owned by `requirement-shell-cli-interface.md` (lifecycle) **plus** the Type 0 domain verbs in §2.1. Grant sudoers **file** (Cmnd arg escape, visudo -cf, visudo-fail copy) is owned by `requirement-sudoers-file.md`.
 
 **Routing honesty:** `help` / `about` **MUST NOT** list a verb that has no dispatcher `case` arm. Convert/submit/list/show/print-sudoers (**operational**) and `test-json-format`/`test-well-known-binary`/`fence-test` (**test-purpose**) **are routed**. Help **MUST** list test-purpose verbs **apart** from operational verbs. Setup and review **are routed** and **fail closed** unless the invoker is already root. Live `setup` creates the dedicated account, the extra sudoers fragment, queues, and login hook. The review-loop body is **live**. About LPU/trust-tier fields remain a **Gap**.
 
@@ -21,7 +21,7 @@ Privilege types and F6 Cmnds are owned by `requirement-three-layer-privilege-mod
 |-----|---------|---------|
 | You / this login | Convert and queue a grant for yourself or another login | `sudoer-cli add-sudoer-request --file request.json` |
 | The other role | Host admin already root, or `sudoer-adm` after setup | `sudo sudoer-cli interactive` |
-| Not this file | Type map, prevention catalog, dest Fence body | `requirement-three-layer-privilege-model` · `requirement-incorrect-json-format` · `requirement-well-known-sudoer-binary-fence` |
+| Not this file | Type map, prevention catalog, dest Fence body, grant sudoers text | `requirement-three-layer-privilege-model` · `requirement-incorrect-json-format` · `requirement-well-known-sudoer-binary-fence` · `requirement-sudoers-file` |
 
 | Includes | Excludes |
 |----------|----------|
@@ -86,7 +86,7 @@ The queued file is the **evidence**. Approvers do **not** trust a world-writable
 | **Not an actor lock** | After euid 0, do **not** require `SUDO_USER==sudoer-adm`, file owner == subject, or JSON username == invoker. Those checks are blockage. Dest uses JSON `username` / `service` when present |
 | **Purpose** | Required. Remove = **purpose only** (`remove_extra_fields` if `commands` present) |
 | **Commands** | Absolute paths; no `ALL`; no `#include` / `Defaults`; service infer agrees with `service` |
-| **visudo** | Render JSON → private sudoers text, then `visudo -cf` (skip comment-only remove). Never feed JSON to visudo |
+| **visudo** | Render JSON → private sudoers text, then `visudo -cf` (skip comment-only remove). Never feed JSON to visudo. Body: `requirement-sudoers-file` |
 | **Dest** | Approve add/update → `/etc/sudoers.d/{{service}}-{{username}}` from JSON `service`/`username` when present, else the name. Never `*-remove` |
 | **Re-validate** | Approve **re-runs** these checks. A tampered inbound file fails then, not at dest write |
 
@@ -124,8 +124,8 @@ Help **MUST** list test-purpose under a heading apart from operational Type 0.
 
 | Verb | Type | Handler family | Operands / flags | Required behavior |
 |------|------|----------------|------------------|-------------------|
-| `sudoers-to-json` | 0 | `sr_sudoers_to_json` | stdin **xor** `--file PATH`; `--action add\|update`; `--purpose TEXT`; `--service NAME` optional; `--out PATH` optional | Convert a sudoers text fragment to request JSON. Infer service from Cmnds. Never queue. Never `/etc/passwd` or `/etc/sudoers.d`. `visudo -cf` the input first. |
-| `json-to-sudoers` | 0 | `sr_json_to_sudoers` | stdin **xor** `--file PATH`; `--out PATH` optional | Convert request JSON to sudoers text. `remove` → `# Purpose:` comments only. `visudo -cf` the output except comment-only remove. Never queue. Never `/etc/passwd` or `/etc/sudoers.d`. |
+| `sudoers-to-json` | 0 | `sr_sudoers_to_json` | stdin **xor** `--file PATH`; `--action add\|update`; `--purpose TEXT`; `--service NAME` optional; `--out PATH` optional | Convert a sudoers text fragment to request JSON. Infer service from Cmnds. Never queue. Never `/etc/passwd` or `/etc/sudoers.d`. visudo / unescape: `requirement-sudoers-file`. |
+| `json-to-sudoers` | 0 | `sr_json_to_sudoers` | stdin **xor** `--file PATH`; `--out PATH` optional | Convert request JSON to sudoers text. `remove` → `# Purpose:` comments only. visudo-legal args + visudo -cf: `requirement-sudoers-file`. Never queue. Never `/etc/passwd` or `/etc/sudoers.d`. |
 | `test-json-format` | 0 **test-purpose** | `sr_test_json_format` | stdin **xor** `--file PATH` | **Unit test** of the JSON-format Fence against a **local test folder** / `--file`. Without dest elev and without the waiting folder. Basename grammar / action match only when the input basename already matches request-id grammar. Never queue. Never `/etc/passwd` or `/etc/sudoers.d`. Sudo wrap **only** chmod/chown of that folder (check before sudo). |
 | `test-well-known-binary` | 0 **test-purpose** | `sr_test_well_known_binary` | stdin **xor** `--file PATH` | **Unit test** of the well-known-binary Fence against a **local test folder** / `--file`. Without dest elev and without the waiting folder. JSON-format Fence runs first. `remove` has no commands — this Fence does not apply. Never queue. Never `/etc/passwd` or `/etc/sudoers.d`. Sudo wrap **only** chmod/chown of that folder. |
 | `fence-test` | 0 **test-purpose** | `sr_fence_test` | stdin **xor** `--file PATH` **xor** `--dir DIR`; `--expect-match` only with `--dir` | **Unit test** of dest fence **functions** against a JSON **file location** in a **local test folder**. **MUST NOT** require `sudo` to run. The only allowed in-tool elev is wrapping **chmod** / **chown** of that folder (check before sudo). **MUST NOT** require a sudoers fragment. **MUST NOT** submit, dest-write, `setup`, `approve`, or read the waiting folder. Closed list: JSON format, then well-known sudoer binary. `--dir` tests every regular non-symlink `*.json` in DIR. `--expect-match` succeeds only when every file matches a dest Fence. Sample: `tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json`. Invocation: `{{APP_NAME}} fence-test --file tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json`. |
@@ -239,7 +239,7 @@ Unknown keys anywhere → `invalid_json`. Closed-schema allowlist: `schema_versi
   "service": "webservice",
   "action": "add",
   "submit_app": "sudoer-cli",
-  "submit_version": "1.17.1",
+  "submit_version": "1.18.0",
   "commands": [
     {
       "runas": "root",
@@ -305,7 +305,7 @@ Canonical rendered line:
 {{username}} ALL=({{runas}}) {{tags:}} {{path}} {{args…}}
 ```
 
-`json-to-sudoers` **MUST** emit that text dual and **MUST** run `visudo -cf` on a private copy (same as convert/submit/approve). Cmnd **args** that contain sudoers-special characters (`:`, `#`, `,`, `\`) **MUST** be backslash-escaped so visudo can parse them (`user\:group`). A trailing sudoers `*` operand **MUST NOT** be expanded as a shell glob. If visudo rejects the text, dest **MUST** fail closed with an operator-readable error that says **visudo rejected this grant**, quotes visudo’s syntax line, and states that the sudoers file would be illegal (not “host validation”). **MUST NOT** dest-write. **TP-SR-19** · **TP-SR-20** · **TP-SR-21**.
+Grant sudoers **file** law — Cmnd arg escape (`user\:group`), `set -f` so `*` is not a glob, `visudo -cf` on a private copy at convert/submit/dest-write, visudo-fail copy that names visudo not “host validation” — is owned by `requirement-sudoers-file`. This file **MUST** still print the canonical line and samples and **point**. **TP-SR-19** · **TP-SR-20** · **TP-SR-21**.
 
 **Paired text dual** for the add sample above:
 
@@ -322,7 +322,7 @@ alice ALL=(root) NOPASSWD: /usr/sbin/nginx -t
 # Purpose: Revoke my webservice sudoers grant; I no longer operate nginx.
 ```
 
-`visudo -cf` on a **private materialized sudoers copy** at convert, submit, and approve/reject. JSON is never fed to visudo.
+`visudo -cf` on a **private materialized sudoers copy** at convert, submit, and approve/reject — **see `requirement-sudoers-file`**. JSON is never fed to visudo.
 
 Reject: User `ALL`, Cmnd `ALL`, other usernames, `#include`, `Defaults`, aliases.
 
@@ -380,7 +380,7 @@ Type 0 list/show **MUST** use a per-user sidecar `${XDG_STATE_HOME:-$HOME/.local
 
 #### Login hook
 
-`setup` **MUST** install an idempotent, marker-guarded snippet so a **TTY login** as `sudoer-adm` starts Type 1 `interactive` **once** per session. The hook **MUST NOT** hang `scp`, CI, or non-TTY sessions. Empty argv stays help.
+`setup` **MUST** install an idempotent, marker-guarded snippet so a **TTY login** as `sudoer-adm` starts Type 1 `interactive` **once** per session. After `setup` copies the ship unit to `/usr/local/bin/sudoer-cli`, it **MUST** create a soft symlink `/usr/local/bin/sudoer-cli-hook` when that name is missing (it **MUST NOT** overwrite a retargeted name). The snippet **MUST** `sudo -n` that hook name, not the product binary. Heal **MUST** rewrite an old `/usr/local/bin/sudoer-cli interactive` line to the hook name, and **MUST** plant the hook block when markers are missing. The hook **MUST NOT** hang `scp`, CI, or non-TTY sessions. Empty argv stays help. Test-mode **MUST NOT** write live `/usr/local/bin`.
 
 **Why `${LPU_HOME}/.profile` must exist:** a bash **login** shell (SSH / console) sources `.profile` (or `.bash_profile` / `.bash_login`) and does **not** source `.bashrc` unless `.profile` does so. Create-first home plus `useradd -M` copies **no** `/etc/skel` `.profile`. Without that file, the hook in `.bashrc` **never runs**.
 
@@ -396,7 +396,7 @@ Type 0 list/show **MUST** use a per-user sidecar `${XDG_STATE_HOME:-$HOME/.local
 | **Interactive** | Require `PS1` set, `$-` contains `i`, and `[ -t 0 ]` and `[ -t 1 ]` **in the rc snippet** (this is rc policy, not the CLI `TTY` SSOT) |
 | **scp / CI** | Skip when `SSH_ORIGINAL_COMMAND` is set |
 | **Session** | Set `SUDOER_CLI_HOOK_RAN=1` **before** `sudo -n`; a second source is a no-op |
-| **Binary** | `sudo -n /usr/local/bin/sudoer-cli interactive` only (production F6 / Table A). **MUST NOT** hook `~/.local/bin/sudoer-cli` |
+| **Binary** | `sudo -n /usr/local/bin/sudoer-cli-hook interactive` (login-hook-symlink; production F6 / Table A). **MUST NOT** hook `~/.local/bin/sudoer-cli`. **MUST NOT** leave an old `sudo -n /usr/local/bin/sudoer-cli interactive` line after heal |
 | **`sudo -n` fail** | Print a **warning** on stderr; **login continues** (do not `exit`) |
 | **Idempotent file** | Begin/end markers; do not append twice |
 | **`.profile` check** | `setup` **MUST** test whether `${LPU_HOME}/.profile` exists before deciding create vs leave |
@@ -417,7 +417,7 @@ if [ -z "${SUDOER_CLI_HOOK_RAN-}" ] \
   && [ -z "${SSH_ORIGINAL_COMMAND-}" ]; then
   SUDOER_CLI_HOOK_RAN=1
   export SUDOER_CLI_HOOK_RAN
-  sudo -n /usr/local/bin/sudoer-cli interactive \
+  sudo -n /usr/local/bin/sudoer-cli-hook interactive \
     || printf '%s\n' "sudoer-cli: interactive hook skipped" >&2
 fi
 # END sudoer-cli login hook
@@ -489,7 +489,7 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | **Worked dest** | `/etc/sudoers.d/webservice-alice` |
 | **Hook marker** | `# BEGIN sudoer-cli login hook` … `# END sudoer-cli login hook` |
 | **Hook env** | `SUDOER_CLI_HOOK_RAN` |
-| **Hook command** | `sudo -n /usr/local/bin/sudoer-cli interactive` |
+| **Hook command** | `sudo -n /usr/local/bin/sudoer-cli-hook interactive` (symlink to `/usr/local/bin/sudoer-cli`; create if missing; do not overwrite) |
 | **Approval question** | One-off yes/no (`prompt_yes_no "Approve this request"`). Yes = approve. No / Enter = reject. No skip / quit / maybe. Term `approval-question`. JSON-format Fence match: no question; display then rejected. Missing stamp / untrusted Cmnd: warn, then ask. |
 | **`.profile` create** | Missing → write source-bashrc sample (`# BEGIN sudoer-cli profile source-bashrc`). Existing never overwritten. |
 | **Routed now** | Type 0 **operational** convert/submit/list/show/print-sudoers; Type 0 **test-purpose** `test-json-format`/`test-well-known-binary`/`fence-test`; Type 1 `setup`/`remove-lpu`/`approve`/`reject`/`interactive` live |
@@ -531,14 +531,14 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 8. Claim Type 1 host mutation complete while `setup` / `approve` / `interactive` is a stub.  
 9. Drop prefix `sudoer-` or suffix `.json` from `request_id`.  
 10. Accept extra fields on remove JSON.  
-11. Feed JSON to `visudo` without materializing sudoers text.  
+11. Feed JSON to `visudo` without materializing sudoers text (`requirement-sudoers-file`).  
 12. `cd` into a queue directory instead of resolving absolute paths.  
 13. Let Type 0 `mkdir` or point production queues at non-F5 paths without the test gate.  
 14. Replace this file-based JSON approval machine with a ticket table, mail queue, or database without revising this requirement.  
 15. Collapse submitter and approver into one role.  
 16. Let a TTY login as `sudoer-adm` imply empty-argv `interactive`.  
 17. Hang login or `scp` from the hook (`sudo` without `-n`, or `exit` on hook failure).  
-18. Hook `~/.local/bin/sudoer-cli` or any non-Table-A binary as the review launcher.  
+18. Hook `~/.local/bin/sudoer-cli` or any non-Table-A binary as the review launcher. Plant `sudo -n /usr/local/bin/sudoer-cli interactive` instead of `/usr/local/bin/sudoer-cli-hook`, overwrite an existing hook name, or `ln` the live global hook from test-mode.  
 19. Ship `interactive` without consuming `TTY` (prompt or hang when `TTY` is not 1).  
 20. Invent a second lock after password `sudo` / root login — including `SUDO_USER` must be `sudoer-adm` on approve — a live-command whitelist the user did not publish, or a Gap stub on live `setup` (`requirement-privilege-prevention-set.md`).  
 21. Walk inbound ids with `while read … done <file` (or any stdin redirect) so `prompt_yes_no` hits EOF and auto-answers no (reject).  
@@ -575,6 +575,7 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | `docs/requirements/requirement-actor-role-subject-approver.md` | Five-column consider catalog |
 | `docs/requirements/requirement-incorrect-json-format.md` | Dest Fence: JSON format |
 | `docs/requirements/requirement-well-known-sudoer-binary-fence.md` | Well-known binary: dest warn + testers/convert fail closed |
+| `docs/requirements/requirement-sudoers-file.md` | Grant sudoers file: Cmnd arg escape, visudo -cf, visudo-fail copy |
 | `src/sudoer-cli` | Ship unit |
 
 ## Design-time verification
@@ -605,6 +606,7 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | **TP-SR-HOOK-02** | `tests/test_domain_sr.sh` | have | Existing `.profile` is not overwritten |
 | **TP-SR-HOOK-03** | `tests/test_domain_sr.sh` | have | Created `.profile` sources `.bashrc` (markers) |
 | **TP-SR-HOOK-04** | `tests/test_domain_sr.sh` | have | After create/rewrite, hook apply/ensure **chown** the LPU (no swallowed `chown`) |
+| **TP-SR-HOOK-05** | `tests/test_domain_sr.sh` | have | Login-hook-symlink: setup creates `${GLOBAL_BIN}/sudoer-cli-hook` when missing; heal rewrites old product-binary `sudo -n` line; F6 grants the hook; test-mode skips live `/usr/local/bin` |
 | **TP-CLI-14** | `tests/test_cli.sh` | have | convert routed; junk unknown |
 | **TP-SR-INT-01** | `tests/test_domain_sr.sh` | have | `interactive` without euid 0 → `authz` |
 | **TP-SR-INT-02** | `tests/test_domain_sr.sh` | have | `--json` / `TTY=0` → `confirm_required`, no hang |
@@ -617,9 +619,9 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | **TP-SR-14** | `tests/test_domain_sr.sh` | have | pretty add-sample JSON → all three Cmnd lines |
 | **TP-SR-15** | `tests/test_domain_sr.sh` | have | pretty add-sample submit inbound keeps all three `path`s |
 | **TP-SR-16** | `tests/test_domain_sr.sh` | have | pretty folder-backup `backup`+`restore` JSON keeps both verbs |
-| **TP-SR-19** | `tests/test_domain_sr.sh` | have | json-to-sudoers `--ownership user:group` → escaped `user\:group`; visudo -cf Pass |
-| **TP-SR-20** | `tests/test_domain_sr.sh` | have | json-to-sudoers `--ownership *` keeps star operand; visudo -cf Pass |
-| **TP-SR-21** | `tests/test_domain_sr.sh` | have | visudo reject says “visudo rejected”; quotes syntax; Next json-to-sudoers; no “host validation” |
+| **TP-SR-19** | `tests/test_domain_sr.sh` | have | json-to-sudoers `--ownership user:group` → escaped `user\:group`; visudo -cf Pass — owner `requirement-sudoers-file` |
+| **TP-SR-20** | `tests/test_domain_sr.sh` | have | json-to-sudoers `--ownership *` keeps star operand; visudo -cf Pass — owner `requirement-sudoers-file` |
+| **TP-SR-21** | `tests/test_domain_sr.sh` | have | visudo reject says “visudo rejected”; quotes syntax; Next json-to-sudoers; no “host validation” — owner `requirement-sudoers-file` |
 | **TP-SR-FENCE-01..04** | `tests/test_domain_sr.sh` | have | dest Fence before yes/no; isolated dest checks |
 | **TP-SR-FENCE-05..08** | `tests/test_domain_sr.sh` | have | Type 0 `test-json-format` + login-hook-elev fixture |
 | **TP-SR-FENCE-11** | `tests/test_domain_sr.sh` | have | Dest `submit_by` stamp first `{` only |
@@ -676,9 +678,11 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | 2026-08-26 | Active 2.32.0 | json-to-sudoers visudo-legal Cmnd args (`\:`); visudo fail names visudo; submit visudo; **TP-SR-19..21** |
 | 2026-08-26 | Active 2.33.0 | Drop leftover Self-scope (A≠B is **OPEN-BEHALF**, not a dest fence). Worked samples `alice` / `webservice`. |
 | 2026-08-26 | Active 2.34.0 | §1.1 Decide: dest **warns** on home-tree Cmnd / missing stamp, then still asks. |
+| 2026-08-26 | Active 2.35.0 | Grant sudoers file (Cmnd arg escape, visudo -cf, visudo-fail copy) **points** at independent `requirement-sudoers-file`. |
+| 2026-09-03 | Active 2.36.0 | Login-hook-symlink `/usr/local/bin/sudoer-cli-hook`; setup creates when missing; heal rewrites old product-binary line; **TP-SR-HOOK-05**. |
 
 ---
 
-**Last Updated**: 2026-08-26  
+**Last Updated**: 2026-09-03  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

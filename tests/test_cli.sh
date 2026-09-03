@@ -165,6 +165,34 @@ run_test_cli() {
     assert_eq "TP-CLI-16 fence-test routed (xor fail not unknown)" 1 "$_ec"
     assert_not_contains "TP-CLI-16 fence-test not unknown" "$_err" "Unknown command"
 
+    # TP-CLI-17 default-cli-main-menu-style printers (menu not claimed; look helpers exist)
+    _th=$(mktemp -d "${TMPDIR:-/tmp}/sudoer-cli.menu.XXXXXX")
+    _runner="${_th}/run-style.sh"
+    {
+        sed -n '/^out_text()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' 'out_menu_choice() { out_text menu_choice "" "${1-}" "${2-}" "${3-}"; }'
+        sed -n '/^util_app_ident()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' 'APP_NAME=sudoer-cli'
+        printf '%s\n' "VERSION='${PRODUCT_VERSION}'"
+        printf '%s\n' 'JSON=0; QUIET=0'
+        printf '%s\n' 'TTY=0'
+        printf '%s\n' 'printf "OFFIDENT:%s\n" "$(util_app_ident)"'
+        printf '%s\n' 'printf "OFFROW:"'
+        printf '%s\n' 'out_menu_choice 1 convert "Turn sudoers text into JSON"'
+        printf '%s\n' 'TTY=1'
+        printf '%s\n' 'printf "ONIDENT:%s\n" "$(util_app_ident)"'
+        printf '%s\n' 'printf "ONROW:"'
+        printf '%s\n' 'out_menu_choice 1 convert "Turn sudoers text into JSON"'
+    } >"${_runner}"
+    _out=$(sh "${_runner}")
+    assert_contains "TP-CLI-17 off-TTY ident is APP_NAME(VERSION)" "${_out}" "OFFIDENT:sudoer-cli(${PRODUCT_VERSION})"
+    assert_not_contains "TP-CLI-17 off-TTY ident has no CSI" "${_out}" "$(printf 'OFFIDENT:\033')"
+    assert_contains "TP-CLI-17 off-TTY row is plain" "${_out}" "OFFROW:1. convert: Turn sudoers text into JSON"
+    assert_contains "TP-CLI-17 TTY ident bold SGR" "${_out}" "$(printf 'ONIDENT:\033[1msudoer-cli\033[0m(\033[3m%s\033[0m)' "${PRODUCT_VERSION}")"
+    assert_contains "TP-CLI-17 TTY row gray italic explain" "${_out}" "$(printf '\033[3;37mTurn sudoers text into JSON\033[0m')"
+    assert_contains "TP-CLI-17 TTY row keeps unstyled name" "${_out}" "ONROW:1. convert: "
+    rm -rf "${_th}"
+
     # TP-ELEV-07: only top-level measure + sr_read_input data-source may use [ -t 0/1 ]
     # Specified exception: the login-hook *snippet* (rc policy, not CLI TTY SSOT).
     _t_hits=$(grep -n '\[ -t [01] \]' "${SCRIPT}" | grep -v '^[[:space:]]*#' || true)

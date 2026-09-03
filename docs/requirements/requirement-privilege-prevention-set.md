@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-privilege-prevention-set.md  
-**Status**: Active (Version 1.6.1)  
+**Status**: Active (Version 1.6.3)  
 **Area**: architecture  
 **Key**: `requirement-privilege-prevention-set`  
 **id**: RQ-PRIVILEGE-PREVENTION-SET  
@@ -93,7 +93,7 @@ Each row is a **real** product stop. How the stop is implemented (fail closed, r
 |----|-----------------|------------|--------------|-------|
 | **PREV-SCHEMA** | Unknown JSON keys; remove JSON with `commands`; mixed or unknown service families | submit and approve | Fail closed (`invalid_json` / `remove_extra_fields` / `unknown_service`) | domain |
 | **PREV-INCLUDE** | User `ALL`, Cmnd `ALL`, `#include`, `Defaults`, or aliases in a request | convert / submit / approve | Reject | domain |
-| **PREV-JSON-VISUDO** | Feeding request JSON to `visudo` | convert / submit / approve | Materialize sudoers text on a private copy first | domain |
+| **PREV-JSON-VISUDO** | Feeding request JSON to `visudo` | convert / submit / approve | Materialize sudoers text on a private copy first | `requirement-sudoers-file` |
 
 #### 2.2.5 UX, hang, and test gates
 
@@ -148,7 +148,7 @@ These steps are **hard to undo**. They stay **allowed** after elev. The extra ga
 | **Product** | `sudoer-cli` |
 | **Ship unit** | `src/sudoer-cli` |
 | **LPU** | `sudoer-adm` (UID/GID `1776`, create home `/etc/sudoer-adm`; public queues `/var/{{APP_NAME}}/`) |
-| **F6 file** | `/etc/sudoers.d/sudoer-adm` = `sudoer-adm ALL=(root) NOPASSWD: /usr/local/bin/sudoer-cli` (Type 1 copy/overwrite/remove exception) |
+| **F6 file** | `/etc/sudoers.d/sudoer-adm` = `sudoer-adm ALL=(root) NOPASSWD: /usr/local/bin/sudoer-cli` **and** `sudoer-adm ALL=(root) NOPASSWD: /usr/local/bin/sudoer-cli-hook` (Type 1 copy/overwrite/remove exception) |
 | **Grant dest** | `/etc/sudoers.d/{{service}}-{{username}}` (worked: `/etc/sudoers.d/webservice-alice`) |
 | **Usual bootstrap** | `sudo src/sudoer-cli setup` or `sudo sudoer-cli setup` (password `sudo` OK) |
 | **Test-roots flag** | `SUDOER_CLI_ALLOW_TEST_ROOTS=1` |
@@ -200,6 +200,7 @@ These steps are **hard to undo**. They stay **allowed** after elev. The extra ga
 | `docs/requirements/requirement-three-layer-privilege-model.md` | Type map + Tables A/B/C |
 | `docs/requirements/requirement-least-privilege-user.md` | F1–F7 identity |
 | `docs/requirements/requirement-domain-sudoer-approval.md` | File-based JSON approval |
+| `docs/requirements/requirement-sudoers-file.md` | Grant sudoers file; **PREV-JSON-VISUDO** owner |
 | `docs/requirements/requirement-shell-cli-interface.md` | Dispatcher / Type 0 catalog |
 | `docs/requirements/requirement-shell-cli-zero-arguments.md` | Empty argv ≠ `interactive` |
 | `docs/requirements/requirement-shell-local-self-management.md` | Type 0 `uninstall` ≠ F7 |
@@ -238,9 +239,11 @@ These steps are **hard to undo**. They stay **allowed** after elev. The extra ga
 | 2026-08-18 | Active 1.5.0 | Drop PREV-BEHALF and Type 1 `owner_mismatch`. Approve/reject are not submitter/owner walls. |
 | 2026-08-18 | Active 1.6.0 | **OPEN-BEHALF**: A may submit for B; filename uses B. Helpful checks are file integrity, not A=B. |
 | 2026-08-26 | Active 1.6.1 | Worked grant dest `webservice-alice` (no session login) |
+| 2026-08-26 | Active 1.6.2 | **PREV-JSON-VISUDO** owner is `requirement-sudoers-file` |
+| 2026-09-03 | Active 1.6.3 | F6 Table A also grants `/usr/local/bin/sudoer-cli-hook` |
 
 ---
 
-**Last Updated**: 2026-08-26  
+**Last Updated**: 2026-09-03  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

@@ -1,6 +1,6 @@
 # =============================================================================
 # tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..04, TP-SR-FENCE-01..17, TP-SR-INT-01..06, TP-SR-19..21)
-# Primary REQ: requirement-domain-sudoer-approval.md
+# Primary REQ: requirement-domain-sudoer-approval.md · requirement-sudoers-file.md (TP-SR-19..21)
 # =============================================================================
 
 # shellcheck source=helpers.sh
@@ -439,6 +439,15 @@ EOF
     _hook=$(sed -n '/^lpu_hook_text()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-PRIV-03 hook sudo -n global interactive" "${_hook}" "sudo -n"
     assert_contains "TP-SR-PRIV-03 hook interactive verb" "${_hook}" "interactive"
+    assert_contains "TP-SR-HOOK-05 hook text uses login-hook-symlink" "${_hook}" '-hook'
+    assert_not_contains "TP-SR-HOOK-05 hook text not old product-binary sudo" "${_hook}" "sudoer-cli interactive"
+    _sym=$(sed -n '/^lpu_ensure_login_hook_symlink()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-HOOK-05 ensure-symlink helper exists" "${_sym}" 'ln -s'
+    assert_contains "TP-SR-HOOK-05 test-mode skips live /usr/local/bin" "${_sym}" '/usr/local/bin'
+    assert_contains "TP-SR-HOOK-05 test-mode reads ALLOW_TEST_ROOTS" "${_sym}" 'SUDOER_CLI_ALLOW_TEST_ROOTS'
+    assert_contains "TP-SR-HOOK-05 does not overwrite existing hook name" "${_sym}" '-e "${_hook}"'
+    _gbin=$(sed -n '/^lpu_ensure_global_bin()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-HOOK-05 global bin creates hook symlink" "${_gbin}" 'lpu_ensure_login_hook_symlink'
     assert_contains "TP-SR-INT-03 hook skips SSH_ORIGINAL_COMMAND" "${_hook}" "SSH_ORIGINAL_COMMAND"
     assert_contains "TP-SR-INT-03 hook requires PS1" "${_hook}" 'PS1-'
     assert_not_contains "TP-SR-INT-03 hook does not exit" "${_hook}" "exit"
@@ -496,10 +505,49 @@ EOF
     _prf2=$(cat "${_th}/home/.profile")
     assert_contains "TP-SR-HOOK-02 existing .profile body kept" "${_prf2}" "# keep-me"
     assert_not_contains "TP-SR-HOOK-02 existing not replaced by create sample" "${_prf2}" "BEGIN sudoer-cli profile source-bashrc"
+    _brc=$(cat "${_th}/home/.bashrc")
+    assert_contains "TP-SR-HOOK-05 planted bashrc uses login-hook-symlink" "${_brc}" "sudoer-cli-hook interactive"
+    assert_not_contains "TP-SR-HOOK-05 planted bashrc not old product binary" "${_brc}" "sudoer-cli interactive"
+    printf '%s\n' \
+        "# BEGIN sudoer-cli login hook" \
+        "sudo -n /usr/local/bin/sudoer-cli interactive" \
+        "# END sudoer-cli login hook" >"${_th}/home/.bashrc"
+    sh "${_runner}"
+    _brc2=$(cat "${_th}/home/.bashrc")
+    assert_contains "TP-SR-HOOK-05 heal rewrites old binary to hook" "${_brc2}" "sudoer-cli-hook interactive"
+    assert_not_contains "TP-SR-HOOK-05 heal removes old product-binary sudo" "${_brc2}" "sudoer-cli interactive"
+    rm -rf "${_th}"
+
+    # Isolated symlink: create when missing; do not overwrite; test-mode skip live path.
+    _th=$(mktemp -d "${TMPDIR:-/tmp}/sudoer-cli.hooksym.XXXXXX")
+    _runner="${_th}/run-sym.sh"
+    {
+        printf '%s\n' 'sr_die() { printf "%s\n" "$*" >&2; exit 1; }'
+        printf '%s\n' 'out_info() { :; }'
+        sed -n '/^lpu_ensure_login_hook_symlink()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' "APP_NAME=sudoer-cli"
+        printf '%s\n' "GLOBAL_BIN='${_th}/gbin'"
+        printf '%s\n' "SUDOER_CLI_ALLOW_TEST_ROOTS=0"
+        printf '%s\n' 'mkdir -p "${GLOBAL_BIN}"'
+        printf '%s\n' 'printf "%s\n" "#!/bin/sh" >"${GLOBAL_BIN}/${APP_NAME}"'
+        printf '%s\n' 'chmod 0755 "${GLOBAL_BIN}/${APP_NAME}"'
+        printf '%s\n' 'lpu_ensure_login_hook_symlink'
+        printf '%s\n' 'lpu_ensure_login_hook_symlink'
+    } >"${_runner}"
+    sh "${_runner}"
+    assert_file_exists "TP-SR-HOOK-05 hook symlink created" "${_th}/gbin/sudoer-cli-hook"
+    _tgt=$(readlink "${_th}/gbin/sudoer-cli-hook")
+    assert_eq "TP-SR-HOOK-05 hook symlink target is product binary" "${_th}/gbin/sudoer-cli" "${_tgt}"
+    rm -f "${_th}/gbin/sudoer-cli-hook"
+    ln -s /bin/true "${_th}/gbin/sudoer-cli-hook"
+    sh "${_runner}"
+    _tgt2=$(readlink "${_th}/gbin/sudoer-cli-hook")
+    assert_eq "TP-SR-HOOK-05 existing hook name not overwritten" "/bin/true" "${_tgt2}"
     rm -rf "${_th}"
     _f6fn=$(sed -n '/^lpu_f6_text()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-PRIV-03 F6 Table A NOPASSWD" "${_f6fn}" "NOPASSWD:"
     assert_contains "TP-SR-PRIV-03 F6 global bin" "${_f6fn}" 'GLOBAL_BIN'
+    assert_contains "TP-SR-HOOK-05 F6 grants login-hook-symlink" "${_f6fn}" '-hook'
     _f6p=$(sed -n '/^lpu_f6_path()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-PRIV-03 F6 path uses sudoers.d dir" "${_f6p}" 'sr_sudoers_d_dir'
     assert_contains "TP-SR-PRIV-03 F6 basename is LPU_USER" "${_f6p}" 'LPU_USER'

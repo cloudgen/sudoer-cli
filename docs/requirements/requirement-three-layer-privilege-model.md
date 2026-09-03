@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-three-layer-privilege-model.md  
-**Status**: Active (Version 1.14.1 – Type 0 test-purpose testers vs operational Type 0)  
+**Status**: Active (Version 1.15.0 – login-hook-symlink on Table A)  
 **Area**: architecture  
 **Key**: `requirement-three-layer-privilege-model`  
 **id**: RQ-THREE-LAYER-PRIVILEGE-MODEL  
@@ -66,6 +66,7 @@ The **closed catalog** of what the product blocks — and what it **must not** b
 | ID | Job | Binary (absolute) | Fixed args | Dest | Invoker | Run-as | NOPASSWD | Sudoers line shape |
 |----|-----|-------------------|------------|------|---------|--------|----------|--------------------|
 | ELEV-F6-CLI | Approver runs all product verbs of the **global** ship unit | `/usr/local/bin/{{APP_NAME}}` | none (whole binary) | — | `sudo {{APP_NAME}} …` | root | yes | `{{LPU_USER}} ALL=(root) NOPASSWD: /usr/local/bin/{{APP_NAME}}` |
+| ELEV-F6-HOOK | Login-hook-symlink (rc `sudo -n`) | `/usr/local/bin/{{APP_NAME}}-hook` | none (symlink to the global ship unit) | — | login hook `sudo -n {{APP_NAME}}-hook interactive` | root | yes | `{{LPU_USER}} ALL=(root) NOPASSWD: /usr/local/bin/{{APP_NAME}}-hook` |
 
 Rules:
 
@@ -106,7 +107,7 @@ The CLI invokes these as **internal jobs**. Account create/teardown **MUST** be 
 ### 2.5 Fragment emit / install
 
 1. Type 0 **MAY** emit a draft fragment and an admin install script under volatile storage. Type 0 **MUST NOT** write `/etc/passwd`, `/etc/sudoers`, or `/etc/sudoers.d`. Type 1 dest is `/etc/sudoers.d/{{service}}-{{username}}` (copy / overwrite / remove).  
-2. Every sudoers write **MUST** pass `visudo -cf` on a private temp copy first.  
+2. Every sudoers write **MUST** pass `visudo -cf` on a private temp copy first. **User-grant** text dual, Cmnd arg escape, and visudo-fail copy: `requirement-sudoers-file`. **F6 Table A** visudo stays this file (JOB-VISUDO).  
 3. Installed fragments **MUST** be mode `0440`, owner `root:root`.  
 4. Previous live fragments **MUST** be backed up before replace/remove.  
 5. When `print-sudoers-install-script` is routed, the generated script **MUST** support `install` / `uninstall` / `replace` / `status`, require root for mutate actions, write only under volatile storage, and **MUST NOT** install as a Type 0 side effect.  
@@ -119,7 +120,7 @@ The CLI invokes these as **internal jobs**. Account create/teardown **MUST** be 
 | **Product** | `sudoer-cli` |
 | **LPU username** | `sudoer-adm` |
 | **F6 path** | `/etc/sudoers.d/sudoer-adm` |
-| **Table A line** | `sudoer-adm ALL=(root) NOPASSWD: /usr/local/bin/sudoer-cli` |
+| **Table A line** | `sudoer-adm ALL=(root) NOPASSWD: /usr/local/bin/sudoer-cli` **and** `sudoer-adm ALL=(root) NOPASSWD: /usr/local/bin/sudoer-cli-hook` |
 | **Type 2** | Not used |
 | **Routing status** | Type 1 `setup`/`remove-lpu` live (useradd/userdel, F6, hook). Approve dest write when authorized. `interactive` loop live (ids not on stdin). |
 | **Test roots** | Fake `SUDOER_CLI_GRANT_ROOT` only when `SUDOER_CLI_ALLOW_TEST_ROOTS=1` |
@@ -155,7 +156,7 @@ The CLI invokes these as **internal jobs**. Account create/teardown **MUST** be 
 4. Elevate the user-local binary for production Pass.  
 5. Write `/etc/passwd` or `/etc/sudoers` (main), or ban this product’s Type 1 copy/overwrite/remove of product-owned `/etc/sudoers.d` names.  
 6. Advertise unrouted Type 1 verbs in `help` before they are dispatched.  
-7. Treat a TTY login as `sudoer-adm` as euid-0 without F6, or hook a non-Table-A binary.  
+7. Treat a TTY login as `sudoer-adm` as euid-0 without F6, or hook a non-Table-A binary. Omit the login-hook-symlink from Table A while the rc snippet `sudo -n`s it.  
 8. Require `SUDO_USER==sudoer-adm` for `setup` / `remove-lpu` (F6 does not exist yet), **or** for `approve` / `reject` / `interactive` after password `sudo`. That actor check is blockage, not help.  
 9. Write bootstrap / first-time setup as `sudo -n`. **`sudo -n` is not suggested** except the F6 login hook.  
 10. Treat “mix model” as a ban on in-tool password `sudo`, or as a ban on Table C `useradd` after euid 0.  
@@ -174,6 +175,7 @@ The CLI invokes these as **internal jobs**. Account create/teardown **MUST** be 
 | `docs/requirements/requirement-least-privilege-user.md` | LPU identity F1–F7 |
 | `docs/requirements/requirement-privilege-prevention-set.md` | Closed catalog of what is blocked vs must stay open |
 | `docs/requirements/requirement-domain-sudoer-approval.md` | File-based JSON approval + verb catalog |
+| `docs/requirements/requirement-sudoers-file.md` | User-grant sudoers text dual / visudo; F6 visudo stays this file |
 | `docs/requirements/requirement-shell-cli-interface.md` | Dispatcher / Type 0 catalog |
 | `docs/requirements/requirement-shell-sudo-command.md` | Sudo-wrapping function; check before sudo; chmod example |
 | `src/sudoer-cli` | Ship unit under test |
@@ -188,10 +190,11 @@ The CLI invokes these as **internal jobs**. Account create/teardown **MUST** be 
 | **TP-SR-PRIV-01** | `tests/test_domain_sr.sh` | have | Type 1 verbs fail closed without euid 0 |
 | **TP-SR-PRIV-02** | `tests/test_domain_sr.sh` | have | Bootstrap setup ≠ F6; not `sudo -n`; not only `sudoer-adm` |
 | **TP-SR-PRIV-03** | `tests/test_domain_sr.sh` | have | Live setup body: useradd, collision, F6, hook (static) |
+| **TP-SR-HOOK-05** | `tests/test_domain_sr.sh` | have | F6 grants login-hook-symlink; setup creates hook name |
 | **TP-SR-PRIV-04** | `tests/test_domain_sr.sh` | have | Approve gate has no exclusive-`sudoer-adm` actor lock (OPEN-ELEV) |
 | **TP-ELEV-09** | `tests/test_domain_sr.sh` | have | Alias of TP-SR-PRIV-04 / TP-PREV-03 |
 | **TP-SR-INT-01** | `tests/test_domain_sr.sh` | have | `interactive` without euid 0 → `authz` |
 
-**Last Updated**: 2026-08-21  
+**Last Updated**: 2026-09-03 (1.15.0 login-hook-symlink on Table A)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

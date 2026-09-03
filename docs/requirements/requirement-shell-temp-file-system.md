@@ -62,12 +62,12 @@ This requirement is the **project Single Source of Truth** for **scratch file le
 | Consumer | Family | Rule |
 |----------|--------|------|
 | Install stage | install staging | already `mktemp` under storage root |
-| `visudo -cf` private copy | convert / approve | `mktemp`; never in-place `/etc/passwd` or `/etc/sudoers.d` |
+| `visudo -cf` private copy | convert / approve | `mktemp`; never in-place `/etc/passwd` or `/etc/sudoers.d`; grant visudo body: `requirement-sudoers-file` |
 | Convert encode/parse/infer/decode scratch | convert | `util_mktemp`; never `sr-*.$$` |
 | Approve private body | Type 1 | `mktemp` |
 | Admin script / draft emit | print helpers | `mktemp` (not a fixed basename under `/tmp`) |
 
-Domain **JSON schema** and **sudoers grammar** stay in `requirement-domain-sudoer-approval`. This REQ does not redefine those samples.
+Domain **JSON schema** stays in `requirement-domain-sudoer-approval`. Grant **sudoers grammar** (escape / visudo) stays in `requirement-sudoers-file`. This REQ does not redefine those samples.
 
 ### 2.5 Sufficient samples
 

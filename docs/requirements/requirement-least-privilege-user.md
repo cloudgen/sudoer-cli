@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-least-privilege-user.md  
-**Status**: Active (Version 1.13.0)  
+**Status**: Active (Version 1.14.0)  
 **Area**: architecture  
 **Key**: `requirement-least-privilege-user`  
 **id**: RQ-LEAST-PRIVILEGE-USER  
@@ -68,7 +68,7 @@ When creating a new LPU, resolve F3 as: override (if set) → `/etc/{{LPU_USER}}
 | Public queues | mkdir `/var/{{APP_NAME}}/` + three children; modes in F5 | archived (unless `--purge-queues`) then the three children **removed** and the public root `rmdir` if empty |
 | Home queue views | F4 symlinks under live LPU home | removed with `userdel -r` |
 | F6 fragment | visudo + `install -m 0440` | backup then remove fragment |
-| Login hook | idempotent marker in LPU `.bashrc`; **check** `.profile` and **create** it when missing (source `.bashrc`; never overwrite). After create/rewrite: **owner this LPU**, readable mode | strip whichever files contain the hook marker; then restore owner |
+| Login hook | After the global binary exists: create `${GLOBAL_BIN}/{{APP_NAME}}-hook` when missing (do not overwrite). Idempotent marker in LPU `.bashrc` calling that hook name; **check** `.profile` and **create** it when missing (source `.bashrc`; never overwrite). After create/rewrite: **owner this LPU**, readable mode | strip whichever files contain the hook marker; then restore owner. **MUST NOT** unlink the global hook name |
 | Live `{{service}}-{{user}}` grants | not created here | **left in place** (no `--purge-grants` in v1) |
 
 F7 v1 default **MUST** be: warn live grants stay → reverse hook → archive queues to `/var/backups/{{APP_NAME}}/{{YYYYMMDD}}-{{n}}/` → `userdel -r`. `--purge-queues` skips the archive copy; home is still removed by `userdel -r`. `--purge-grants` is **not** v1.
@@ -87,7 +87,7 @@ F7 v1 default **MUST** be: warn live grants stay → reverse hook → archive qu
 | Affected (F5) | `/var/{{APP_NAME}}` mode **0755** owner `sudoer-adm:sudoer-adm`; `/var/{{APP_NAME}}/sudoer-request` **3773** (sticky+setgid, other `-wx` no other-r); `/var/{{APP_NAME}}/sudoer-approved` **0700**; `/var/{{APP_NAME}}/sudoer-rejected` **0700** | F5 |
 | Sudoers file | `/etc/sudoers.d/sudoer-adm` mode 0440 `root:root` (Type 1 copy/overwrite/remove exception) | F6 |
 | Approval subject | sudoers grant text (sudoer-file; queued as JSON) — **at least one required** | LPA leaf |
-| Login hook | `${LPU_HOME}/.bashrc` (create if missing) **and** check `${LPU_HOME}/.profile` (create source-bashrc sample if missing; never overwrite). After create or rewrite: **owner `sudoer-adm:sudoer-adm`**, mode **0644**. Marker `# BEGIN sudoer-cli login hook`; env `SUDOER_CLI_HOOK_RAN`; command `sudo -n /usr/local/bin/sudoer-cli interactive` | F5 rc / domain SSOT |
+| Login hook | `${LPU_HOME}/.bashrc` (create if missing) **and** check `${LPU_HOME}/.profile` (create source-bashrc sample if missing; never overwrite). After create or rewrite: **owner `sudoer-adm:sudoer-adm`**, mode **0644**. Marker `# BEGIN sudoer-cli login hook`; env `SUDOER_CLI_HOOK_RAN`; command `sudo -n /usr/local/bin/sudoer-cli-hook interactive`. `setup` creates `/usr/local/bin/sudoer-cli-hook` → `/usr/local/bin/sudoer-cli` when missing; does not overwrite; test-mode skips live `ln`. F7 does **not** unlink the hook name | F5 rc / domain SSOT |
 | Remove | `sudo sudoer-cli setup --uninstall` (or `remove-lpu`) — any host admin, password sudo OK | F7 |
 
 **Routing status:** `setup` / `remove-lpu` **are live** (useradd / F6 / hook / userdel) and **fail closed** without euid 0. Bootstrap is **any** host admin already root (`sudo sudoer-cli setup`); **not** `sudo -n`; **not** limited to `sudoer-adm` (that account is what setup creates). Type 0 / an LSU **MUST NOT** `useradd`. After success, setup **helps submit** (prints the `add-sudoer-request` next-step; the invoking sudoer **may** name B). Probe with `id sudoer-adm` before claiming the account exists. A TTY login as `sudoer-adm` enters approval via F6 + hook; a host admin who already used password `sudo` **may** approve without logging in as `sudoer-adm`. The hook’s `sudo -n` is **post-F6 only**.
@@ -125,6 +125,7 @@ Snippet text, guards, the `.profile` create sample, and the review loop are owne
 6. Implement `nologin` as the portable default shell.  
 7. Claim a TTY login as `sudoer-adm` can approve while the review loop is still a Gap.  
 8. Install the review hook in any account other than this LPU, or skip the LPU `~/.profile` existence check / auto-create (login then never reaches `.bashrc`).  
+8b. Skip creating `/usr/local/bin/sudoer-cli-hook` after a global copy, overwrite a retargeted hook name, plant the old product-binary `sudo -n` line, or unlink the hook name on F7.  
 8a. Leave this LPU’s `.profile` or `.bashrc` owned by root (or otherwise unreadable by `sudoer-adm`) after `setup` / hook rewrite. The corresponding user **must** own those files.  
 9. Claim a least-privilege-approver leaf complete with **zero** named approval subjects.  
 10. Require the operator to be `sudoer-adm` (or to use `sudo -n`) in order to run first-time `setup`, **or** to finish `approve` / `reject` / `interactive` after password `sudo`. F6 is extra, not exclusive.  
@@ -148,7 +149,7 @@ Snippet text, guards, the `.profile` create sample, and the review loop are owne
 | `docs/requirements/requirement-shell-cli-interface.md` | Type map on the dispatcher |
 | `src/sudoer-cli` | Ship unit |
 
-**Last Updated**: 2026-08-18  
+**Last Updated**: 2026-09-03  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).
 

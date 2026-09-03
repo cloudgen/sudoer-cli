@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-output-requirements.md  
-**Status**: Active (Version 1.1.1)  
+**Status**: Active (Version 1.3.0) — default-cli-main-menu-style printers; operator-readable fatals  
 **Area**: shell  
 **Key**: `requirement-shell-output-requirements`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -68,6 +68,8 @@ This origin owns the `out_*` family. Domain verbs **MUST** use the same `out_*` 
 | `out_error` | Error | stderr | Always show (human) | Prefer `out_json_error` / `out_die` |
 | `out_die` | Fatal + exit 1 | stderr (+ JSON error when JSON) | Always | Emits JSON error then exits |
 | `out_plain` | Plain text, no prefix | stdout | Suppress under quiet | Suppress under JSON |
+| `out_menu_choice` | Numbered menu row; TTY *italic* + light-gray explain (default-cli-main-menu-style) | stdout | Suppress under quiet | Suppress under JSON |
+| `util_app_ident` | Identity token **bold** name / *italic* version (`APP_NAME(VERSION)`); pipeline capture into `out_*` | pipeline | n/a | plain when JSON |
 | `out_msg_n` | Prompt fragment without newline | stdout | Suppress under quiet/json | Never for machines |
 | `out_json` | Machine success/status object | stdout | N/A | Only when `JSON=1` |
 | `out_json_error` | Machine error object | as designed for fatal path | N/A | Only when `JSON=1` |
@@ -81,7 +83,18 @@ This origin owns the `out_*` family. Domain verbs **MUST** use the same `out_*` 
 
 Rules:
 
-1. Fatal paths use `out_die` / `out_json_error`. Operator-facing fatals **MUST** say what failed in plain words and, when a next action exists, print a **`Next:`** line with a pasteable command. Do **not** emit only `Type 1` / `euid 0` / `authorization failed`.  
+1. Fatal paths use `out_die` / `out_json_error`. Operator-facing fatals **MUST** fill these slots (order recommended):
+
+| Slot | Required | Meaning |
+|------|----------|---------|
+| **What happened** | yes | One concrete sentence a person who just ran the command can parse |
+| **What it means** | SHOULD | Plain restatement if the first sentence uses a product noun |
+| **What to do next** | yes | A pasteable **`Next:`** command, a path, or who to ask |
+| **Do not** | when dangerous | Only if a wrong next step exists |
+
+**MUST NOT** emit only `Type 1` / `euid 0` / `authorization failed` / “host validation”. JSON `message` **MUST** be the same operator sentence. Quiet **MUST** still show the error.
+
+**Worked visudo-fail** (grant text dual — body on `requirement-sudoers-file`): **What happened** `visudo rejected this grant` (quote visudo’s syntax line). **What it means** the sudoers file would be illegal; do not approve. **Next:** `json-to-sudoers --file …`. **Do not** say “host validation”.  
 2. JSON mode: no colors, banners, or progress mixed into stdout JSON.  
 3. Capture pattern: `sudoer-cli --json <cmd> 2>err.log`.  
 4. **No secrets** on either channel (tokens, passwords, private keys, full private key material).
@@ -102,7 +115,10 @@ Rules:
 | **Product** | `sudoer-cli` |
 | **Ship unit** | `src/sudoer-cli` |
 | **Human prefixes** | `[INFO]`, `[OK]`, `[WARN]`, `[ERROR]` (or equivalent consistent set) |
-| **Domain messages** | Convert / submit / list / show / Type 1 fatals use the same `out_*` family. Fatals say what failed and print a **`Next:`** line when a next action exists |
+| **Default CLI main menu style** | Look printers live: `util_app_ident` + `out_menu_choice`. Header nametag **sudoer-cli**(*VERSION*) (bold name, italic version on TTY). Numbered `explain` *italic* + light gray on TTY; number and short-descript unstyled; off-TTY / JSON plain. A numbered TTY **main menu is not claimed** (empty argv stays help; no `menu`/`main` verb). About identity title uses `util_app_ident`. |
+| **Domain messages** | Convert / submit / list / show / Type 1 fatals use the same `out_*` family. Fatals fill happened / means / Next: |
+| **Banned jargon (whole message)** | `Type 1`, `euid 0`, `authorization failed`, `host validation`, `host sudoers checker` |
+| **Worked fatal** | visudo-fail: `visudo rejected this grant. visudo said: N:M: syntax error. That means the sudoers file would be illegal. … Next: sudoer-cli json-to-sudoers --file request.json` |
 | **Bootstrap role** | This product is hop 0; `out_*` is this origin’s family |
 
 ### 2.6 Why This Requirement Exists (CIAO)
@@ -131,7 +147,10 @@ Rules:
 3. Mix human text into JSON stdout success paths.  
 4. Log secrets or private key material.  
 5. Remove quiet/json contracts for “simplicity.”  
-6. Re-test live `[ -t 1 ]` inside `out_*` for color — consume `TTY` set outside functions.
+6. Re-test live `[ -t 1 ]` inside `out_*` for color — consume `TTY` set outside functions.  
+7. Ship a blocking error that only insiders can parse, or give JSON a different story than the human `[ERROR]` line.  
+8. Say “host validation” when visudo rejects (`requirement-sudoers-file`).  
+9. Draw a claimed numbered list off default-cli-main-menu-style, skip `out_menu_choice` / `util_app_ident`, emit CSI off-TTY or under JSON, or print a bare `APP_NAME` on an identity header.
 
 **Violating this rule is a critical output SSOT regression.**
 
@@ -145,6 +164,17 @@ Rules:
 | AC-2 | JSON mode produces structured success/error without human interleave |
 | AC-3 | Quiet still surfaces errors |
 | AC-4 | Lifecycle messaging uses the same SSOT |
+| AC-5 | Fatals fill happened / Next:; visudo-fail names visudo (**TP-SR-21**) |
+
+## Design-time verification
+
+| TP family / ID | Suite | Status | Note |
+|----------------|-------|--------|------|
+| **TP-CLI-08** | `tests/test_cli.sh` | have | unknown verb fatal + Next: |
+| **TP-CLI-17** | `tests/test_cli.sh` | have | default-cli-main-menu-style printers: TTY bold/italic ident + gray italic explain; off-TTY plain |
+| **TP-SR-21** | `tests/test_domain_sr.sh` | have | visudo-fail operator-readable slots |
+
+**Matrix:** `reviews/requirement-test-matrix.md`
 
 ---
 
@@ -154,6 +184,7 @@ Rules:
 |-----|--------------|
 | `requirement-shell-cli-interface` | Modes and flags |
 | `requirement-shell-interactive-vs-noninteractive` | Prompt vs auto |
+| `requirement-sudoers-file` | visudo-fail operator copy (worked fatal) |
 | `docs/requirements/index.md` | Registry |
 
 ---
@@ -166,9 +197,11 @@ Rules:
 | 2026-08-13 | Active | Retarget to cli-template; drop domain message law |
 | 2026-08-14 | Active 1.1.0 | Colors consume `TTY`; do not re-test `[ -t 1 ]` in `out_*` |
 | 2026-08-14 | Active 1.1.1 | Implementation Notes: domain messages live; fatals use `Next:` |
+| 2026-08-26 | Active 1.2.0 | Operator-readable fatal slots (happened / means / Next:); visudo-fail worked example; **TP-SR-21** |
+| 2026-09-03 | Active 1.3.0 | Look printers `util_app_ident` / `out_menu_choice` (default-cli-main-menu-style). Main menu **not** claimed. **TP-CLI-17**. |
 
 ---
 
-**Last Updated**: 2026-08-14  
+**Last Updated**: 2026-09-03  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

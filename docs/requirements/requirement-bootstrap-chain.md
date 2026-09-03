@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-bootstrap-chain.md  
-**Status**: Active (Version 5.2.0)  
+**Status**: Active (Version 5.2.1)  
 **Area**: architecture  
 **Key**: `requirement-bootstrap-chain`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -99,7 +99,7 @@ These are **this product’s** structural contracts. Descendants inherit them. T
 | Concern | Value |
 |---------|---------|
 | `APP_NAME` | `sudoer-cli` |
-| `VERSION` | `1.17.1` (product version SSOT in ship unit) |
+| `VERSION` | `1.18.0` (product version SSOT in ship unit) |
 | Primary install story | Local copy from running ship unit → `${USER_BIN}` (default `~/.local/bin`) |
 | README one-liner | **No** `curl \| sh` channel claim |
 
@@ -190,9 +190,10 @@ These are **this product’s** structural contracts. Descendants inherit them. T
 | 2026-08-13 | Active 5.0.0 | Specialize A→B: this product is **sudoer-cli**; cli-template is historical origin. |
 | 2026-08-14 | Active 5.1.0 | Type 1 `setup` live; dest install on authorized `approve`; `interactive` loop Gap |
 | 2026-08-26 | Active 5.2.0 | Exactly one Active domain SSOT; workspace `{{PROJECTS_ROOT}}/{{PROJECT_BASENAME}}`; VERSION notes **1.17.1** |
+| 2026-09-03 | Active 5.2.1 | Stay-honest Implementation Notes `VERSION` **1.18.0** |
 
 ---
 
-**Last Updated**: 2026-08-26  
+**Last Updated**: 2026-09-03  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

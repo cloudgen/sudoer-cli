@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-local-self-management.md  
-**Status**: Active (Version 1.4.0)  
+**Status**: Active (Version 1.5.0)  
 **Area**: shell  
 **Key**: `requirement-shell-local-self-management`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -118,7 +118,7 @@ This product ships as a **POSIX shell script** (interpreted). Execution by any n
 |------|--------|
 | **Product / binary** | `sudoer-cli` |
 | **Ship unit** | `src/sudoer-cli` |
-| **Primary install path story** | Type 0 day-to-day: `${HOME}/.local/bin/sudoer-cli`; multi-user: `/usr/local/bin/sudoer-cli` |
+| **Primary install path story** | Type 0 day-to-day: `${HOME}/.local/bin/sudoer-cli`; multi-user: `/usr/local/bin/sudoer-cli`. Global copy **MUST** create `/usr/local/bin/sudoer-cli-hook` when missing (do not overwrite; test-mode skips live `ln`) |
 | **Handlers** | `inst_local_install`, `inst_local_uninstall`, `app_where_is_me`, `app_version` |
 | **Detect** | `inst_is_installed` / privilege-correct path helpers |
 | **Online package** | **Absent by design** (bootstrap trim) |
@@ -203,9 +203,10 @@ This product ships as a **POSIX shell script** (interpreted). Execution by any n
 | 2026-08-09 | Active 1.2.0 | §2.3.1 mode **0755** multi-user; ban `chmod +x`→`0711` trap; AC-6..8; TP-LC-09/10 |
 | 2026-08-13 | Active 1.4.0 | Index already 1.4.0 (0755 + multi-user). Header catch-up. |
 | 2026-08-14 | Active 1.4.0 | Implementation Notes `VERSION` aligned to ship unit **1.2.3** |
+| 2026-09-03 | Active 1.5.0 | Global install creates login-hook-symlink `/usr/local/bin/sudoer-cli-hook` when missing |
 
 ---
 
-**Last Updated**: 2026-08-14  
+**Last Updated**: 2026-09-03  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

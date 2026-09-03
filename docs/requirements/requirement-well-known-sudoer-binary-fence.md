@@ -7,7 +7,7 @@
 
 ## 1. Purpose
 
-This requirement is the **well-known sudoer binary** checker. Convert, Type 0 submit add/update, and Type 0 testers **MUST** fail closed when any add/update `commands[].path` is not a well-known system binary (no queue). Dest `interactive` / `approve` / `reject` **MUST NOT** dest-drain or fail closed on that match: dest **MUST** warn in people/folder words, then **ask** the approval question. The dest table on `requirement-domain-sudoer-approval.md` **MUST** still print this row and **point here**. This checker **MUST NOT** be folded into incorrect JSON format. **INC-20260821-002**.
+This requirement is the **well-known sudoer binary** checker. Convert, Type 0 submit add/update, and Type 0 testers **MUST** fail closed when any add/update `commands[].path` is not a well-known system binary (no queue). Dest `interactive` / `approve` / `reject` **MUST NOT** dest-drain or fail closed on that match: dest **MUST** warn in people/folder words, then **ask** the approval question. **Stay-honest vs dest Fence mold:** a dest **Fence** is fail-closed with no yes/no. This checker is **not** that Fence — dest **warns then asks**. The dest table on `requirement-domain-sudoer-approval.md` **MUST** still print this row and **point here**. This checker **MUST NOT** be folded into incorrect JSON format. **INC-20260821-002**.
 
 ### 1.1 Human-facing
 
@@ -17,7 +17,7 @@ This requirement is the **well-known sudoer binary** checker. Convert, Type 0 su
 |-----|---------|---------|
 | You / this login | The host admin already using `sudo`, reviewing inbound files | `sudo sudoer-cli interactive` |
 | The other role | The person who dropped the file in the waiting folder | `sudoer-cli add-sudoer-request --file request.json` |
-| Not this file | JSON schema / who submitted / file owner | `requirement-incorrect-json-format` |
+| Not this file | JSON schema / who submitted / file owner; Cmnd **arg** escape / visudo | `requirement-incorrect-json-format` · `requirement-sudoers-file` |
 
 | Includes | Excludes |
 |----------|----------|
@@ -129,6 +129,7 @@ This requirement is the **well-known sudoer binary** checker. Convert, Type 0 su
 | `docs/requirements/index.md` | Registry SSOT |
 | `requirement-domain-sudoer-approval.md` | Dest table + review loop |
 | `requirement-incorrect-json-format.md` | JSON-format Fence (runs first) |
+| `requirement-sudoers-file.md` | Grant sudoers text dual / visudo (not this path Fence) |
 | `requirement-shell-cli-interface` | Dual mention of `test-well-known-binary` |
 | `requirement-domain-sudoer-approval` | Dual mention of Type 0 `fence-test` (closed dest fence list) |
 | `src/sudoer-cli` | Ship unit |
