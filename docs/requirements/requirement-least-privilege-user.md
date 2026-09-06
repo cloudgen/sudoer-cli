@@ -30,6 +30,7 @@ This requirement is the **project Single Source of Truth** for the dedicated **l
 | You do… | What it means | What you type |
 |---------|---------------|---------------|
 | First-time setup | A host admin already using sudo creates sudoer-adm and the three folders. You still queue as yourself. | `sudo sudoer-cli setup` |
+| Remove that account | Teardown the dedicated approver account after confirm or `--force`. | `sudo sudoer-cli remove-lpu --force` |
 
 ---
 

@@ -198,7 +198,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 | TP family / ID | Suite | Status | Note |
 |----------------|-------|--------|------|
-| **TP-CLI-13** | `tests/test_cli.sh` | have | Unrouted print-sudoers fails closed |
+| **TP-CLI-13** | `tests/test_cli.sh` | have | Trimmed parent `backup` / `restore` / `remove-project-sudoers` fail closed (`print-sudoers` is routed Type 0) |
 | **TP-SR-03** | `tests/test_domain_sr.sh` | have | visudo private copy; Table A ≠ user grant |
 | **TP-SR-06** | `tests/test_domain_sr.sh` | have | `{{service}}-{{user}}` only |
 | **TP-SR-PRIV-01** | `tests/test_domain_sr.sh` | have | Type 1 verbs fail closed without euid 0 |

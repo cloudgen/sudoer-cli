@@ -18,7 +18,7 @@
 | P1 | Read `docs/requirements/index.md` | Class + shell + three-layer + LPU + **prevention-set 1.6.4** + **domain 2.37.1** + ARSA + dest Fence + coding-style + sudo-command + default-interaction |
 | P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.20.0**) |
 | P3 | Load `reviews/lessons.md` and re-check open L-* that still apply | Skip parent backup L-SUDOERS except **L-JSON-CMDS-01** |
-| P4 | Run `./tests/run.sh` | Record PASS/FAIL/SKIP; **must include TP-SR-14/15/16**, **TP-SR-PRIV-04** / **TP-ELEV-09** / **TP-PREV-03**, and **TP-SR-HOOK-01..04** |
+| P4 | Run `./tests/run.sh` | Record PASS/FAIL/SKIP; **must include TP-SR-14/15/16**, **TP-SR-PRIV-04** / **TP-ELEV-09** / **TP-PREV-01..03**, **TP-SR-HOOK-01..05**, **TP-CLI-18..21** / **TP-ELEV-10**, and **TP-SR-INT-07** |
 | P5 | Confirm install **channel** still local-only | No SCRIPT_URL product UX |
 | P6 | Confirm trimmed verbs stay unknown | backup / restore / `remove-project-sudoers` (`print-sudoers` is domain) |
 | P7 | **JSON re-encode fidelity** | Complete section below. **Revise/Block** if skipped. |

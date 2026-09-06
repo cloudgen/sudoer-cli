@@ -5,7 +5,7 @@ Maps **TP-*** coverage to `tests/`.
 **Ship unit:** `src/sudoer-cli`  
 **Product VERSION:** 1.20.0  
 **Last plan update:** 2026-09-03 (claimed case-3 `menu` / `main` **TP-CLI-18..21** · **TP-ELEV-10**)  
-**Last suite run:** PASS=513 FAIL=0 SKIP=7 (2026-09-06; 1.20.0 people-first help/menu; keep-latest duplicate inbound; live Type 1 skipped)  
+**Last suite run:** PASS=516 FAIL=0 SKIP=7 (2026-09-06; 1.20.0 people-first help/menu; TP-PREV-01/02 and TP-TMP-02 labeled; live Type 1 skipped)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)

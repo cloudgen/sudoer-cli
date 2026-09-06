@@ -115,7 +115,7 @@ The weak point is **0777 without sticky** on a hostile inbound dropbox that stil
 | `requirement-least-privilege-user.md` 1.9.0 | F4/F5 |
 | `requirement-domain-sudoer-approval.md` 2.11.0 | Submit dest + chown |
 | `src/sudoer-cli` 1.5.0 | `sr_resolve_queues`, `lpu_mkdir_f5`, `sr_approve` |
-| `docs/checklists/2026-08-15-checklist-file-based-json-approval.md` | Layout gate |
+| `docs/templates/checklists/checklist-file-based-json-approval.md` | Layout gate (blank; no filled run on disk) |
 
 **Written by:** council Review  
 **Review status:** Findings open (no code change this turn)

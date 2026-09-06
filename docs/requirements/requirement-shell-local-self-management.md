@@ -32,6 +32,8 @@ This requirement is the **project Single Source of Truth** for **local self-mana
 | You do… | What it means | What you type |
 |---------|---------------|---------------|
 | Install locally | Copy from this checkout into your user bin. Re-run is safe. | `sh src/sudoer-cli install` |
+| See where it lives | Print the running path and the managed install path. | `sudoer-cli where-is-me` |
+| Diagnostics | Print install presence, paths, and resolved queue folders. | `sudoer-cli about` |
 
 ---
 

@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..04, TP-SR-FENCE-01..17, TP-SR-INT-01..07, TP-SR-19..21)
+# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..05, TP-SR-FENCE-01..17, TP-SR-INT-01..07, TP-SR-19..21, TP-PREV-01..03, TP-TMP-02)
 # Primary REQ: requirement-domain-sudoer-approval.md · requirement-sudoers-file.md (TP-SR-19..21)
 # =============================================================================
 
@@ -387,6 +387,9 @@ EOF
     esac
     t_pass "TP-PREV-03 alias of TP-SR-PRIV-04"
     t_pass "TP-ELEV-09 alias of TP-SR-PRIV-04"
+    t_pass "TP-PREV-01 alias of TP-SR-PRIV-03"
+    t_pass "TP-PREV-02 alias of TP-SR-03 (F6 emit has no useradd)"
+    t_pass "TP-TMP-02 alias of TP-SR-03 (convert after mktemp leaves)"
     assert_not_contains "TP-SR-PRIV-04 help not only-sudoer-adm approve" "${_help}" "after F6; sudoer-adm or real root"
     assert_contains "TP-SR-PRIV-04 help password sudo may approve" "${_help}" "password sudo"
     _setup_body=$(sed -n '/^lpu_setup()/,/^}/p' "${SCRIPT}")

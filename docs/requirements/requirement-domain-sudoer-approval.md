@@ -37,7 +37,10 @@ Privilege types and F6 Cmnds are owned by `requirement-three-layer-privilege-mod
 | Convert | Turn sudoers text into JSON. Nothing is queued yet. | `sudoer-cli sudoers-to-json --file draft.sudoers --action add --purpose "…"` |
 | Test dest fences | Point at a JSON file. No `sudo`. Does not queue. | `sh src/sudoer-cli fence-test --file tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json` |
 | Submit | This program names the file and writes it into the waiting folder. | `sudoer-cli add-sudoer-request --file request.json` |
-| Decide | If several waiting files are for the **same** dest (`username` + `service`), dest **keeps the newest** and moves the older copies to rejected without asking. If the JSON is broken, dest says so, does not ask, and moves the file to rejected. If a command is not a well-known system binary, or the queue stamp is missing, dest **warns** and still asks. If it is valid, **one** yes/no: yes accepts, no (or Enter) declines. No skip or quit. | `sudo sudoer-cli interactive` |
+| Update / remove | Queue an update from a file, or a purpose-only remove for one service. | `sudoer-cli update-sudoer-request --file request.json` · `sudoer-cli remove-sudoer-request --service webservice` |
+| List / show | List waiting files, then show one known id. | `sudoer-cli list-approving` · `sudoer-cli show sudoer-20260814-webservice-alice-add-1.json` |
+| Print install script | Emit the admin install script (does not write `/etc`). | `sudoer-cli print-sudoers-install-script` |
+| Decide | If several waiting files are for the **same** dest (`username` + `service`), dest **keeps the newest** and moves the older copies to rejected without asking. If the JSON is broken, dest says so, does not ask, and moves the file to rejected. If a command is not a well-known system binary, or the queue stamp is missing, dest **warns** and still asks. If it is valid, **one** yes/no: yes accepts, no (or Enter) declines. No skip or quit. Direct id paths stay non-interactive. | `sudo sudoer-cli interactive` · `sudo sudoer-cli approve sudoer-20260814-webservice-alice-add-1.json` · `sudo sudoer-cli reject sudoer-20260814-webservice-alice-add-1.json` |
 
 ---
 
