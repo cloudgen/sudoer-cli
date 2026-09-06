@@ -2,7 +2,7 @@
 
 Authoritative specialized product law for **sudoer-cli** lives here.
 
-**Current state (2026-09-06):** Specialized **software-development** product. Historical origin **cli-template**. Domain SSOT is Active **2.37.1** (keep-latest duplicate inbound; help headings people-first; related shell REQs **Under command line for normal user only**). Dest Fence REQ **1.5.0**. Well-known checker **1.2.0**. Class **1.9.11**. CLI **3.10.2**. Default interaction **1.0.1** (case 3 `menu` / `main`). Output **1.3.1**. Coding style **1.4.1**. Prompt **1.2.1**. Interactive **1.5.1**. ARSA catalog Active **1.0.0**. Prevention catalog is Active **1.6.4**. Registry is populated — see `index.md`.
+**Current state (2026-09-06):** This folder is the live product law for sudoer-cli: a POSIX `/bin/sh` program you install yourself. A normal login converts and queues JSON; a host admin who already used password `sudo` runs first-time setup and review. Historical starter was **cli-template**. One domain file owns the waiting-folder machine. Registry: `index.md`. (Catalog versions: domain **2.37.1**; dest Fence **1.5.0**; well-known **1.2.0**; class **1.9.11**; CLI **3.10.2**; default interaction **1.0.1**; output **1.3.1**; coding style **1.4.1**; prompt **1.2.1**; interactive **1.5.1**; ARSA **1.0.0**; prevention **1.6.4**.)
 
 ## Product identity (summary)
 
@@ -13,7 +13,7 @@ Authoritative specialized product law for **sudoer-cli** lives here.
 | Ship unit | `src/sudoer-cli` |
 | Default install | `~/.local/bin/sudoer-cli` (global `/usr/local/bin/sudoer-cli` so `sudoer-adm` can review without a password) |
 | Install mode | **Local-only** |
-| Domain surface | File-based JSON approval; Type 0 convert/submit/list/show **routed**; Type 1 `setup` / `interactive` **live** |
+| Domain surface | File-based JSON approval: convert/submit/list/show as yourself; `setup` / `interactive` after password `sudo` |
 
 ## Class requirement gate
 

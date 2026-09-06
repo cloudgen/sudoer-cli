@@ -25,7 +25,7 @@ This requirement is the **project Single Source of Truth** for the dedicated **l
 
 | Surface | What you open | What for |
 |---------|---------------|----------|
-| `src/sudoer-cli` | ship unit | setup / F1–F7 |
+| `src/sudoer-cli` | ship unit | first-time setup: create `sudoer-adm`, home views, and the waiting folder |
 
 | You do… | What it means | What you type |
 |---------|---------------|---------------|

@@ -6,13 +6,13 @@
 
 ## 1. Purpose
 
-Declare this workspace as a **software-development** project class and hold the **residual collection** of software-engineering stack facts **not already owned** by more specific Active peer requirements: primary language, toolchain policy, package/test tooling, and runtime OS family.
+This folder’s **project nature** is software you hand people to install: a POSIX `/bin/sh` program. This file keeps leftover stack facts (language, toolchain, OS) that no other live requirement owns.
 
-This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycle, output, storage, or coding-style tables (the coding-style related REQ **MUST** exist as the specialize-in home for portable writing lessons).
+This file is **not** a second copy of install, output, storage, or writing-style tables (the coding-style related REQ **MUST** exist as the specialize-in home for portable writing lessons).
 
 ### 1.1 Human-facing
 
-**In one sentence:** This workspace is shippable software: a POSIX `/bin/sh` program you install yourself, with a dedicated approver account after first-time setup.
+**In one sentence:** This workspace is software you install: a POSIX `/bin/sh` program, with a dedicated approver account after first-time setup.
 
 | Box | Meaning | Example |
 |-----|---------|---------|

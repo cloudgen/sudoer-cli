@@ -11,7 +11,7 @@ This requirement is the **single current domain SSOT** for sudoers-request appro
 
 Privilege types and F6 Cmnds are owned by `requirement-three-layer-privilege-model.md`. LPU identity is owned by `requirement-least-privilege-user.md`. What Type 0 / Type 1 **block** vs what must stay open after elev is owned by `requirement-privilege-prevention-set.md`. Live Type 0 dispatcher catalog is owned by `requirement-shell-cli-interface.md` (lifecycle) **plus** the Type 0 domain verbs in §2.1. Grant sudoers **file** (Cmnd arg escape, visudo -cf, visudo-fail copy) is owned by `requirement-sudoers-file.md`.
 
-**Routing honesty:** `help` / `about` **MUST NOT** list a verb that has no dispatcher `case` arm. Convert/submit/list/show/print-sudoers (**operational**) and `test-json-format`/`test-well-known-binary`/`fence-test` (**test-purpose**) **are routed**. Help **MUST** list test-purpose verbs **apart** from operational verbs. Setup and review **are routed** and **fail closed** unless the invoker is already root. Live `setup` creates the dedicated account, the extra sudoers fragment, queues, and login hook. The review-loop body is **live**. About LPU/trust-tier fields remain a **Gap**.
+**Routing honesty:** `help` / `about` **MUST NOT** list a command that is not wired. Convert, queue, list, show, and the local testers run as you. `setup` and review run only after you are already root (password `sudo`). Testers stay on a separate help heading. Live `setup` creates the dedicated account, the extra sudoers fragment, queues, and login hook. The review-loop body is **live**. About dedicated-account / trust-tier fields remain a **Gap**.
 
 ### 1.1 Human-facing
 

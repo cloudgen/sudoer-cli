@@ -7,9 +7,9 @@
 
 ## 1. Purpose
 
-This requirement is the **project Single Source of Truth** for the **Type 0 / Type 1 / Type 2 privilege map**, the **elev Tables A/B/C**, and the **sudoers-fragment emit/install contract** of this product.
+This requirement says **who may run what**. A normal login converts and queues. A host admin who already used password `sudo` sets up the dedicated account and decides waiting files. The extra sudoers fragment is another path into review, not the only approver. This product does **not** switch into `sudoer-adm` to write `/etc`. (Catalog: Type 0 / Type 1 / Type 2 map, elev Tables A/B/C, fragment emit/install.)
 
-Domain verbs that *use* elevation are catalogued in `requirement-domain-sudoer-approval.md`. Type 0 submit vs Type 1 approve is the privilege split of that file-based JSON approval machine. They **MUST NOT** invent a second elev table. This file owns the Type map and the Cmnd set that `print-sudoers` may emit.
+Domain verbs that *use* elevation are catalogued in `requirement-domain-sudoer-approval.md`. Convert/queue vs approve is the privilege split of that file-based JSON approval machine. They **MUST NOT** invent a second elev table. This file owns the Type map and the Cmnd set that `print-sudoers` may emit.
 
 The **closed catalog** of what the product blocks — and what it **must not** block after elev — is owned by `requirement-privilege-prevention-set.md`. This file **MUST NOT** grow a parallel unpublished wall.
 

@@ -8,7 +8,7 @@
 
 This requirement is the **project Single Source of Truth** for the **POSIX shell CLI interface** of sudoer-cli: live command surface, privilege typing, global flags, dispatcher behavior, help/about contracts, and mode rules.
 
-The **live** dispatcher is Type 0 lifecycle **plus** Type 0 **operational** convert/submit/list/show/print-sudoers **plus** Type 0 **test-purpose** `test-json-format`/`test-well-known-binary`/`fence-test`. Domain catalog and Type 1 fail-closed behavior are owned by `requirement-domain-sudoer-approval.md` and `requirement-three-layer-privilege-model.md`. Help **MUST NOT** list a verb with no `case` arm. Help **MUST** list test-purpose verbs **apart** from operational verbs. Privilege Type 0 does **not** mean “unit test.” Full lifecycle rules live in `requirement-shell-local-self-management.md`.
+Help lists only commands that actually run. As yourself you install, convert, queue, list, show, and run the local testers. After password `sudo` you run `setup` and review. Help **MUST** list testers apart from everyday commands. Being a normal login is **not** the same as “unit test.” Domain catalog and fail-closed review are owned by `requirement-domain-sudoer-approval.md` and `requirement-three-layer-privilege-model.md`. Help **MUST NOT** list a verb with no `case` arm. Full lifecycle rules live in `requirement-shell-local-self-management.md`. (Catalog: Type 0 operational convert/submit/list/show/print-sudoers; Type 0 test-purpose `test-json-format` / `test-well-known-binary` / `fence-test`; Type 1 `setup` / review.)
 
 ### 1.1 Human-facing
 
