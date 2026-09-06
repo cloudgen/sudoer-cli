@@ -3,9 +3,9 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.18.0  
-**Last plan update:** 2026-09-03 (login-hook-symlink **TP-SR-HOOK-05**; default-cli-main-menu-style **TP-CLI-17**)  
-**Last suite run:** PASS=466 FAIL=0 SKIP=6 (2026-09-03; 1.18.0 login-hook-symlink + menu-style printers; live Type 1 skipped)  
+**Product VERSION:** 1.20.0  
+**Last plan update:** 2026-09-03 (claimed case-3 `menu` / `main` **TP-CLI-18..21** · **TP-ELEV-10**)  
+**Last suite run:** PASS=513 FAIL=0 SKIP=7 (2026-09-06; 1.20.0 people-first help/menu; keep-latest duplicate inbound; live Type 1 skipped)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)
@@ -18,7 +18,8 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 |------|--------|----------|
 | Syntax `sh -n` | have | TP-CLI-01 |
 | version / help / about human + JSON | have | TP-CLI-02..06 |
-| Type N empty argv = help | have | TP-CLI-07 |
+| Type N empty argv = help | have | TP-CLI-07 · **TP-CLI-18** |
+| Numbered start list (`menu` / `main`) | have | **TP-CLI-18..21** · **TP-ELEV-10** |
 | Unknown + quiet + set -u HOME | have | TP-CLI-08..11 |
 | Storage isolation | have | TP-CLI-12 |
 | No online verbs / no SCRIPT_URL UX | have | TP-CLI-04, TP-CLI-10 |
@@ -149,7 +150,12 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-FT-06 | `fence-test --dir` xor `--file` fail closed | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-SR-FT-07 | `--expect-match` without `--dir` fail closed | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-CLI-16 | `fence-test` is routed (xor fail is not unknown) | `tests/test_cli.sh` | requirement-shell-cli-interface | **have** |
-| TP-CLI-17 | default-cli-main-menu-style printers: TTY bold/italic ident + gray italic explain; off-TTY plain (menu not claimed) | `tests/test_cli.sh` | requirement-shell-output-requirements · requirement-shell-cli-interface | **have** |
+| TP-CLI-17 | default-cli-main-menu-style printers: TTY bold/italic ident + gray italic explain; off-TTY plain (claimed menu uses them) | `tests/test_cli.sh` | requirement-shell-output-requirements · requirement-shell-cli-interface · requirement-shell-cli-default-interaction | **have** |
+| TP-CLI-18 | `menu` / `main` routed; empty argv still help (case 3) | `tests/test_cli.sh` | requirement-shell-cli-default-interaction · requirement-shell-cli-zero-arguments | **have** |
+| TP-CLI-19 | Off-TTY `menu` is help; `--json` JSON help; `--quiet` does not swallow | `tests/test_cli.sh` | requirement-shell-cli-default-interaction · requirement-shell-interactive-vs-noninteractive | **have** |
+| TP-CLI-20 | Membership: no help/install/setup/testers/`menu`; Exit **99** | `tests/test_cli.sh` | requirement-shell-cli-default-interaction | **have** |
+| TP-CLI-21 | Interactive `menu --json` still draws the list | `tests/test_cli.sh` | requirement-shell-cli-default-interaction | **have** |
+| TP-ELEV-10 | No `$()` of `prompt_ask`; `PROMPT_ASK_VALUE` on the menu path (portable TP-CLI-16 hosted here) | `tests/test_cli.sh` | requirement-shell-cli-default-interaction · requirement-shell-prompt | **have** |
 | TP-SR-PRIV-01 | Type 1 verbs: non-root fail-closed, no `/etc` write | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval · three-layer | **have** |
 | TP-SR-PRIV-02 | Bootstrap `setup` is any euid 0 (not `sudo -n`, not `sudoer-adm`); approve still requires euid 0 | `tests/test_domain_sr.sh` | requirement-three-layer-privilege-model · domain | **have** |
 | TP-SR-PRIV-04 | Approve gate has no exclusive-`sudoer-adm` actor lock; setup prints submit next-step | `tests/test_domain_sr.sh` | prevention-set OPEN-SUDOER-APPR · domain | **have** |
@@ -160,6 +166,7 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-INT-04 | Empty inbound `interactive` exits 0 (live as root; static otherwise) | `tests/test_domain_sr.sh` | domain | **have** |
 | TP-SR-INT-05 | `interactive` loop reads ids on fd 3 so `prompt_yes_no` keeps stdin | `tests/test_domain_sr.sh` | domain · prompt | **have** |
 | TP-SR-INT-06 | Dest review is one-off `prompt_yes_no` (yes=approve, no/Enter=reject; no skip/quit; no three chained y/N) | `tests/test_domain_sr.sh` | domain · prompt · approval-question | **have** |
+| TP-SR-INT-07 | Duplicate inbound same dest: keep latest; older superseded → rejected; other dest stays | `tests/test_domain_sr.sh` | domain · duplicate-inbound-request | **have** |
 | TP-SR-HOOK-01 | `setup` checks LPU `.profile`; missing → create source-bashrc sample | `tests/test_domain_sr.sh` | domain · LPU | **have** |
 | TP-SR-HOOK-02 | Existing `.profile` is not overwritten | `tests/test_domain_sr.sh` | domain | **have** |
 | TP-SR-HOOK-03 | Created `.profile` sources `.bashrc` (markers) | `tests/test_domain_sr.sh` | domain | **have** |

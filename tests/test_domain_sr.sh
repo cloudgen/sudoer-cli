@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..04, TP-SR-FENCE-01..17, TP-SR-INT-01..06, TP-SR-19..21)
+# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..04, TP-SR-FENCE-01..17, TP-SR-INT-01..07, TP-SR-19..21)
 # Primary REQ: requirement-domain-sudoer-approval.md · requirement-sudoers-file.md (TP-SR-19..21)
 # =============================================================================
 
@@ -557,7 +557,7 @@ EOF
     _rm=$(sed -n '/^lpu_remove()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-PRIV-03 remove userdel -r" "${_rm}" "userdel"
     assert_contains "TP-SR-PRIV-03 remove --force confirm" "${_rm}" "confirm_required"
-    assert_contains "TP-SR-PRIV-03 help no Gap on setup" "${_help}" "Create/teardown LPU"
+    assert_contains "TP-SR-PRIV-03 help no Gap on setup" "${_help}" "Create or remove the dedicated approver account"
     assert_not_contains "TP-SR-PRIV-03 help not Gap stub" "${_help}" "Live useradd is a Gap"
     _mkdirf5=$(sed -n '/^lpu_mkdir_f5()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-Q-01 public sudoer-request" "${_mkdirf5}" "sudoer-request"
@@ -593,6 +593,14 @@ EOF
     _about=$(HOME="${CI_HOME}" sh "${SCRIPT}" about 2>/dev/null)
     assert_contains "TP-SR-Q-01 about default submit dest" "${_about}" "/var/sudoer-cli/sudoer-request"
     _int=$(sed -n '/^sr_interactive()/,/^}/p' "${SCRIPT}")
+    _coll=$(sed -n '/^sr_collapse_duplicate_inbound()/,/^}/p' "${SCRIPT}")
+    _dkey=$(sed -n '/^sr_inbound_dest_key()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-INT-07 interactive calls collapse" "${_int}" "sr_collapse_duplicate_inbound"
+    assert_contains "TP-SR-INT-07 dest key uses username" "${_dkey}" 'sr_json_get_str "${_dkb}" "username"'
+    assert_contains "TP-SR-INT-07 dest key uses service" "${_dkey}" 'sr_json_get_str "${_dkb}" "service"'
+    assert_contains "TP-SR-INT-07 collapse archives superseded" "${_coll}" "sr_drop_superseded_inbound"
+    assert_not_contains "TP-SR-INT-07 collapse has no prompt" "${_coll}" "prompt_yes_no"
+    assert_contains "TP-SR-INT-07 superseded note shape" "$(sed -n '/^sr_archive_superseded_rejected()/,/^}/p' "${SCRIPT}")" "superseded"
     assert_not_contains "TP-SR-INT-04 loop is not a stub" "${_int}" "not implemented yet"
     assert_contains "TP-SR-INT-04 empty inbound note" "${_int}" "no pending requests"
     assert_contains "TP-SR-INT-04 uses prompt_yes_no" "${_int}" "prompt_yes_no"
@@ -662,9 +670,35 @@ EOF
         assert_not_contains "TP-SR-INT-06 live no Reject prompt" "${_err}" "Reject "
         assert_file_exists "TP-SR-INT-06 live moved to rejected" "${_pq}/sudoer-rejected/${_rid}"
         assert_file_missing "TP-SR-INT-06 live left inbound" "${_pq}/sudoer-request/${_rid}"
+
+        _dq="${CI_HOME}/dupq"
+        mkdir -p "${_dq}/sudoer-request" "${_dq}/sudoer-approved" "${_dq}/sudoer-rejected"
+        _old="sudoer-20260801-webservice-${_u}-add-1.json"
+        _new="sudoer-20260903-webservice-${_u}-add-1.json"
+        _oth="sudoer-20260903-dns-cli-${_u}-add-1.json"
+        printf '%s\n' '{"schema_version":1,"purpose":"int-07 older dup","username":"'"${_u}"'","service":"webservice","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/true","args":[]}]}' \
+            >"${_dq}/sudoer-request/${_old}"
+        sleep 1
+        printf '%s\n' '{"schema_version":1,"purpose":"int-07 latest dup","username":"'"${_u}"'","service":"webservice","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/true","args":[]}]}' \
+            >"${_dq}/sudoer-request/${_new}"
+        printf '%s\n' '{"schema_version":1,"purpose":"int-07 other dest","username":"'"${_u}"'","service":"dns-cli","action":"add","submit_app":"dns-cli","submit_version":"1.12.0","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/bin/true","args":[]}]}' \
+            >"${_dq}/sudoer-request/${_oth}"
+        _derr=$(printf 'n\nn\n' | HOME="${CI_HOME}" TTY=1 SUDOER_CLI_ALLOW_TEST_ROOTS=1 \
+            sh "${SCRIPT}" --queue-root "${_dq}" interactive 2>&1)
+        assert_eq "TP-SR-INT-07 live exit 0" 0 "$?"
+        assert_contains "TP-SR-INT-07 live superseded note" "${_derr}" "superseded ${_old}"
+        assert_contains "TP-SR-INT-07 live kept latest" "${_derr}" "kept ${_new}"
+        assert_not_contains "TP-SR-INT-07 live no skipped word" "${_derr}" "skipped"
+        assert_file_exists "TP-SR-INT-07 live older in rejected" "${_dq}/sudoer-rejected/${_old}"
+        assert_file_missing "TP-SR-INT-07 live older left inbound" "${_dq}/sudoer-request/${_old}"
+        assert_file_exists "TP-SR-INT-07 live latest rejected after no" "${_dq}/sudoer-rejected/${_new}"
+        assert_file_exists "TP-SR-INT-07 live other dest rejected after no" "${_dq}/sudoer-rejected/${_oth}"
+        assert_file_missing "TP-SR-INT-07 live inbound empty" "${_dq}/sudoer-request/${_new}"
+        assert_file_missing "TP-SR-INT-07 live other dest left inbound" "${_dq}/sudoer-request/${_oth}"
     else
         t_skip "TP-SR-INT-04 empty inbound live needs Type 1"
         t_skip "TP-SR-INT-06 live reject needs Type 1"
+        t_skip "TP-SR-INT-07 live duplicate collapse needs Type 1"
     fi
 
     # TP-SR-FENCE: dest Fence before yes/no; reject re-validates; action mismatch; subject mismatch is not a fence

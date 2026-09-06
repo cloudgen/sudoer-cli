@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.20.0] - 2026-09-03
+
+### Changed
+
+- Dest **`interactive`** (login hook included) **keeps the latest** inbound file per dest (`username` + `service`) and moves older duplicates to rejected without dest-write and without yes/no. Not a dest Fence. Domain **2.37.0**. **TP-SR-INT-07**. Ship unit **`VERSION="1.20.0"`**.
+- Help and the numbered start list use people/folder words: `print-sudoers` prints the sudoers fragment that lets `sudoer-adm` review without a password; `remove-lpu` removes that dedicated account; `interactive` reviews waiting requests one file at a time. Help headings no longer lead with Type 0 / Type 1 / F6. **TP-CLI-04**.
+
+## [1.19.0] - 2026-09-03
+
+### Added
+
+- **Numbered start list** on live commands **`menu`** / **`main`** (case 3: empty argv stays Type N help). Fifteen operational rows; Exit **99**. Interactive `menu --json` still draws the list. Off-TTY `menu` is help. Choice uses current-shell `PROMPT_ASK_VALUE` (no `$()` of `prompt_ask`). Default-interaction REQ **1.0.0**. CLI **3.10.0**. **TP-CLI-18..21** · **TP-ELEV-10**. Ship unit **`VERSION="1.19.0"`**.
+
 ## [1.18.0] - 2026-09-03
 
 ### Added

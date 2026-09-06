@@ -1,6 +1,6 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.18.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.20.0-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
@@ -59,6 +59,7 @@ Pretty-printed and compact JSON are the same grant. If the request looks incompl
 
 - **Install and remove yourself** — `install`, `uninstall`, `where-is-me`, `version`, `about`, `help` work in your user bin and in `/usr/local/bin`
 - **No arguments shows help** — it does not install, and it does not start a review
+- **Numbered start list** — `sudoer-cli menu` (or `main`) on a real terminal; a pipe still prints help
 - **Everyone can run the installed program** — mode `0755`
 - **Unknown commands fail** (non-zero exit)
 - **CIAO / CIAO-Lite** defensive design
@@ -98,6 +99,29 @@ sudo sudoer-cli setup
 
 This product is **local-only** for its install channel (no default `SCRIPT_URL` online install). Global vs local here means install *location*, not an online channel.
 
+**Numbered start list** (after install; running with no arguments still prints help):
+
+```text
+$ sudoer-cli menu
+[INFO] **sudoer-cli**(*1.20.0*) — numbered list of live commands
+1. sudoers-to-json: Convert sudoers fragment to request JSON
+2. json-to-sudoers: Convert request JSON to sudoers fragment
+3. print-sudoers: Print the sudoers fragment that lets sudoer-adm review without a password
+4. print-sudoers-install-script: Emit admin install script
+5. add-sudoer-request: Queue an add request (JSON or sudoers)
+6. update-sudoer-request: Queue an update request
+7. remove-sudoer-request: Queue a purpose-only remove (--service)
+8. list-approving: List waiting requests
+9. list-approved: List accepted requests
+10. list-rejected: List declined requests
+11. show: Show a known request
+12. remove-lpu: Remove the dedicated approver account (sudoer-adm)
+13. approve: Copy/overwrite dest in /etc/sudoers.d (product names only)
+14. reject: Decline a waiting request
+15. interactive: Review waiting requests one file at a time (not empty argv)
+99. Exit
+```
+
 **Source repository:** [cloudgen/sudoer-cli](https://github.com/cloudgen/sudoer-cli)  
 Config identity: `REPO_USER=cloudgen`, `REPO_NAME=sudoer-cli` (override with env if needed; does not enable online install while `SCRIPT_URL` is empty).
 
@@ -105,6 +129,7 @@ Config identity: `REPO_USER=cloudgen`, `REPO_NAME=sudoer-cli` (override with env
 
 ```sh
 sudoer-cli help
+sudoer-cli menu
 sudoer-cli about
 sudoer-cli --json about
 
@@ -181,6 +206,8 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
+2026-09-03 — version **1.20.0** (dest `interactive` keeps the latest duplicate inbound grant per dest; help and numbered list use people/folder words).
+2026-09-03 — version **1.19.0** (numbered start list on `sudoer-cli menu` / `main`; empty argv still prints help).
 2026-09-03 — version **1.18.0** (login-hook-symlink `/usr/local/bin/sudoer-cli-hook`; setup heals old `.bashrc` hook path; default-cli-main-menu-style printers).
 2026-08-26 — version **1.17.1** (`json-to-sudoers` visudo-legal args; visudo fail names visudo, not “host validation”).
 2026-08-21 — version **1.16.0** (Type 0 stamps `submit_app` / `submit_version`; dest shows `queued by {app} {version}` before yes/no).

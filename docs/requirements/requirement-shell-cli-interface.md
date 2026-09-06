@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-interface.md  
-**Status**: Active (Version 3.9.0)  
+**Status**: Active (Version 3.10.2)  
 **Area**: shell  
 **Key**: `requirement-shell-cli-interface`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -18,7 +18,7 @@ The **live** dispatcher is Type 0 lifecycle **plus** Type 0 **operational** conv
 |-----|---------|---------|
 | You / this login | Run listed commands without becoming root | `sudoer-cli help` |
 | The other role | Host admin already using sudo for setup and review | `sudo sudoer-cli setup` |
-| Not this file | Domain schema, dest fences, empty-argv help-only rule | `requirement-domain-sudoer-approval` · `requirement-shell-cli-zero-arguments` |
+| Not this file | Domain schema, dest fences, empty-argv help-only rule, numbered-list membership | `requirement-domain-sudoer-approval` · `requirement-shell-cli-zero-arguments` · `requirement-shell-cli-default-interaction` |
 
 | Includes | Excludes |
 |----------|----------|
@@ -43,7 +43,7 @@ Every command **MUST** map to exactly one privilege type. Unclassified commands 
 
 | Category | Privilege | Meaning |
 |----------|-----------|---------|
-| **Type 0 – CLI lifecycle + diagnostics + domain convert** | Invoking user | Lifecycle (**operational**): `install`, `uninstall`, `where-is-me`, `version`, `about`, `help`. Domain Type 0 **operational**: convert / submit / list / show / `print-sudoers` (catalog on domain SSOT). Domain Type 0 **test-purpose**: `test-json-format` / `test-well-known-binary` / `fence-test` (unit test; local test folder; catalog on domain SSOT) |
+| **Type 0 – CLI lifecycle + diagnostics + domain convert** | Invoking user | Lifecycle (**operational**): `install`, `uninstall`, `where-is-me`, `version`, `about`, `help`, **`menu` / `main`**. Domain Type 0 **operational**: convert / submit / list / show / `print-sudoers` (catalog on domain SSOT). Domain Type 0 **test-purpose**: `test-json-format` / `test-well-known-binary` / `fence-test` (unit test; local test folder; catalog on domain SSOT) |
 | **Type 1 – Narrow elevated host ops** | Controlled sudo | Names **routed**; **fail closed** without euid 0. **`setup` / `remove-lpu`**: any host admin already euid 0 (`sudo {{APP}} setup`, password OK; not `sudo -n`; not limited to `sudoer-adm`). Live: useradd, F6, hook; after setup print submit next-step. **`approve` / `reject` / `interactive`**: any already euid-0 host admin (password `sudo`), or F6 `sudoer-adm`, or real root. Review-loop body is **live** |
 | **Type 2 – Dedicated system user app ops** | Dedicated app user euid | **Not used** (sudoer-adm is an authorizer, not a Type 2 execution context) |
 
@@ -52,7 +52,7 @@ Every command **MUST** map to exactly one privilege type. Unclassified commands 
 | Purpose | Verbs | Target | Sudo |
 |---------|-------|--------|------|
 | **Test-purpose** (unit test) | `test-json-format`, `test-well-known-binary`, `fence-test` | Local test folder / `--file` under it | Wrap **chmod** / **chown** of that folder only (check before sudo). **MUST NOT** sudo otherwise. **MUST NOT** queue, dest-write, `setup`, or `approve`. |
-| **Operational** (run the product) | Lifecycle; convert; submit; list; show; print-sudoers; Type 1 `setup` / `approve` / `reject` / `interactive` | Queues, dest, install | Type-appropriate. Type 0 operational **MUST NOT** write `/etc`. |
+| **Operational** (run the product) | Lifecycle; `menu` / `main`; convert; submit; list; show; print-sudoers; Type 1 `setup` / `approve` / `reject` / `interactive` | Queues, dest, install | Type-appropriate. Type 0 operational **MUST NOT** write `/etc`. |
 
 Help **MUST** list test-purpose under a heading apart from operational Type 0.
 
@@ -90,7 +90,7 @@ Additional flags **MAY** be added only when documented here (or a superseding re
 
 In JSON mode, help **MUST NOT** dump long human text; return a short structured success/note object.
 
-`help` **MUST** list live domain Type 0 rows per the domain SSOT. `help` **MUST** list **test-purpose** verbs (`test-json-format`, `test-well-known-binary`, `fence-test`) under a **separate heading** from **operational** Type 0 (convert, submit, list, show, print-sudoers). `help` **MUST NOT** list a verb with no dispatcher arm.
+`help` **MUST** list live domain Type 0 rows per the domain SSOT. `help` **MUST** list **test-purpose** verbs (`test-json-format`, `test-well-known-binary`, `fence-test`) under a **separate heading** from **operational** Type 0 (convert, submit, list, show, print-sudoers). Operator-facing help **headings and one-liners** **MUST** name the job in people/folder words first (install, convert, queue, unit tests, first-time setup, approve). **MUST NOT** lead those headings with Type 0 / Type 1 / F6 / LPU as the only words. Catalog codes **MAY** follow the plain sentence. `help` **MUST NOT** list a verb with no dispatcher arm.
 
 ### 2.5 Implementation Notes (this project)
 
@@ -100,10 +100,10 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | **Primary executable** | `src/sudoer-cli` (POSIX `/bin/sh`, single-file ship unit) |
 | **Dispatcher** | `app_main` |
 | **Output SSOT** | `out_text` + wrappers (`out_info`, `out_success`, `out_warn`, `out_error`, `out_die`, `out_plain`, `out_json`, …) |
-| **Version SSOT** | `VERSION="1.18.0"` hard-assign in ship unit |
+| **Version SSOT** | `VERSION="1.20.0"` hard-assign in ship unit |
 | **Install paths** | Global: `GLOBAL_BIN` default `/usr/local/bin`; User: `USER_BIN` default `${HOME}/.local/bin` |
 | **Primary install story** | User bin: `~/.local/bin/sudoer-cli`; global `/usr/local/bin/sudoer-cli` for production F6; login-hook-symlink `/usr/local/bin/sudoer-cli-hook` after global copy |
-| **Default CLI main menu** | **Not claimed.** Empty argv stays Type N help. Look printers live on output REQ (`util_app_ident` / `out_menu_choice`; **TP-CLI-17**) |
+| **Default CLI main menu** | **Claimed (case 3).** Empty argv stays Type N help. Verb `menu` / `main` opens the numbered list. Topic owner: `requirement-shell-cli-default-interaction`. Look printers: `util_app_ident` / `out_menu_choice` (**TP-CLI-17**) |
 | **Online channel env** | **Not product UX** (trimmed) |
 | **Type 1 / Type 2 commands** | Type 1 **routed, fail closed** without euid 0; setup = any admin sudo (live useradd/F6/hook); approve = same elev (F6 extra); Type 2 **not used** |
 | **Dedicated system user** | `sudoer-adm` (authorizer; see LPU REQ) |
@@ -120,6 +120,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | `version` | Type 0 | `app_version` | Local `VERSION` only; no network |
 | `about` | Type 0 | `app_about` | Diagnostics: install presence, paths, user, shell, TTY, storage, **resolved queue paths**; **no** channel one-liner; **no** backup/restore fields |
 | `help` | Type 0 | `app_help` | Full usage in human mode; short JSON note in JSON mode |
+| `menu` / `main` | Type 0 | `app_main_menu` | Numbered TTY start list. Empty argv stays help. Dual mention on `requirement-shell-cli-default-interaction`. |
 | `sudoers-to-json` | Type 0 | `sr_sudoers_to_json` | Named here; text dual / visudo on `requirement-sudoers-file`; convert catalog on domain SSOT |
 | `json-to-sudoers` | Type 0 | `sr_json_to_sudoers` | Named here; text dual / visudo on `requirement-sudoers-file`; convert catalog on domain SSOT |
 | `test-json-format` | Type 0 **test-purpose** | `sr_test_json_format` | Named here; Fence body on `requirement-incorrect-json-format`. Unit test; local test folder. |
@@ -175,6 +176,20 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 
 ---
 
+## Under command line for normal user only
+
+When this program runs on Termux, Git Bash, Windows cmd, or the same class (no root login on that shell):
+
+| MUST | MUST NOT |
+|------|----------|
+| Keep **normal user privilege** only | Turn on **admin privilege** or **dedicated system user privilege** |
+| Convert, queue, list, help, and local install into the user bin | In-tool `sudo`; wrap `apt` / `dnf`; `useradd`; write `/etc`; recommend `sudo curl | sh` |
+| Document setup / approve / interactive as **unused** on that class | Invent a dedicated account on that class |
+
+**This requirement:** dispatcher and help stay this-login commands; setup / approve / interactive stay unused on this class.
+
+Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` is set. Git Bash — `MSYSTEM` is `MINGW*` / `MSYS*`. Windows cmd — `OS` is `Windows_NT` and `COMSPEC` names `cmd.exe` (after excluding Git Bash / WSL).
+
 ## 3. Design Principles (CIAO / CIAO-Lite)
 
 - **Caution**: Fail closed on unknown verbs, including trimmed parent verbs.  
@@ -204,7 +219,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 
 | ID | Criterion |
 |----|-----------|
-| AC-1 | Help lists lifecycle Type 0 **and** every named domain/Type 1 verb in the Supported commands table (`sudoers-to-json` / `json-to-sudoers` / `test-json-format` / `test-well-known-binary` / `fence-test` / `print-sudoers` / `print-sudoers-install-script` / `add-sudoer-request` / `update-sudoer-request` / `remove-sudoer-request` / `list-*` / `show` / `setup` / `remove-lpu` / `approve` / `reject` / `interactive`) |
+| AC-1 | Help lists lifecycle Type 0 **and** every named domain/Type 1 verb in the Supported commands table (`sudoers-to-json` / `json-to-sudoers` / `test-json-format` / `test-well-known-binary` / `fence-test` / `print-sudoers` / `print-sudoers-install-script` / `add-sudoer-request` / `update-sudoer-request` / `remove-sudoer-request` / `list-*` / `show` / `setup` / `remove-lpu` / `approve` / `reject` / `interactive` / `menu` / `main`) |
 | AC-2 | Help and about omit `backup` / `restore` / `remove-project-sudoers` |
 | AC-3 | Unknown and trimmed verbs exit non-zero |
 | AC-4 | Empty argv is help |
@@ -216,6 +231,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | Key | Relationship |
 |-----|--------------|
 | `requirement-shell-cli-zero-arguments` | Empty argv |
+| `requirement-shell-cli-default-interaction` | Dual mention of `menu` / `main`; numbered-list membership |
 | `requirement-shell-local-self-management` | install / uninstall / where-is-me |
 | `requirement-shell-output-requirements` | `out_*` |
 | `requirement-bootstrap-chain` | Historical origin |
@@ -235,7 +251,8 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | TP family / ID | Suite | Status | Note |
 |----------------|-------|--------|------|
 | **TP-CLI-01..16** | `tests/test_cli.sh` | have | includes stripped-verb fail-closed + convert / `test-json-format` / `test-well-known-binary` / `fence-test` routed |
-| **TP-CLI-17** | `tests/test_cli.sh` | have | default-cli-main-menu-style printers (menu not claimed) |
+| **TP-CLI-17** | `tests/test_cli.sh` | have | default-cli-main-menu-style printers (claimed menu uses them) |
+| **TP-CLI-18..21** | `tests/test_cli.sh` | have | `menu` / `main` routed; off-TTY help; membership; interactive `--json` still list |
 | **TP-LC-*** | `tests/test_local_lifecycle.sh` | have | lifecycle |
 | **TP-SR-PRIV-03** | `tests/test_domain_sr.sh` | have | live setup body (static) |
 
@@ -246,6 +263,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-09-06 | Active 3.10.2 | Under command line for normal user only |
 | 2026-08-03 | Active 1.0.0 | folder-backup Type 0 + domain verbs |
 | 2026-08-13 | Active 2.0.0 | cli-template Type 0 only |
 | 2026-08-13 | Active 3.0.0 | Specialize sudoer-cli; domain catalog owned by domain SSOT |
@@ -267,9 +285,11 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | 2026-08-26 | Active 3.8.3 | Stay-honest Implementation Notes `VERSION` 1.17.1 |
 | 2026-08-26 | Active 3.8.4 | Convert verbs **point** at `requirement-sudoers-file` (text dual / visudo) |
 | 2026-09-03 | Active 3.9.0 | Login-hook-symlink after global copy; default main menu **not** claimed; look printers **TP-CLI-17**; `VERSION` 1.18.0 |
+| 2026-09-03 | Active 3.10.0 | Claimed case-3 `menu` / `main`; empty argv stays help; `VERSION` 1.19.0 |
+| 2026-09-03 | Active 3.10.1 | Stay-honest Implementation Notes `VERSION` 1.20.0 |
 
 ---
 
-**Last Updated**: 2026-09-03  
+**Last Updated**: 2026-09-03 (3.10.1 — stay-honest `VERSION` 1.20.0)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

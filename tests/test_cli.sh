@@ -2,7 +2,8 @@
 # tests/test_cli.sh — CLI surface (local-only; no network)
 # =============================================================================
 # Primary REQs: requirement-shell-cli-interface, requirement-shell-cli-zero-arguments,
-# requirement-shell-output-requirements, requirement-shell-cli-storage
+# requirement-shell-cli-default-interaction, requirement-shell-output-requirements,
+# requirement-shell-cli-storage
 # TP family: TP-CLI-*
 # =============================================================================
 
@@ -41,6 +42,7 @@ run_test_cli() {
     assert_contains "TP-CLI-04 help install" "$_out" "install"
     assert_contains "TP-CLI-04 help uninstall" "$_out" "uninstall"
     assert_contains "TP-CLI-04 help where-is-me" "$_out" "where-is-me"
+    assert_contains "TP-CLI-04 help menu" "$_out" "menu / main"
     assert_contains "TP-CLI-04 help --json" "$_out" "--json"
     assert_not_contains "TP-CLI-04 no backup verb" "$_out" "backup <"
     assert_not_contains "TP-CLI-04 no restore verb" "$_out" "restore <"
@@ -49,8 +51,10 @@ run_test_cli() {
     assert_contains "TP-CLI-04 help test-json-format" "$_out" "test-json-format"
     assert_contains "TP-CLI-04 help test-well-known-binary" "$_out" "test-well-known-binary"
     assert_contains "TP-CLI-04 help fence-test" "$_out" "fence-test"
-    assert_contains "TP-CLI-04 help unit test heading" "$_out" "Unit test (local test folder; Type 0 — test-purpose):"
-    assert_contains "TP-CLI-04 help operational heading" "$_out" "Sudoers requests (Type 0 — operational):"
+    assert_contains "TP-CLI-04 help unit test heading" "$_out" "Unit tests (local test folder; does not queue):"
+    assert_contains "TP-CLI-04 help operational heading" "$_out" "Convert, queue, and list requests:"
+    assert_not_contains "TP-CLI-04 help headings not Type-N lead" "$_out" "Type 0 —"
+    assert_not_contains "TP-CLI-04 help print-sudoers not F6 lead" "$_out" "Emit F6 Table A"
     assert_contains "TP-CLI-04 help add-sudoer-request" "$_out" "add-sudoer-request"
     assert_contains "TP-CLI-04 help update-sudoer-request" "$_out" "update-sudoer-request"
     assert_contains "TP-CLI-04 help remove-sudoer-request" "$_out" "remove-sudoer-request"
@@ -165,7 +169,7 @@ run_test_cli() {
     assert_eq "TP-CLI-16 fence-test routed (xor fail not unknown)" 1 "$_ec"
     assert_not_contains "TP-CLI-16 fence-test not unknown" "$_err" "Unknown command"
 
-    # TP-CLI-17 default-cli-main-menu-style printers (menu not claimed; look helpers exist)
+    # TP-CLI-17 default-cli-main-menu-style printers (claimed menu uses them)
     _th=$(mktemp -d "${TMPDIR:-/tmp}/sudoer-cli.menu.XXXXXX")
     _runner="${_th}/run-style.sh"
     {
@@ -192,6 +196,112 @@ run_test_cli() {
     assert_contains "TP-CLI-17 TTY row gray italic explain" "${_out}" "$(printf '\033[3;37mTurn sudoers text into JSON\033[0m')"
     assert_contains "TP-CLI-17 TTY row keeps unstyled name" "${_out}" "ONROW:1. convert: "
     rm -rf "${_th}"
+
+    # TP-CLI-18: menu / main routed; empty argv still help (case 3)
+    _out=$(sh "${SCRIPT}" menu 2>/dev/null)
+    _ec=$?
+    assert_eq "TP-CLI-18 menu off-TTY exit 0" 0 "${_ec}"
+    assert_contains "TP-CLI-18 menu off-TTY is help" "${_out}" "Usage:"
+    assert_not_contains "TP-CLI-18 menu off-TTY not unknown" "${_out}" "Unknown command"
+    _out=$(sh "${SCRIPT}" main 2>/dev/null)
+    _ec=$?
+    assert_eq "TP-CLI-18 main off-TTY exit 0" 0 "${_ec}"
+    assert_contains "TP-CLI-18 main off-TTY is help" "${_out}" "Usage:"
+    _out=$(sh "${SCRIPT}" 2>/dev/null)
+    assert_contains "TP-CLI-18 empty argv still help" "${_out}" "Usage:"
+    assert_not_contains "TP-CLI-18 empty argv not Choice prompt" "${_out}" "Choice:"
+
+    # TP-CLI-19: off-TTY menu follows json; --quiet must not swallow help
+    _out=$(sh "${SCRIPT}" --json menu 2>/dev/null)
+    _ec=$?
+    assert_eq "TP-CLI-19 menu --json off-TTY exit 0" 0 "${_ec}"
+    assert_contains "TP-CLI-19 menu --json is JSON help" "${_out}" '"type":"success"'
+    assert_not_contains "TP-CLI-19 menu --json not numbered header" "${_out}" "numbered list of live commands"
+    _out=$(sh "${SCRIPT}" --quiet menu 2>/dev/null)
+    _ec=$?
+    assert_eq "TP-CLI-19 menu --quiet off-TTY exit 0" 0 "${_ec}"
+    assert_contains "TP-CLI-19 menu --quiet still prints help" "${_out}" "Usage:"
+
+    # TP-CLI-20: membership + Exit 99 (N=15)
+    _fn=$(sed -n '/^app_main_menu_print()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-CLI-20 row sudoers-to-json" "${_fn}" "sudoers-to-json"
+    assert_contains "TP-CLI-20 row interactive" "${_fn}" "interactive"
+    assert_contains "TP-CLI-20 Exit 99" "${_fn}" "99. Exit"
+    assert_not_contains "TP-CLI-20 no 16. Exit" "${_fn}" "16. Exit"
+    assert_not_contains "TP-CLI-20 no help row" "${_fn}" 'out_menu_choice 'help
+    if printf '%s\n' "${_fn}" | grep -E 'out_menu_choice [0-9]+ install ' >/dev/null; then
+        t_fail "TP-CLI-20 install must not be a numbered choice"
+    else
+        t_pass "TP-CLI-20 no install choice"
+    fi
+    assert_not_contains "TP-CLI-20 no setup choice" "${_fn}" 'out_menu_choice 12 setup'
+    assert_not_contains "TP-CLI-20 no version choice" "${_fn}" "out_menu_choice"version
+    assert_not_contains "TP-CLI-20 no about as choice name" "${_fn}" 'out_menu_choice '*' about '
+    assert_not_contains "TP-CLI-20 no test-json-format" "${_fn}" "test-json-format"
+    assert_not_contains "TP-CLI-20 no test-well-known-binary" "${_fn}" "test-well-known-binary"
+    assert_not_contains "TP-CLI-20 no fence-test" "${_fn}" "fence-test"
+    assert_not_contains "TP-CLI-20 no menu as choice" "${_fn}" 'out_menu_choice '*' menu '
+    assert_contains "TP-CLI-20 remove-lpu is a row" "${_fn}" "remove-lpu"
+    assert_not_contains "TP-CLI-20 print-sudoers label not F6" "${_fn}" "F6 Table A"
+    assert_not_contains "TP-CLI-20 remove-lpu label not LPU jargon" "${_fn}" "Teardown LPU"
+    assert_not_contains "TP-CLI-20 interactive label not TTY-loop jargon" "${_fn}" "TTY review loop"
+
+    # TP-CLI-21: interactive menu ignores --json (draw list, not JSON help)
+    _th=$(mktemp -d "${TMPDIR:-/tmp}/sudoer-cli.menu21.XXXXXX")
+    _runner="${_th}/run-menu.sh"
+    {
+        printf '%s\n' 'set -u'
+        sed -n '/^out_text()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' 'out_info() { out_text out_info "$*"; }'
+        printf '%s\n' 'out_plain() { out_text plain "$*"; }'
+        printf '%s\n' 'out_menu_choice() { out_text menu_choice "" "${1-}" "${2-}" "${3-}"; }'
+        printf '%s\n' 'out_die() { printf "DIE:%s\n" "$*"; exit 1; }'
+        sed -n '/^util_app_ident()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_main_menu_print()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_main_menu()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' 'APP_NAME=sudoer-cli'
+        printf '%s\n' "VERSION='${PRODUCT_VERSION}'"
+        printf '%s\n' 'prompt_ask() { PROMPT_ASK_VALUE=99; }'
+        printf '%s\n' 'app_help() { printf "%s\n" HELPPATH; }'
+        printf '%s\n' 'app_run_command() { printf "%s\n" RAN; }'
+        printf '%s\n' 'TTY=1; JSON=1; QUIET=1; PROMPT_ASK_VALUE='
+        printf '%s\n' 'app_main_menu'
+    } >"${_runner}"
+    _out=$(sh "${_runner}")
+    _ec=$?
+    assert_eq "TP-CLI-21 interactive menu --json exit 0" 0 "${_ec}"
+    assert_contains "TP-CLI-21 interactive menu --json draws list" "${_out}" "numbered list of live commands"
+    assert_not_contains "TP-CLI-21 interactive menu --json not help path" "${_out}" "HELPPATH"
+    assert_contains "TP-CLI-21 interactive menu --json Exit 99" "${_out}" "99. Exit"
+    rm -rf "${_th}"
+
+    # TP-ELEV-10: do-not-capture-read (portable TP-CLI-16 hosted here; product TP-CLI-16 is fence-test)
+    _menu=$(sed -n '/^app_main_menu()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-ELEV-10 menu calls prompt_ask" "${_menu}" 'prompt_ask "Choice"'
+    assert_contains "TP-ELEV-10 menu reads PROMPT_ASK_VALUE" "${_menu}" 'PROMPT_ASK_VALUE'
+    _menu_live=$(printf '%s\n' "${_menu}" | grep -v '^[[:space:]]*#' || true)
+    if printf '%s\n' "${_menu_live}" | grep -E '\$\(prompt_|`prompt_' >/dev/null; then
+        t_fail "TP-ELEV-10 app_main_menu must not \$() prompt_ask"
+    else
+        t_pass "TP-ELEV-10 app_main_menu no \$() of prompt_ask"
+    fi
+    _cap_bad=0
+    while IFS= read -r _cl; do
+        [ -n "${_cl}" ] || continue
+        case "${_cl}" in
+            *'#'*) continue ;;
+            *) _cap_bad=1 ;;
+        esac
+    done <<EOF
+$(grep -n '$(prompt_\|`prompt_' "${SCRIPT}" || true)
+EOF
+    if [ "${_cap_bad}" -eq 0 ]; then
+        t_pass "TP-ELEV-10 ship unit has no live \$() of prompt_"
+    else
+        t_fail "TP-ELEV-10 live \$() of prompt_ still present"
+    fi
+    _pask=$(sed -n '/^prompt_ask()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-ELEV-10 prompt_ask assigns PROMPT_ASK_VALUE" "${_pask}" "PROMPT_ASK_VALUE="
 
     # TP-ELEV-07: only top-level measure + sr_read_input data-source may use [ -t 0/1 ]
     # Specified exception: the login-hook *snippet* (rc policy, not CLI TTY SSOT).

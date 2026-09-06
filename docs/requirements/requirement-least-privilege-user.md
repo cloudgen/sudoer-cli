@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-least-privilege-user.md  
-**Status**: Active (Version 1.14.0)  
+**Status**: Active (Version 1.14.1)  
 **Area**: architecture  
 **Key**: `requirement-least-privilege-user`  
 **id**: RQ-LEAST-PRIVILEGE-USER  
@@ -103,6 +103,20 @@ Snippet text, guards, the `.profile` create sample, and the review loop are owne
 - **CIAO Principle 1 – Caution**: fail closed on UID collision.
 
 ---
+
+## Under command line for normal user only
+
+When this program runs on Termux, Git Bash, Windows cmd, or the same class (no root login on that shell):
+
+| MUST | MUST NOT |
+|------|----------|
+| Keep **normal user privilege** only | Turn on **admin privilege** or **dedicated system user privilege** |
+| Convert, queue, list, help, and local install into the user bin | In-tool `sudo`; wrap `apt` / `dnf`; `useradd`; write `/etc`; recommend `sudo curl | sh` |
+| Document setup / approve / interactive as **unused** on that class | Invent a dedicated account on that class |
+
+**This requirement:** do not `useradd` / create `sudoer-adm` on this class; teardown of that account is unused here.
+
+Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` is set. Git Bash — `MSYSTEM` is `MINGW*` / `MSYS*`. Windows cmd — `OS` is `Windows_NT` and `COMSPEC` names `cmd.exe` (after excluding Git Bash / WSL).
 
 ## 3. Design Principles (CIAO / CIAO-Lite)
 

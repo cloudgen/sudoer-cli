@@ -13,6 +13,7 @@
 # - requirement-project-folder.md
 # - requirement-shell-cli-interface.md
 # - requirement-shell-cli-zero-arguments.md  (Type N empty argv = help)
+# - requirement-shell-cli-default-interaction.md  (TTY menu / main; empty argv stays help)
 # - requirement-shell-local-self-management.md
 # - requirement-shell-cli-storage.md
 # - requirement-shell-idempotency.md
@@ -37,7 +38,7 @@
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
 # APP NAME: hard-assign APP_NAME="sudoer-cli"
-# VERSION: hard-assign VERSION="1.18.0"
+# VERSION: hard-assign VERSION="1.20.0"
 #
 # =============================================================================
 
@@ -50,11 +51,11 @@ set -u  # Treat unset variables as error (defensive)
 # Product identity SSOT (extractors use: grep '^APP_NAME="' / '^VERSION="').
 APP_NAME="sudoer-cli"
 : "${APP_NAME:=sudoer-cli}"
-: "${APP_DESC:=Least-privilege sudoers-request approval CLI (Type 0 lifecycle; domain target law)}"
+: "${APP_DESC:=Least-privilege sudoers-request approval CLI}"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
-: "${DESCRIPTION:=POSIX /bin/sh CLI: lifecycle plus sudoers-request convert/submit/list/show/test-json-format/test-well-known-binary/fence-test. Type 1 setup creates sudoer-adm; approve/reject require euid 0.}"
+: "${DESCRIPTION:=POSIX /bin/sh CLI: convert a sudoers fragment to JSON, queue it, and let a host admin who already used password sudo accept or decline it. First-time setup creates sudoer-adm.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.18.0"
+VERSION="1.20.0"
 : "${VERSION:=1.0.0}"
 # Repository identity SSOT (git host owner/repo for project-repository alignment).
 # Install remains local-only: SCRIPT_URL stays empty (no online curl|sh channel).
@@ -101,6 +102,7 @@ fi
 : "${FORCE_USER:=0}"
 : "${FORCE_GLOBAL:=0}"
 : "${COMMAND:=help}"
+: "${PROMPT_ASK_VALUE:=}"
 : "${SH:=sh}"
 
 [ -t 0 ] && [ -t 1 ] && TTY=1
@@ -1099,12 +1101,14 @@ util_chmod() {
 # which violates the single output system, quiet/json handling, and TTY detection.
 #
 # PRINTF EXCEPTION (class B – function return-via-stdout only):
-# printf '%s' "${default|answer}" returns the chosen value for $(prompt_ask …)
-# capture. It is NOT the prompt UI. User-visible prompt text MUST stay on
-# out_info / out_msg_n. Do not replace those with raw printf + read.
-# See requirement-shell-output-requirements.md §2.1.1.
+# printf '%s' still emits the chosen value for leftover pipeline capture.
+# Callers MUST NOT wrap this helper in $() / backticks (do-not-capture-read).
+# The choice string is PROMPT_ASK_VALUE after a current-shell call.
+# User-visible prompt text MUST stay on out_info / out_msg_n.
+# See requirement-shell-output-requirements.md §2.1.1
+# and requirement-shell-prompt.md.
 #
-# Last reviewed: 2026-07-12
+# Last updated: 2026-09-03
 # =============================================================================
 
 prompt_ask() {
@@ -1121,13 +1125,15 @@ prompt_ask() {
 
     # Never prompt in non-interactive modes
     if [ "${JSON}" -eq 1 ] || [ "${QUIET}" -eq 1 ]; then
-        printf '%s' "${default}"
+        PROMPT_ASK_VALUE="${default}"
+        printf '%s' "${PROMPT_ASK_VALUE}"
         return 0
     fi
 
     # Consume TTY SSOT (requirement-shell-prompt.md — no live [ -t ] gate)
     if [ "${TTY}" -ne 1 ] && [ "${INTERACTIVE}" -ne 1 ]; then
-        printf '%s' "${default}"
+        PROMPT_ASK_VALUE="${default}"
+        printf '%s' "${PROMPT_ASK_VALUE}"
         return 0
     fi
 
@@ -1151,10 +1157,11 @@ prompt_ask() {
     fi
 
     if [ -z "${answer}" ]; then
-        printf '%s' "${default}"
+        PROMPT_ASK_VALUE="${default}"
     else
-        printf '%s' "${answer}"
+        PROMPT_ASK_VALUE="${answer}"
     fi
+    printf '%s' "${PROMPT_ASK_VALUE}"
 }
 
 # =============================================================================
@@ -1684,7 +1691,7 @@ app_about() {
     if [ "$(id -u)" -eq 0 ]; then
         out_success "Execution context: root"
     else
-        out_info "Execution context: normal user (Type 0 lifecycle)"
+        out_info "Execution context: this login (no root)"
     fi
     out_empty_line
     out_info "Current shell:     ${_shell}"
@@ -3238,6 +3245,118 @@ sr_reject() {
     fi
 }
 
+# Dest identity for duplicate inbound collapse: JSON username + service.
+# ALIGNMENT: requirement-domain-sudoer-approval.md
+sr_inbound_dest_key() {
+    _dkf="$1"
+    if [ ! -f "${_dkf}" ] || [ -L "${_dkf}" ]; then
+        return 1
+    fi
+    _dkb=$(cat "${_dkf}" 2>/dev/null) || return 1
+    _dku=$(sr_json_get_str "${_dkb}" "username")
+    _dks=$(sr_json_get_str "${_dkb}" "service")
+    if [ -z "${_dku}" ] || [ -z "${_dks}" ]; then
+        return 1
+    fi
+    printf '%s|%s' "${_dku}" "${_dks}"
+}
+
+# 0 when $1 is later than $2 (newer mtime; equal mtime → later basename).
+sr_inbound_is_later() {
+    _la="$1"
+    _lb="$2"
+    if [ "${_la}" -nt "${_lb}" ]; then
+        return 0
+    fi
+    if [ "${_lb}" -nt "${_la}" ]; then
+        return 1
+    fi
+    _lba=$(basename "${_la}")
+    _lbb=$(basename "${_lb}")
+    [ "${_lba}" \> "${_lbb}" ]
+}
+
+# Older duplicate: snapshot inbound → rejected. No dest-write. No submit_by. No yes/no.
+# ALIGNMENT: requirement-domain-sudoer-approval.md
+sr_archive_superseded_rejected() {
+    _sp="$1"
+    _sid="$2"
+    _kept="$3"
+    _no=$(sr_approver_dir rejected)
+    _priv=$(mktemp "${TMPDIR:-/tmp}/sr-super.XXXXXX")
+    if ! cp "${_sp}" "${_priv}"; then
+        rm -f "${_priv}"
+        sr_die "cannot snapshot superseded ${_sid}" "authz"
+    fi
+    sr_archive_validated "${_priv}" "${_no}" "${_sid}" "${_sp}"
+    out_info "superseded ${_sid} (kept ${_kept})"
+}
+
+sr_drop_superseded_inbound() {
+    _din="$1"
+    _old="$2"
+    _kept="$3"
+    if [ ! -f "${_din}/${_old}" ]; then
+        return 0
+    fi
+    if [ "$(id -u)" -eq 0 ]; then
+        sr_chown_request_to_lpu "${_din}/${_old}"
+    fi
+    sr_archive_superseded_rejected "${_din}/${_old}" "${_old}" "${_kept}"
+}
+
+# Keep the latest inbound file per dest identity. Move older duplicates to rejected.
+# Not a dest Fence. Standalone approve/reject of a remaining id stay non-interactive.
+# ALIGNMENT: requirement-domain-sudoer-approval.md
+sr_collapse_duplicate_inbound() {
+    _cin="$1"
+    _pairs=$(mktemp "${TMPDIR:-/tmp}/sr-dup.XXXXXX")
+    for _cf in "${_cin}"/sudoer-*.json; do
+        [ -f "${_cf}" ] || continue
+        if [ -L "${_cf}" ]; then
+            continue
+        fi
+        _cbn=$(basename "${_cf}")
+        case "${_cbn}" in
+            sudoer-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-*.json) ;;
+            *) continue ;;
+        esac
+        _ck=$(sr_inbound_dest_key "${_cf}") || continue
+        printf '%s\t%s\n' "${_cbn}" "${_ck}" >>"${_pairs}"
+    done
+    if [ ! -s "${_pairs}" ]; then
+        rm -f "${_pairs}"
+        return 0
+    fi
+    _keys=$(mktemp "${TMPDIR:-/tmp}/sr-dupk.XXXXXX")
+    cut -f2 "${_pairs}" | sort -u >"${_keys}"
+    while IFS= read -r _ckey || [ -n "${_ckey}" ]; do
+        [ -n "${_ckey}" ] || continue
+        _keep=""
+        while IFS= read -r _cline || [ -n "${_cline}" ]; do
+            [ -n "${_cline}" ] || continue
+            _cbn="${_cline%%	*}"
+            _ckk="${_cline#*	}"
+            [ "${_ckk}" = "${_ckey}" ] || continue
+            if [ -z "${_keep}" ]; then
+                _keep="${_cbn}"
+                continue
+            fi
+            if sr_inbound_is_later "${_cin}/${_cbn}" "${_cin}/${_keep}"; then
+                if ! ( sr_drop_superseded_inbound "${_cin}" "${_keep}" "${_cbn}" ); then
+                    out_error "could not move superseded ${_keep} to rejected; continuing"
+                fi
+                _keep="${_cbn}"
+            else
+                if ! ( sr_drop_superseded_inbound "${_cin}" "${_cbn}" "${_keep}" ); then
+                    out_error "could not move superseded ${_cbn} to rejected; continuing"
+                fi
+            fi
+        done <"${_pairs}"
+    done <"${_keys}"
+    rm -f "${_pairs}" "${_keys}"
+}
+
 # Interactive fence match: display already happened. Drain inbound → rejected
 # without dest-write, without submit_by, without standalone reject re-validate.
 # ALIGNMENT: requirement-incorrect-json-format.md · requirement-domain-sudoer-approval.md
@@ -3273,6 +3392,7 @@ sr_interactive() {
     sr_require_queues
     sr_require_approver_views
     _in=$(sr_approver_dir request)
+    sr_collapse_duplicate_inbound "${_in}"
     _ids=$(mktemp "${TMPDIR:-/tmp}/sr-int.XXXXXX")
     for _f in "${_in}"/sudoer-*.json; do
         [ -f "${_f}" ] || continue
@@ -3841,10 +3961,160 @@ lpu_remove() {
 }
 
 # =============================================================================
+# app_main_menu_print() - Numbered start list (default-cli-main-menu-style)
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Print the claimed TTY main menu: nametag header, then live operational
+# rows (not help, install/setup, self-managed, version/about, test-purpose,
+# or menu/main itself), then Exit 99 (N=15).
+#
+# ALIGNMENT:
+# - requirement-shell-cli-default-interaction.md
+# - requirement-shell-output-requirements.md (util_app_ident / out_menu_choice)
+#
+# Last updated: 2026-09-03
+# =============================================================================
+app_main_menu_print() {
+    out_info "$(util_app_ident) — numbered list of live commands"
+    out_menu_choice 1 sudoers-to-json "Convert sudoers fragment to request JSON"
+    out_menu_choice 2 json-to-sudoers "Convert request JSON to sudoers fragment"
+    out_menu_choice 3 print-sudoers "Print the sudoers fragment that lets sudoer-adm review without a password"
+    out_menu_choice 4 print-sudoers-install-script "Emit admin install script"
+    out_menu_choice 5 add-sudoer-request "Queue an add request (JSON or sudoers)"
+    out_menu_choice 6 update-sudoer-request "Queue an update request"
+    out_menu_choice 7 remove-sudoer-request "Queue a purpose-only remove (--service)"
+    out_menu_choice 8 list-approving "List waiting requests"
+    out_menu_choice 9 list-approved "List accepted requests"
+    out_menu_choice 10 list-rejected "List declined requests"
+    out_menu_choice 11 show "Show a known request"
+    out_menu_choice 12 remove-lpu "Remove the dedicated approver account (sudoer-adm)"
+    out_menu_choice 13 approve "Copy/overwrite dest in /etc/sudoers.d (product names only)"
+    out_menu_choice 14 reject "Decline a waiting request"
+    out_menu_choice 15 interactive "Review waiting requests one file at a time (not empty argv)"
+    out_plain "99. Exit"
+}
+
+# =============================================================================
+# app_main_menu() - Case 3 TTY menu (verb menu / main; empty argv stays help)
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Interactive (TTY=1): ignore --json, draw the numbered list, read a choice
+# in the current shell (PROMPT_ASK_VALUE; MUST NOT $() prompt_ask), run that
+# handler. Non-interactive: help (human or JSON). MUST NOT hang. MUST NOT
+# swallow help under --quiet.
+#
+# ALIGNMENT:
+# - requirement-shell-cli-default-interaction.md
+# - requirement-shell-cli-zero-arguments.md (empty argv is not this path)
+# - requirement-shell-prompt.md (PROMPT_ASK_VALUE)
+#
+# Last updated: 2026-09-03
+# =============================================================================
+app_main_menu() {
+    : "${TTY:=0}"
+    : "${JSON:=0}"
+    : "${QUIET:=0}"
+    : "${PROMPT_ASK_VALUE:=}"
+
+    if [ "${TTY}" -ne 1 ]; then
+        if [ "${JSON}" -eq 0 ]; then
+            QUIET=0
+        fi
+        app_help
+        return 0
+    fi
+
+    # Interactive menu ignores --json (case 3). Restore after the choice read.
+    local _menu_json="${JSON}"
+    local _menu_quiet="${QUIET}"
+    local _choice=""
+    JSON=0
+    QUIET=0
+    app_main_menu_print
+    # WARNING — do-not-capture-read (PP-A-22)
+    # MUST NOT _choice=$(prompt_ask …) / $() / backticks. Body of prompt_ask contains read.
+    prompt_ask "Choice" ""
+    _choice="${PROMPT_ASK_VALUE}"
+    JSON="${_menu_json}"
+    QUIET="${_menu_quiet}"
+
+    case "${_choice}" in
+        1|sudoers-to-json) COMMAND=sudoers-to-json ;;
+        2|json-to-sudoers) COMMAND=json-to-sudoers ;;
+        3|print-sudoers) COMMAND=print-sudoers ;;
+        4|print-sudoers-install-script) COMMAND=print-sudoers-install-script ;;
+        5|add-sudoer-request) COMMAND=add-sudoer-request ;;
+        6|update-sudoer-request) COMMAND=update-sudoer-request ;;
+        7|remove-sudoer-request) COMMAND=remove-sudoer-request ;;
+        8|list-approving) COMMAND=list-approving ;;
+        9|list-approved) COMMAND=list-approved ;;
+        10|list-rejected) COMMAND=list-rejected ;;
+        11|show) COMMAND=show ;;
+        12|remove-lpu) COMMAND=remove-lpu ;;
+        13|approve) COMMAND=approve ;;
+        14|reject) COMMAND=reject ;;
+        15|interactive) COMMAND=interactive ;;
+        99|exit|quit|Exit) return 0 ;;
+        *)
+            out_die "Unknown choice '${_choice}'. Next: ${APP_NAME} menu"
+            ;;
+    esac
+    app_run_command
+}
+
+# =============================================================================
+# app_run_command() - Dispatch COMMAND to the live handler
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Single case for the live dispatcher. app_main parses flags then calls this.
+# app_main_menu sets COMMAND from a numbered choice then calls this.
+#
+# ALIGNMENT:
+# - requirement-shell-cli-interface.md
+# - requirement-shell-cli-default-interaction.md
+#
+# Last updated: 2026-09-03
+# =============================================================================
+app_run_command() {
+    : "${COMMAND:=help}"
+    case "${COMMAND}" in
+        version)      app_version ;;
+        about)        app_about ;;
+        install)      inst_local_install ;;
+        uninstall)    inst_local_uninstall ;;
+        where-is-me)  app_where_is_me ;;
+        menu|main)    app_main_menu ;;
+        sudoers-to-json) sr_sudoers_to_json ;;
+        json-to-sudoers) sr_json_to_sudoers ;;
+        test-json-format) sr_test_json_format ;;
+        test-well-known-binary) sr_test_well_known_binary ;;
+        fence-test) sr_fence_test ;;
+        print-sudoers) sr_print_sudoers ;;
+        print-sudoers-install-script) sr_print_sudoers_install_script ;;
+        add-sudoer-request)    sr_submit add ;;
+        update-sudoer-request) sr_submit update ;;
+        remove-sudoer-request) sr_submit remove ;;
+        list-approving)  sr_list approving ;;
+        list-approved)   sr_list approved ;;
+        list-rejected)   sr_list rejected ;;
+        show)            sr_show ;;
+        approve)         sr_approve ;;
+        reject)          sr_reject ;;
+        interactive)     sr_interactive ;;
+        setup)           lpu_setup ;;
+        remove-lpu)      lpu_remove ;;
+        help|*)          app_help ;;
+    esac
+}
+
+# =============================================================================
 # app_help() - Usage (Type 0 lifecycle + routed domain)
 # =============================================================================
 app_help() {
-    : "${SHORT_DESCRIPTION:=${APP_DESC:-Local self-managed POSIX /bin/sh CLI (Type 0 lifecycle)}}"
+    : "${SHORT_DESCRIPTION:=${APP_DESC:-Least-privilege sudoers-request approval CLI}}"
     : "${DESCRIPTION:=POSIX /bin/sh CLI: install, uninstall, where-is-me, version, about, help.}"
 
     if [ "${JSON}" -eq 1 ]; then
@@ -3863,19 +4133,20 @@ app_help() {
     out_info "Usage:"
     out_plain "  ${APP_NAME} [command] [options]"
     out_empty_line
-    out_info "Lifecycle (Type 0 — local self-managed):"
+    out_info "Install and remove (no root required):"
     out_plain "  install              Install ${APP_NAME} (root→global, user→~/.local/bin)"
     out_plain "  install --global     Force global path (${GLOBAL_BIN}; needs write/root)"
     out_plain "  uninstall            Remove managed binary (confirm or --force)"
     out_plain "  where-is-me          Show running and install paths"
     out_plain "  version              Show local version"
-    out_plain "  about                Show diagnostics (Type 0 + resolved queue paths)"
+    out_plain "  about                Show diagnostics and resolved queue paths"
+    out_plain "  menu / main          Numbered list of live work commands (real terminal)"
     out_plain "  help                 Show this help"
     out_empty_line
-    out_info "Sudoers requests (Type 0 — operational):"
+    out_info "Convert, queue, and list requests:"
     out_plain "  sudoers-to-json      Convert sudoers fragment to request JSON"
     out_plain "  json-to-sudoers      Convert request JSON to sudoers fragment"
-    out_plain "  print-sudoers        Emit F6 Table A draft (Type 0; never writes /etc/passwd or /etc/sudoers)"
+    out_plain "  print-sudoers        Print the sudoers fragment that lets sudoer-adm review without a password"
     out_plain "  print-sudoers-install-script  Emit admin install script"
     out_plain "  add-sudoer-request   Queue an add request (JSON or sudoers)"
     out_plain "  update-sudoer-request  Queue an update request"
@@ -3883,18 +4154,18 @@ app_help() {
     out_plain "  list-approving|list-approved|list-rejected"
     out_plain "  show <request-id.json>   Show a known request"
     out_empty_line
-    out_info "Unit test (local test folder; Type 0 — test-purpose):"
+    out_info "Unit tests (local test folder; does not queue):"
     out_plain "  test-json-format     Test a grant JSON file against the dest JSON-format fence (does not queue)"
     out_plain "  test-well-known-binary  Test grant command paths against the well-known system-binary fence (does not queue)"
     out_plain "  fence-test            Test dest fence functions against a local JSON file (no sudo; does not queue)"
     out_empty_line
-    out_info "Bootstrap (Type 1 — any host admin, outer sudo; password OK):"
-    out_plain "  setup / remove-lpu   Create/teardown LPU (sudoer-adm). Run: sudo ${APP_NAME} setup"
+    out_info "First-time setup (host admin; password sudo OK):"
+    out_plain "  setup / remove-lpu   Create or remove the dedicated approver account (sudoer-adm). Run: sudo ${APP_NAME} setup"
     out_plain "                       Not sudo -n. Not limited to sudoer-adm."
     out_empty_line
-    out_info "Approver (Type 1 — password sudo or a root login; sudoer-adm after F6 is extra):"
+    out_info "Approve and reject (password sudo or a root login; sudoer-adm after setup is extra):"
     out_plain "  approve|reject <id>  Copy/overwrite/remove dest in /etc/sudoers.d (product names only)"
-    out_plain "  interactive          TTY review loop (not empty argv). Hook may sudo -n after F6."
+    out_plain "  interactive          Review waiting requests one file at a time (not empty argv). After setup, the login hook may run this without a password."
     out_empty_line
     out_info "Global Options:"
     out_plain "  --quiet, -q          Suppress info/success (errors still shown)"
@@ -3910,7 +4181,7 @@ app_help() {
     out_plain "  --service NAME       Service pin / required on remove"
     out_plain "  --out PATH           Write convert payload (absolute)"
     out_plain "  --queue-root DIR     Test/override public trio (DIR/sudoer-request|approved|rejected)"
-    out_plain "  Type 0 submit dest   /var/${APP_NAME}/sudoer-request (unless --queue-root)"
+    out_plain "  Waiting folder       /var/${APP_NAME}/sudoer-request (unless --queue-root)"
     out_empty_line
     out_info "Environment:"
     out_plain "  USER_BIN / GLOBAL_BIN  install destinations"
@@ -3921,6 +4192,7 @@ app_help() {
     out_plain "  sudo ${APP_NAME} install          # any admin → /usr/local/bin (password sudo OK)"
     out_plain "  sudo ${APP_NAME} setup            # any admin bootstrap (password sudo OK; not -n)"
     out_plain "  sudo ${APP_NAME} interactive      # any admin after setup (password sudo is the approval)"
+    out_plain "  ${APP_NAME} menu                  # numbered list (real terminal; empty argv stays help)"
     out_plain "  ${APP_NAME} version"
     out_plain "  ${APP_NAME} about"
     out_plain "  ${APP_NAME} --json about"
@@ -3941,14 +4213,16 @@ app_help() {
 #
 # GENERAL PURPOSE:
 # Single dispatcher: Type 0 lifecycle + routed domain verbs.
-# Empty argv = Type N help (not install-ensure; not interactive).
+# Empty argv = Type N help (not install-ensure; not interactive; not the menu).
+# Verb menu / main = TTY numbered list (requirement-shell-cli-default-interaction).
 #
 # ALIGNMENT:
 # - requirement-shell-cli-interface.md
 # - requirement-shell-cli-zero-arguments.md
+# - requirement-shell-cli-default-interaction.md
 # - requirement-domain-sudoer-approval.md
 #
-# Last reviewed: 2026-08-14
+# Last updated: 2026-09-03
 # =============================================================================
 app_main() {
     : "${COMMAND:=help}"
@@ -4042,7 +4316,7 @@ app_main() {
             --orphans)    SR_ORPHANS=1 ;;
             --uninstall)  SR_UNINSTALL=1 ;;
             --purge-queues) SR_PURGE_QUEUES=1 ;;
-            version|about|help|install|uninstall|where-is-me|\
+            version|about|help|install|uninstall|where-is-me|menu|main|\
             sudoers-to-json|json-to-sudoers|test-json-format|test-well-known-binary|fence-test|print-sudoers|print-sudoers-install-script|\
             add-sudoer-request|update-sudoer-request|remove-sudoer-request|\
             list-approving|list-approved|list-rejected|show|approve|reject|\
@@ -4070,33 +4344,7 @@ app_main() {
 
     out_debug "dispatch command=${COMMAND} quiet=${QUIET} json=${JSON}"
 
-    case "${COMMAND}" in
-        version)      app_version ;;
-        about)        app_about ;;
-        install)      inst_local_install ;;
-        uninstall)    inst_local_uninstall ;;
-        where-is-me)  app_where_is_me ;;
-        sudoers-to-json) sr_sudoers_to_json ;;
-        json-to-sudoers) sr_json_to_sudoers ;;
-        test-json-format) sr_test_json_format ;;
-        test-well-known-binary) sr_test_well_known_binary ;;
-        fence-test) sr_fence_test ;;
-        print-sudoers) sr_print_sudoers ;;
-        print-sudoers-install-script) sr_print_sudoers_install_script ;;
-        add-sudoer-request)    sr_submit add ;;
-        update-sudoer-request) sr_submit update ;;
-        remove-sudoer-request) sr_submit remove ;;
-        list-approving)  sr_list approving ;;
-        list-approved)   sr_list approved ;;
-        list-rejected)   sr_list rejected ;;
-        show)            sr_show ;;
-        approve)         sr_approve ;;
-        reject)          sr_reject ;;
-        interactive)     sr_interactive ;;
-        setup)           lpu_setup ;;
-        remove-lpu)      lpu_remove ;;
-        help|*)          app_help ;;
-    esac
+    app_run_command
 }
 
 # =============================================================================

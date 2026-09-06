@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-script-coding.md  
-**Status**: Active (Version 1.3.0 – sudo-wrapping / check before sudo **points** at `requirement-shell-sudo-command`)  
+**Status**: Active (Version 1.4.1 – unused on Termux / Git Bash / Windows cmd)  
 **Area**: shell  
 **Key**: `requirement-shell-script-coding`  
 **id**: RQ-SHELL-SCRIPT-CODING  
@@ -105,6 +105,7 @@ Record **n/a** for a dedicated coding-style family in `reviews/test-plan.md`.
 | Function prefixes (`out_`, `inst_`, `app_`, `sr_`, `lpu_`, `prompt_*`, …) | `requirement-shell-modular-function-design` | Point only |
 | Interactive vs non-interactive; `[ -t` **outside** functions | `requirement-shell-interactive-vs-noninteractive` | Point only |
 | `prompt_yes_no` / `prompt_ask` bodies | `requirement-shell-prompt` | Point only |
+| Do not `$()` a `read` helper (`PROMPT_ASK_VALUE`) | `requirement-shell-prompt` · `requirement-shell-cli-default-interaction` | Adopted; point |
 | Scratch leaves (`mktemp`; no `$$` names) | `requirement-shell-temp-file-system` | Point only |
 | Re-run install/uninstall | `requirement-shell-idempotency` | Point only |
 | In-tool sudo / chmod wrappers | `requirement-shell-sudo-command` | Point only |
@@ -117,7 +118,7 @@ Record **n/a** for a dedicated coding-style family in `reviews/test-plan.md`.
 | **Primary language** | posix-sh (`#!/bin/sh`) |
 | **Linter / formatter as law** | **none** — `shellcheck` optional for maintainers |
 | **Domain prefixes** | `sr_` / `lpu_` (owned on the modular requirement) |
-| **Adopted portable lessons** | POSIX shebang; full headers; Protection Zones; explicit `if`; respect working code; live-requirement ALIGNMENT; HOME-before-paths; no raw `sudo -n`; check before sudo + sudo-wrapping function (bodies on `requirement-shell-sudo-command`) |
+| **Adopted portable lessons** | POSIX shebang; full headers; Protection Zones; explicit `if`; respect working code; live-requirement ALIGNMENT; HOME-before-paths; no raw `sudo -n`; check before sudo + sudo-wrapping function (bodies on `requirement-shell-sudo-command`); do not `$()` `prompt_ask` / any `read` helper (`PROMPT_ASK_VALUE`) |
 | **Refused portable lessons** | Online-install / `curl\|sh` Type O empty-argv; remote self-update; treating `sudo -n` as default elev |
 
 ### 2.9 Why This Requirement Exists (Direct CIAO Alignment)
@@ -129,6 +130,20 @@ Record **n/a** for a dedicated coding-style family in `reviews/test-plan.md`.
 - **CIAO Principle 10 / 22**: Check before sudo. Example: do not `sudo chmod` when this login already owns the path.
 
 ---
+
+## Under command line for normal user only
+
+When this program runs on Termux, Git Bash, Windows cmd, or the same class (no root login on that shell):
+
+| MUST | MUST NOT |
+|------|----------|
+| Keep **normal user privilege** only | Turn on **admin privilege** or **dedicated system user privilege** |
+| Convert, queue, list, help, and local install into the user bin | In-tool `sudo`; wrap `apt` / `dnf`; `useradd`; write `/etc`; recommend `sudo curl | sh` |
+| Document setup / approve / interactive as **unused** on that class | Invent a dedicated account on that class |
+
+**This requirement:** helpers stay this-login POSIX; MUST NOT paste in-tool `sudo` / `apt` bodies as if they were live on this class.
+
+Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` is set. Git Bash — `MSYSTEM` is `MINGW*` / `MSYS*`. Windows cmd — `OS` is `Windows_NT` and `COMSPEC` names `cmd.exe` (after excluding Git Bash / WSL).
 
 ## 3. Design Principles (CIAO / CIAO-Lite)
 
@@ -182,7 +197,8 @@ Record **n/a** for a dedicated coding-style family in `reviews/test-plan.md`.
 | `docs/requirements/requirement-shell-modular-function-design.md` | Prefixes |
 | `docs/requirements/requirement-shell-output-requirements.md` | `out_*` |
 | `docs/requirements/requirement-shell-interactive-vs-noninteractive.md` | TTY measure |
-| `docs/requirements/requirement-shell-prompt.md` | Prompt bodies |
+| `docs/requirements/requirement-shell-prompt.md` | Prompt bodies; `PROMPT_ASK_VALUE` |
+| `docs/requirements/requirement-shell-cli-default-interaction.md` | Menu choice must not `$()` `prompt_ask` |
 | `docs/requirements/requirement-shell-temp-file-system.md` | Scratch leaves |
 | `src/sudoer-cli` | Ship unit |
 
@@ -192,12 +208,14 @@ Record **n/a** for a dedicated coding-style family in `reviews/test-plan.md`.
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-09-06 | Active 1.4.1 | Under command line for normal user only |
 | 2026-08-20 | Active 1.0.0 | Specialize-in home for portable POSIX writing lessons |
 | 2026-08-20 | Active 1.1.0 | Before `sudo chmod`, non-sudo owner probe (`[ -O path ]`); if match, no elevated chmod |
 | 2026-08-20 | Active 1.2.0 | Superclass: check before sudo; `sudo chmod` remains the worked example |
 | 2026-08-20 | Active 1.3.0 | Own-or-point: sudo-wrapping bodies on `requirement-shell-sudo-command` |
+| 2026-09-03 | Active 1.4.0 | Adopt do-not-capture-read; point at prompt + default-interaction |
 
-**Last Updated**: 2026-08-20  
+**Last Updated**: 2026-09-03  
   
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

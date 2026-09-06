@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-interactive-vs-noninteractive.md  
-**Status**: Active (Version 1.4.0)  
+**Status**: Active (Version 1.5.1)  
 **Area**: shell  
 **Key**: `requirement-shell-interactive-vs-noninteractive`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -74,6 +74,7 @@ Rules:
 | `interactive` (Type 1) | Review loop when `TTY=1` and authz holds (domain SSOT). One-off yes/no (`prompt_yes_no`; yes=approve, no=reject). Id walk **MUST NOT** redirect stdin over that prompt | **Fail closed** `confirm_required` — no hang. `--json` same. `--force` does **not** auto-approve |
 | Login hook (LPU `.bashrc`) | May launch `sudo -n … interactive` once | **Skip** (`scp` / `SSH_ORIGINAL_COMMAND` / no TTY / no `PS1`). `sudo -n` failure is a warning; login continues |
 | Missing required operand | Clear error | Clear error; non-zero exit |
+| `menu` / `main` | Numbered start list; `--json` ignored | **Help** (human; `--json` → JSON help). **MUST NOT** hang. `--quiet` must not swallow help |
 
 ### 2.4 Implementation Notes (this project)
 
@@ -92,6 +93,20 @@ Rules:
 - **Principle 14 – Traceability**: Errors visible under quiet/json contracts
 
 ---
+
+## Under command line for normal user only
+
+When this program runs on Termux, Git Bash, Windows cmd, or the same class (no root login on that shell):
+
+| MUST | MUST NOT |
+|------|----------|
+| Keep **normal user privilege** only | Turn on **admin privilege** or **dedicated system user privilege** |
+| Convert, queue, list, help, and local install into the user bin | In-tool `sudo`; wrap `apt` / `dnf`; `useradd`; write `/etc`; recommend `sudo curl | sh` |
+| Document setup / approve / interactive as **unused** on that class | Invent a dedicated account on that class |
+
+**This requirement:** confirm helpers stay this login; dest `interactive` stays unused on this class (no hang, no invented sudo).
+
+Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` is set. Git Bash — `MSYSTEM` is `MINGW*` / `MSYS*`. Windows cmd — `OS` is `Windows_NT` and `COMSPEC` names `cmd.exe` (after excluding Git Bash / WSL).
 
 ## 3. Design Principles (CIAO / CIAO-Lite)
 
@@ -145,6 +160,7 @@ Rules:
 | `requirement-shell-prompt` | Helper bodies + samples |
 | `requirement-domain-sudoer-approval` | `interactive` loop + login hook |
 | `requirement-shell-cli-zero-arguments` | Empty argv ≠ review |
+| `requirement-shell-cli-default-interaction` | `menu` / `main` no-hang; empty argv stays help |
 | `docs/requirements/index.md` | Registry |
 
 ---
@@ -158,6 +174,7 @@ Rules:
 | TP-SR-INT-02 | `interactive` non-TTY / `--json` fail closed | `tests/test_domain_sr.sh` |
 | TP-SR-INT-05 | Review loop does not steal stdin from `prompt_yes_no` | `tests/test_domain_sr.sh` |
 | TP-SR-INT-06 | One-off approval question (yes=approve, no=reject; no skip/quit) | `tests/test_domain_sr.sh` |
+| TP-CLI-19 | Off-TTY `menu` is help (no hang) | `tests/test_cli.sh` |
 
 ---
 
@@ -165,14 +182,16 @@ Rules:
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-09-06 | Active 1.5.1 | Under command line for normal user only |
 | 2026-08-03 | Active 1.0.0 | Interactive vs non-interactive for folder-backup |
 | 2026-08-14 | Active 1.1.0 | TTY measured outside functions; helpers consume `TTY` (no-retest) |
 | 2026-08-14 | Active 1.2.0 | Matrix: Type 1 `interactive` + login hook; no-hang / no empty-argv hijack |
 | 2026-08-15 | Active 1.3.0 | AC-6: `TTY=1` loop must not steal stdin; **TP-SR-INT-05** |
 | 2026-08-20 | Active 1.4.0 | Dest review is one-off yes/no (AC-7; **TP-SR-INT-06**); EOF auto-answer is reject not skip |
+| 2026-09-03 | Active 1.5.0 | `menu` / `main` no-hang; interactive ignores `--json` |
 
 ---
 
-**Last Updated**: 2026-08-20  
+**Last Updated**: 2026-09-03  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

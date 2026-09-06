@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-zero-arguments.md  
-**Status**: Active (Version 1.1.0)  
+**Status**: Active (Version 1.2.1)  
 **Area**: shell  
 **Key**: `requirement-shell-cli-zero-arguments`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -16,7 +16,7 @@ This requirement is the **project Single Source of Truth** for **zero-argument (
 |-----|---------|---------|
 | You / this login | Run with no arguments | `sudoer-cli` |
 | The other role | Review is an explicit command after sudo | `sudo sudoer-cli interactive` |
-| Not this file | Online install-ensure on empty argv | intentionally absent |
+| Not this file | Online install-ensure on empty argv; numbered start list | intentionally absent · `requirement-shell-cli-default-interaction` |
 
 | Includes | Excludes |
 |----------|----------|
@@ -51,6 +51,7 @@ Type O (online-install empty-argv = install-ensure) does **not** apply.
 3. Explicit `sudoer-cli help` remains a valid full-usage path (same content family as empty argv).  
 4. Explicit `sudoer-cli install` remains the only first-time local install path (plus documented force refresh).  
 6. Empty argv **MUST NOT** start `interactive` for any uid (including sudoer-adm).  
+7. Empty argv **MUST NOT** open the numbered start list. That list is verb `menu` / `main` (`requirement-shell-cli-default-interaction`, case 3).  
 5. Script entry **MUST** always call `app_main "$@"` (no basename product-name gate that blocks dispatch).
 
 ### 2.2 Normative matrix
@@ -79,6 +80,20 @@ Type O (online-install empty-argv = install-ensure) does **not** apply.
 
 ---
 
+## Under command line for normal user only
+
+When this program runs on Termux, Git Bash, Windows cmd, or the same class (no root login on that shell):
+
+| MUST | MUST NOT |
+|------|----------|
+| Keep **normal user privilege** only | Turn on **admin privilege** or **dedicated system user privilege** |
+| Convert, queue, list, help, and local install into the user bin | In-tool `sudo`; wrap `apt` / `dnf`; `useradd`; write `/etc`; recommend `sudo curl | sh` |
+| Document setup / approve / interactive as **unused** on that class | Invent a dedicated account on that class |
+
+**This requirement:** empty argv still prints help; it does not become an install or setup path on this class.
+
+Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` is set. Git Bash — `MSYSTEM` is `MINGW*` / `MSYS*`. Windows cmd — `OS` is `Windows_NT` and `COMSPEC` names `cmd.exe` (after excluding Git Bash / WSL).
+
 ## 3. Design Principles (CIAO / CIAO-Lite)
 
 - **Caution**: No silent ensure on empty argv.  
@@ -94,7 +109,7 @@ Type O (online-install empty-argv = install-ensure) does **not** apply.
 
 1. Change empty argv to install-ensure while the product remains local-only.  
 2. Copy Type O empty-argv law wholesale without updating this file and install mode.  
-3. Make bare invocation run domain `backup` or `interactive`.
+3. Make bare invocation run domain `backup`, `interactive`, or the numbered start list (`menu`).
 
 **Violating this rule is a critical dispatcher regression.**
 
@@ -115,6 +130,7 @@ Type O (online-install empty-argv = install-ensure) does **not** apply.
 | Key | Relationship |
 |-----|--------------|
 | `requirement-shell-cli-interface` | Dispatcher command table |
+| `requirement-shell-cli-default-interaction` | Numbered list is `menu` / `main`; this file still owns empty argv |
 | `requirement-shell-local-self-management` | Explicit install |
 | `requirement-bootstrap-chain` | Trim of Type O from parent |
 | `docs/requirements/index.md` | Registry |
@@ -134,11 +150,13 @@ Type O (online-install empty-argv = install-ensure) does **not** apply.
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-09-06 | Active 1.2.1 | Under command line for normal user only |
 | 2026-08-03 | Active | Type N for local-only folder-backup |
 | 2026-08-13 | Active 1.1.0 | sudoer-cli; interactive ≠ empty argv |
+| 2026-09-03 | Active 1.2.0 | Numbered list is `menu` / `main`; empty argv stays help |
 
 ---
 
-**Last Updated**: 2026-08-03  
+**Last Updated**: 2026-09-03  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

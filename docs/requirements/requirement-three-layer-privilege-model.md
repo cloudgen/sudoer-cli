@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-three-layer-privilege-model.md  
-**Status**: Active (Version 1.15.0 – login-hook-symlink on Table A)  
+**Status**: Active (Version 1.15.1 – unused on Termux / Git Bash / Windows cmd)  
 **Area**: architecture  
 **Key**: `requirement-three-layer-privilege-model`  
 **id**: RQ-THREE-LAYER-PRIVILEGE-MODEL  
@@ -135,6 +135,20 @@ The CLI invokes these as **internal jobs**. Account create/teardown **MUST** be 
 - **CIAO Principle 4 / 20 – Over-protect**: Table A vs Table C split is sacred.
 
 ---
+
+## Under command line for normal user only
+
+When this program runs on Termux, Git Bash, Windows cmd, or the same class (no root login on that shell):
+
+| MUST | MUST NOT |
+|------|----------|
+| Keep **normal user privilege** only | Turn on **admin privilege** or **dedicated system user privilege** |
+| Convert, queue, list, help, and local install into the user bin | In-tool `sudo`; wrap `apt` / `dnf`; `useradd`; write `/etc`; recommend `sudo curl | sh` |
+| Document setup / approve / interactive as **unused** on that class | Invent a dedicated account on that class |
+
+**This requirement:** admin privilege and dedicated system user privilege stay unused on detect; elev tables do not apply on this class.
+
+Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` is set. Git Bash — `MSYSTEM` is `MINGW*` / `MSYS*`. Windows cmd — `OS` is `Windows_NT` and `COMSPEC` names `cmd.exe` (after excluding Git Bash / WSL).
 
 ## 3. Design Principles (CIAO / CIAO-Lite)
 

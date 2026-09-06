@@ -2,16 +2,16 @@
 
 Authoritative specialized product law for **sudoer-cli** lives here.
 
-**Current state (2026-09-03):** Specialized **software-development** product. Historical origin **cli-template**. Domain SSOT is Active **2.36.0** (login-hook-symlink; dest review is one-off yes/no; JSON-format Fence display-then-rejected; missing stamp / untrusted Cmnd warn then ask; grant sudoers file **points** at `requirement-sudoers-file` 1.1.0; OPEN-BEHALF). Dest Fence REQ **1.5.0**. Well-known checker **1.2.0**. Class **1.9.9**. CLI **3.9.0**. Output **1.3.0**. Coding style **1.3.0**. Prompt **1.1.0**. Interactive **1.4.0**. ARSA catalog Active **1.0.0**. Prevention catalog is Active **1.6.3**. Registry is populated — see `index.md`.
+**Current state (2026-09-06):** Specialized **software-development** product. Historical origin **cli-template**. Domain SSOT is Active **2.37.1** (keep-latest duplicate inbound; help headings people-first; related shell REQs **Under command line for normal user only**). Dest Fence REQ **1.5.0**. Well-known checker **1.2.0**. Class **1.9.11**. CLI **3.10.2**. Default interaction **1.0.1** (case 3 `menu` / `main`). Output **1.3.1**. Coding style **1.4.1**. Prompt **1.2.1**. Interactive **1.5.1**. ARSA catalog Active **1.0.0**. Prevention catalog is Active **1.6.4**. Registry is populated — see `index.md`.
 
 ## Product identity (summary)
 
 | Field | Value |
 |-------|--------|
 | Product / `APP_NAME` | `sudoer-cli` |
-| Version SSOT | `1.18.0` (ship unit hard-assign) |
+| Version SSOT | `1.20.0` (ship unit hard-assign) |
 | Ship unit | `src/sudoer-cli` |
-| Default install | `~/.local/bin/sudoer-cli` (global `/usr/local/bin/sudoer-cli` for production F6) |
+| Default install | `~/.local/bin/sudoer-cli` (global `/usr/local/bin/sudoer-cli` so `sudoer-adm` can review without a password) |
 | Install mode | **Local-only** |
 | Domain surface | File-based JSON approval; Type 0 convert/submit/list/show **routed**; Type 1 `setup` / `interactive` **live** |
 

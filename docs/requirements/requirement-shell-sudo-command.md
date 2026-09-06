@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-sudo-command.md  
-**Status**: Active (Version 1.0.0 – sudo-wrapping function; check before sudo; chmod example)  
+**Status**: Active (Version 1.0.1 – unused on Termux / Git Bash / Windows cmd)  
 **Area**: shell  
 **Key**: `requirement-shell-sudo-command`  
 **id**: RQ-SHELL-SUDO-COMMAND  
@@ -113,6 +113,20 @@ util_chmod() {
 
 ---
 
+## Under command line for normal user only
+
+When this program runs on Termux, Git Bash, Windows cmd, or the same class (no root login on that shell):
+
+| MUST | MUST NOT |
+|------|----------|
+| Keep **normal user privilege** only | Turn on **admin privilege** or **dedicated system user privilege** |
+| Convert, queue, list, help, and local install into the user bin | In-tool `sudo`; wrap `apt` / `dnf`; `useradd`; write `/etc`; recommend `sudo curl | sh` |
+| Document setup / approve / interactive as **unused** on that class | Invent a dedicated account on that class |
+
+**This requirement:** in-tool sudo wrappers stay unused on this class; check-before-sudo does not invent a sudo path.
+
+Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` is set. Git Bash — `MSYSTEM` is `MINGW*` / `MSYS*`. Windows cmd — `OS` is `Windows_NT` and `COMSPEC` names `cmd.exe` (after excluding Git Bash / WSL).
+
 ## 3. Design Principles (CIAO / CIAO-Lite)
 
 - **Caution**: Probe without sudo.  
@@ -167,6 +181,7 @@ util_chmod() {
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-09-06 | Active 1.0.1 | Under command line for normal user only |
 | 2026-08-20 | Active 1.0.0 | sudo-wrapping function + check before sudo; chmod example |
 
 **Last Updated**: 2026-08-20  

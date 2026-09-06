@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-output-requirements.md  
-**Status**: Active (Version 1.3.0) — default-cli-main-menu-style printers; operator-readable fatals  
+**Status**: Active (Version 1.3.1) — default-cli-main-menu-style printers used by claimed `menu` / `main`  
 **Area**: shell  
 **Key**: `requirement-shell-output-requirements`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -115,7 +115,7 @@ Rules:
 | **Product** | `sudoer-cli` |
 | **Ship unit** | `src/sudoer-cli` |
 | **Human prefixes** | `[INFO]`, `[OK]`, `[WARN]`, `[ERROR]` (or equivalent consistent set) |
-| **Default CLI main menu style** | Look printers live: `util_app_ident` + `out_menu_choice`. Header nametag **sudoer-cli**(*VERSION*) (bold name, italic version on TTY). Numbered `explain` *italic* + light gray on TTY; number and short-descript unstyled; off-TTY / JSON plain. A numbered TTY **main menu is not claimed** (empty argv stays help; no `menu`/`main` verb). About identity title uses `util_app_ident`. |
+| **Default CLI main menu style** | Look printers live: `util_app_ident` + `out_menu_choice`. Header nametag **sudoer-cli**(*VERSION*) (bold name, italic version on TTY). Numbered `explain` *italic* + light gray on TTY; number and short-descript unstyled; off-TTY / JSON plain. Claimed numbered list is verb `menu` / `main` (`requirement-shell-cli-default-interaction`; empty argv stays help). About identity title uses `util_app_ident`. |
 | **Domain messages** | Convert / submit / list / show / Type 1 fatals use the same `out_*` family. Fatals fill happened / means / Next: |
 | **Banned jargon (whole message)** | `Type 1`, `euid 0`, `authorization failed`, `host validation`, `host sudoers checker` |
 | **Worked fatal** | visudo-fail: `visudo rejected this grant. visudo said: N:M: syntax error. That means the sudoers file would be illegal. … Next: sudoer-cli json-to-sudoers --file request.json` |
@@ -183,6 +183,7 @@ Rules:
 | Key | Relationship |
 |-----|--------------|
 | `requirement-shell-cli-interface` | Modes and flags |
+| `requirement-shell-cli-default-interaction` | Claimed `menu` / `main` uses `util_app_ident` / `out_menu_choice` |
 | `requirement-shell-interactive-vs-noninteractive` | Prompt vs auto |
 | `requirement-sudoers-file` | visudo-fail operator copy (worked fatal) |
 | `docs/requirements/index.md` | Registry |
@@ -199,6 +200,7 @@ Rules:
 | 2026-08-14 | Active 1.1.1 | Implementation Notes: domain messages live; fatals use `Next:` |
 | 2026-08-26 | Active 1.2.0 | Operator-readable fatal slots (happened / means / Next:); visudo-fail worked example; **TP-SR-21** |
 | 2026-09-03 | Active 1.3.0 | Look printers `util_app_ident` / `out_menu_choice` (default-cli-main-menu-style). Main menu **not** claimed. **TP-CLI-17**. |
+| 2026-09-03 | Active 1.3.1 | Printers used by claimed `menu` / `main` (`requirement-shell-cli-default-interaction`) |
 
 ---
 

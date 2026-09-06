@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-class-software-dev.md  
-**Status**: Active (Version 1.9.9 – residual points at grant sudoers-file REQ; VERSION 1.18.0)  
+**Status**: Active (Version 1.9.11 – residual points at numbered start list; VERSION 1.20.0)  
 **Area**: class  
 **Key**: `requirement-class-software-dev`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -129,7 +129,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | **Architectures supported** | any arch with POSIX sh and the external tools the script invokes |
 | **Git surface** | used when product is published |
 | **Ship unit / install** | yes — `src/sudoer-cli` → `${USER_BIN}/sudoer-cli` (default `~/.local/bin/sudoer-cli`); **local-only** install (no online channel) |
-| **Product version SSOT** | `VERSION="1.18.0"` hard-assign in `src/sudoer-cli` |
+| **Product version SSOT** | `VERSION="1.20.0"` hard-assign in `src/sudoer-cli` |
 | **Bootstrap origin** | Historical **cli-template**. This product is **sudoer-cli**. No live parent ship unit. |
 
 **Residual ownership table:**
@@ -152,6 +152,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | Project layout / ship path | `requirement-project-folder` | `src/` + bin targets |
 | Type 0 CLI surface / flags / dispatch | `requirement-shell-cli-interface` | Do not duplicate |
 | Empty argv Type N help | `requirement-shell-cli-zero-arguments` | Local-only |
+| Numbered TTY start list | `requirement-shell-cli-default-interaction` | Case 3: empty argv stays help; verb `menu` / `main` |
 | Local self-managed lifecycle | `requirement-shell-local-self-management` | install / uninstall / where-is-me |
 | Output SSOT (`out_*`) | `requirement-shell-output-requirements` | Do not duplicate |
 | Scratch/cache storage resolve | `requirement-shell-cli-storage` | Do not duplicate |
@@ -229,6 +230,7 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | `requirement-project-folder` | Layout and install locations |
 | `requirement-shell-cli-interface` | Command surface, flags, dispatch |
 | `requirement-shell-cli-zero-arguments` | Type N empty argv |
+| `requirement-shell-cli-default-interaction` | Numbered start list on `menu` / `main` |
 | `requirement-shell-local-self-management` | Local install lifecycle |
 | `requirement-shell-output-requirements` | `out_*` SSOT |
 | `requirement-shell-cli-storage` | Scratch/cache resolve |
@@ -272,6 +274,8 @@ This file is **class law + residual SSOT**, not a second copy of Type 0 lifecycl
 | 2026-08-26 | Active 1.9.7 | Stay-honest Implementation Notes `VERSION` 1.17.1 |
 | 2026-08-26 | Active 1.9.8 | Residual **points** at `requirement-sudoers-file` (grant text dual, Cmnd escape, visudo) |
 | 2026-09-03 | Active 1.9.9 | Stay-honest Implementation Notes `VERSION` 1.18.0 (login-hook-symlink) |
+| 2026-09-03 | Active 1.9.10 | Residual **points** at `requirement-shell-cli-default-interaction`; `VERSION` 1.19.0 |
+| 2026-09-03 | Active 1.9.11 | Stay-honest Implementation Notes `VERSION` 1.20.0 (keep-latest duplicate inbound) |
 
 ---
 

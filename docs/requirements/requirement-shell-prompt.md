@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-prompt.md  
-**Status**: Active (Version 1.1.0)  
+**Status**: Active (Version 1.2.1)  
 **Area**: shell  
 **Key**: `requirement-shell-prompt`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -41,7 +41,7 @@ This requirement is the **project Single Source of Truth** for **how** sudoer-cl
 | Helper | Role | Return |
 |--------|------|--------|
 | `prompt_yes_no` | Destructive / optional confirm | Exit **0** yes, **1** no/cancel |
-| `prompt_ask` | Value with default | Chosen string on **stdout** (class-B; safe for `$(prompt_ask …)`) |
+| `prompt_ask` | Value with default | Chosen string in **`PROMPT_ASK_VALUE`** after a current-shell call. **MUST NOT** `_x=$(prompt_ask …)` / `$()` of this helper. Stdout printf is leftover class-B only. |
 
 1. Domain and lifecycle **MUST NOT** call raw `read` for user-visible confirms.  
 2. Prompt **question text** **MUST** go through `out_msg_n` / `out_*` — never raw product `printf` for the question.  
@@ -53,11 +53,11 @@ Helpers **MUST** read `TTY`, `JSON`, `QUIET`, and optional `INTERACTIVE`. They *
 
 | Condition | `prompt_yes_no` | `prompt_ask` |
 |-----------|-----------------|--------------|
-| `JSON=1` or `QUIET=1` | return 1 (no) | print default; return 0 |
-| `TTY` is not `1` and `INTERACTIVE` is not `1` | return 1 | print default; return 0 |
-| else | ask; `read` | ask; `read`; print answer or default |
+| `JSON=1` or `QUIET=1` | return 1 (no) | set `PROMPT_ASK_VALUE` to default; return 0 |
+| `TTY` is not `1` and `INTERACTIVE` is not `1` | return 1 | set `PROMPT_ASK_VALUE` to default; return 0 |
+| else | ask; `read` | ask; `read`; assign `PROMPT_ASK_VALUE` |
 
-`read` **SHOULD** use `/dev/tty` when the helper is designed for `$(prompt_ask)` so capture does not steal the answer. Direct `if prompt_yes_no; then` **MAY** `read` from stdin when `TTY=1`.
+`read` **SHOULD** use `/dev/tty` when openable so a redirected stdin does not steal the answer. Direct `if prompt_yes_no; then` **MAY** `read` from stdin when `TTY=1`. Callers **MUST NOT** wrap `prompt_ask` in `$()`.
 
 Measuring `[ -t` remains **outside functions** (interactive REQ).
 
@@ -97,11 +97,13 @@ prompt_ask() {
     local default="${2-}"
     local current="${3-}"
     if [ "${JSON}" -eq 1 ] || [ "${QUIET}" -eq 1 ]; then
-        printf '%s' "${default}"
+        PROMPT_ASK_VALUE="${default}"
+        printf '%s' "${PROMPT_ASK_VALUE}"
         return 0
     fi
     if [ "${TTY}" -ne 1 ] && [ "${INTERACTIVE}" -ne 1 ]; then
-        printf '%s' "${default}"
+        PROMPT_ASK_VALUE="${default}"
+        printf '%s' "${PROMPT_ASK_VALUE}"
         return 0
     fi
     if [ -n "${current}" ]; then
@@ -118,11 +120,15 @@ prompt_ask() {
         read -r answer || true
     fi
     if [ -z "${answer}" ]; then
-        printf '%s' "${default}"
+        PROMPT_ASK_VALUE="${default}"
     else
-        printf '%s' "${answer}"
+        PROMPT_ASK_VALUE="${answer}"
     fi
+    printf '%s' "${PROMPT_ASK_VALUE}"
 }
+
+# WARNING — do not wrap prompt_ask in $() / backticks.
+# Caller: prompt_ask "Choice" "" then _choice="${PROMPT_ASK_VALUE}"
 ```
 
 ### 2.4 Implementation Notes (this project)
@@ -133,7 +139,7 @@ prompt_ask() {
 | **Ship unit** | `src/sudoer-cli` |
 | **Live confirm** | `uninstall` uses `prompt_yes_no` unless `--force` |
 | **Dest review** | `interactive` uses **one** `prompt_yes_no` per unfenced inbound file (yes=approve, no/Enter=reject). Domain SSOT owns that mapping. **MUST NOT** add a second helper or a skip/quit menu |
-| **Value ask** | `prompt_ask` reserved; domain must not add ad-hoc `read` |
+| **Value ask** | `prompt_ask` sets `PROMPT_ASK_VALUE`; numbered start list uses it (`requirement-shell-cli-default-interaction`). Domain must not add ad-hoc `read` |
 
 ### 2.5 Why This Requirement Exists (CIAO)
 
@@ -142,6 +148,20 @@ prompt_ask() {
 - **Principle 5**: Question text via `out_*`.
 
 ---
+
+## Under command line for normal user only
+
+When this program runs on Termux, Git Bash, Windows cmd, or the same class (no root login on that shell):
+
+| MUST | MUST NOT |
+|------|----------|
+| Keep **normal user privilege** only | Turn on **admin privilege** or **dedicated system user privilege** |
+| Convert, queue, list, help, and local install into the user bin | In-tool `sudo`; wrap `apt` / `dnf`; `useradd`; write `/etc`; recommend `sudo curl | sh` |
+| Document setup / approve / interactive as **unused** on that class | Invent a dedicated account on that class |
+
+**This requirement:** yes/no and ask helpers stay this login; dest review prompts stay unused on this class.
+
+Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` is set. Git Bash — `MSYSTEM` is `MINGW*` / `MSYS*`. Windows cmd — `OS` is `Windows_NT` and `COMSPEC` names `cmd.exe` (after excluding Git Bash / WSL).
 
 ## 3. Design Principles (CIAO / CIAO-Lite)
 
@@ -160,7 +180,8 @@ prompt_ask() {
 2. Replace `out_msg_n` with raw `printf` for the question.  
 3. Auto-yes on json/quiet/non-TTY.  
 4. Add a second confirm family beside `prompt_yes_no`.  
-5. Turn dest review into three chained `(y/N)` questions (Approve / Reject / Quit) or a skip/quit menu. The dest approval question uses this helper **once**.
+5. Turn dest review into three chained `(y/N)` questions (Approve / Reject / Quit) or a skip/quit menu. The dest approval question uses this helper **once**.  
+6. Capture `prompt_ask` with `$()` / backticks. The answer is `PROMPT_ASK_VALUE` after a current-shell call.
 
 **Violating this rule is a critical prompt regression.**
 
@@ -187,6 +208,7 @@ prompt_ask() {
 | `requirement-shell-local-self-management` | Uninstall confirm |
 | `requirement-domain-sudoer-approval` | Dest review one-off yes/no (approval-question) |
 | `requirement-shell-modular-function-design` | `prompt_` prefix |
+| `requirement-shell-cli-default-interaction` | Menu choice uses `prompt_ask` + `PROMPT_ASK_VALUE` |
 | `docs/requirements/index.md` | Registry |
 
 ---
@@ -198,6 +220,7 @@ prompt_ask() {
 | TP-LC-05 | Uninstall JSON no force fail-closed | `tests/test_local_lifecycle.sh` |
 | TP-ELEV-07 | Static: `prompt_*` / `app_about` consume `TTY`; no live `[ -t` policy gate | `tests/test_cli.sh` |
 | TP-SR-INT-06 | Dest review is one `prompt_yes_no` (yes=approve, no=reject) | `tests/test_domain_sr.sh` |
+| TP-ELEV-10 | No `$()` of `prompt_ask`; `PROMPT_ASK_VALUE` on the menu path | `tests/test_cli.sh` |
 
 ---
 
@@ -205,11 +228,13 @@ prompt_ask() {
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-09-06 | Active 1.2.1 | Under command line for normal user only |
 | 2026-08-14 | Active 1.0.0 | Prompt helper SSOT; samples consume `TTY` |
 | 2026-08-20 | Active 1.1.0 | Dest review uses this helper once (approval-question); no skip/quit family |
+| 2026-09-03 | Active 1.2.0 | `PROMPT_ASK_VALUE`; ban `$()` of `prompt_ask` |
 
 ---
 
-**Last Updated**: 2026-08-20  
+**Last Updated**: 2026-09-03  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

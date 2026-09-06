@@ -1,12 +1,12 @@
 # What to review — sudoer-cli
 
 **Living checklist** (review plan). Product: **sudoer-cli** (Type 0 live; **Type 0 operational** convert/submit/list/show **plus Type 0 test-purpose** `test-json-format`/`test-well-known-binary`/`fence-test` routed; Type 1 `setup` / `interactive` live).  
-**Class:** software-development · **one** Active domain SSOT (`requirement-domain-sudoer-approval` **2.31.0**) · **local-only** install channel.  
+**Class:** software-development · **one** Active domain SSOT (`requirement-domain-sudoer-approval` **2.37.1**) · **local-only** install channel.  
 **Always load first:** `reviews/lessons.md`  
-**Latest report:** `reviews/reports/2026-08-21-shell-cli-test.md` (suite review; dest-owned stamps). Prior: 2026-08-19 dest Fence + OPEN-BEHALF. Actor lock: INC-20260818-001. Cmnd identity: **INC-20260821-001** / **L-CMND-PATH-01**. Dest auto-reject / `set -u`: **INC-20260821-002** / **L-FENCE-ASK-01** / **L-INT-SETU-01**.
+**Latest report:** `reviews/reports/2026-09-06-human-readability-and-coverage.md` (README/help people words; related-shell **Under command line**; TP vs matrix). Prior: 2026-08-21 shell CLI suite; dest-owned stamps. Actor lock: INC-20260818-001. Cmnd identity: **INC-20260821-001** / **L-CMND-PATH-01**. Dest auto-reject / `set -u`: **INC-20260821-002** / **L-FENCE-ASK-01** / **L-INT-SETU-01**.
 
-**Last plan update:** 2026-08-21  
-**Ship unit VERSION:** 1.17.0  
+**Last plan update:** 2026-09-06  
+**Ship unit VERSION:** 1.20.0  
 **Suite baseline:** see `reviews/test-plan.md`
 
 ---
@@ -15,8 +15,8 @@
 
 | # | Check | Notes |
 |---|--------|--------|
-| P1 | Read `docs/requirements/index.md` | Class + shell + three-layer + LPU + **prevention-set 1.6.0** + **domain 2.31.0** + ARSA + dest Fence + coding-style + sudo-command |
-| P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.17.0**) |
+| P1 | Read `docs/requirements/index.md` | Class + shell + three-layer + LPU + **prevention-set 1.6.4** + **domain 2.37.1** + ARSA + dest Fence + coding-style + sudo-command + default-interaction |
+| P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.20.0**) |
 | P3 | Load `reviews/lessons.md` and re-check open L-* that still apply | Skip parent backup L-SUDOERS except **L-JSON-CMDS-01** |
 | P4 | Run `./tests/run.sh` | Record PASS/FAIL/SKIP; **must include TP-SR-14/15/16**, **TP-SR-PRIV-04** / **TP-ELEV-09** / **TP-PREV-03**, and **TP-SR-HOOK-01..04** |
 | P5 | Confirm install **channel** still local-only | No SCRIPT_URL product UX |
@@ -34,6 +34,7 @@
 | Project folder | `requirement-project-folder.md` | `src/`, bins; no `/var/backup` |
 | CLI interface | `requirement-shell-cli-interface.md` | Type 0 commands, flags, dispatch |
 | Empty argv Type N | `requirement-shell-cli-zero-arguments.md` | Empty = help |
+| Numbered start list | `requirement-shell-cli-default-interaction.md` | Case 3: `menu` / `main`; empty argv stays help |
 | Local self-management | `requirement-shell-local-self-management.md` | install/uninstall; mode 0755 |
 | Output SSOT | `requirement-shell-output-requirements.md` | `out_*`; JSON errors; colors consume `TTY`; **operator-readable fatals** (`Next:`) |
 | Modular design | `requirement-shell-modular-function-design.md` | Type 0 prefixes; `sr_` / `lpu_` reserved; `prompt_*` consume `TTY` |
@@ -78,12 +79,14 @@
 | R21 | Dest `interactive` displays a fence match, then moves that file to rejected (no yes/no, no dest write). Standalone approve/reject stay inbound | **have** (1.13.0; domain 2.25.0; dest Fence 1.3.0; **TP-SR-FENCE-12**) |
 | R19 | Type 0 `test-json-format` tests the JSON-format Fence without dest elev; golden login-hook-elev fixture | **have** (1.9.0; **TP-SR-FENCE-05..08**) |
 | R20 | Dest `interactive` asks one-off yes/no (yes=approve, no/Enter=reject; no skip/quit; no three chained y/N) | **have** (1.12.0; domain 2.24.0; **TP-SR-INT-06**) |
+| R27 | Dest `interactive` keeps the latest inbound file per dest (`username`+`service`); older duplicates superseded → rejected (no dest-write, no extra yes/no) | **have** (1.20.0; domain 2.37.0; **TP-SR-INT-07**) |
 | R18 | OPEN-BEHALF: A may submit/remove for B; inbound and dest use B | **have** (1.8.1; **TP-SR-17** / **TP-SR-18**) |
 | R16 | After hook install, LPU can **read** `${LPU_HOME}/.profile` (not `root:root` `0600`); existence is not enough | **open** (checkout 1.8.1 + **TP-SR-HOOK-04**; host still `root:root` `0600`; global **1.8.0**; **L-HOOK-PROFILE-02**; INC-20260818-003 · INC-20260819-001) |
 | R22 | Dest apply of `login-hook-elev` does not install a `.ci-homes` / test-gbin Cmnd; live dest `/etc/sudoers.d/dns-cli-dns-adm` is `/usr/local/bin/dns-cli interactive`; visudo-pass ≠ identity | **have** dest Fence + **TP-SR-WKBIN-*** (1.14.0); **open** host dest file (**L-CMND-PATH-01**; INC-20260821-001) |
 | R23 | Type 0 `fence-test` is a **test-purpose** verb (unit test of a local test folder; `--file PATH`; no sudo except wrap chmod/chown of that folder; no queue). Help lists testers apart from operational. Sample `tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json` | **have** (1.15.2; **TP-SR-FT-01..07** · **TP-CLI-16**) |
 | R24 | Dest-owned `submit_app` / `submit_version`: testers/convert require strings; sibling app/version is not a fence; Type 0 convert/submit stamps live Config (overwrite inbound); interactive prints `queued by {app} {version}` | **have** (1.17.0; dest Fence 1.5.0; **TP-SR-FENCE-13..17**) |
 | R25 | Dest `interactive` asks yes/no on waiting grants (warn on missing `submit_app` / home / `.ci-homes`; do not dest-drain without the question). Must not die `SR_D_SUBMIT_APP: parameter not set` | **have** (1.17.0; **L-FENCE-ASK-01** · **L-INT-SETU-01**; **TP-SR-FENCE-16/17** · **TP-SR-WKBIN-11**; INC-20260821-002) |
+| R26 | Numbered start list is verb `menu` / `main` (case 3); empty argv stays help; no `$()` of `prompt_ask`; Exit **99** | **have** (1.19.0; **TP-CLI-18..21** · **TP-ELEV-10**) |
 
 ## JSON re-encode / convert fidelity — review plan gate
 

@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-modular-function-design.md  
-**Status**: Active (Version 3.2.0 – util_sudo / util_chmod)  
+**Status**: Active (Version 3.2.1 – unused on Termux / Git Bash / Windows cmd)  
 **Area**: shell  
 **Key**: `requirement-shell-modular-function-design`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -104,6 +104,20 @@ Critical sections (output SSOT, install place/remove, storage resolve) **MUST** 
 
 ---
 
+## Under command line for normal user only
+
+When this program runs on Termux, Git Bash, Windows cmd, or the same class (no root login on that shell):
+
+| MUST | MUST NOT |
+|------|----------|
+| Keep **normal user privilege** only | Turn on **admin privilege** or **dedicated system user privilege** |
+| Convert, queue, list, help, and local install into the user bin | In-tool `sudo`; wrap `apt` / `dnf`; `useradd`; write `/etc`; recommend `sudo curl | sh` |
+| Document setup / approve / interactive as **unused** on that class | Invent a dedicated account on that class |
+
+**This requirement:** `util_sudo` stays unused on this class; prefixes do not grow a Type 1/2 path because the helper exists.
+
+Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` is set. Git Bash — `MSYSTEM` is `MINGW*` / `MSYS*`. Windows cmd — `OS` is `Windows_NT` and `COMSPEC` names `cmd.exe` (after excluding Git Bash / WSL).
+
 ## 3. Design Principles (CIAO / CIAO-Lite)
 
 - Single file; logical modules via prefixes.  
@@ -153,6 +167,7 @@ Critical sections (output SSOT, install place/remove, storage resolve) **MUST** 
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-09-06 | Active 3.2.1 | Under command line for normal user only |
 | 2026-08-03 | Active 1.0.0 | folder-backup prefixes including `fb_*` |
 | 2026-08-13 | Active 2.0.0 | cli-template: no domain prefix |
 | 2026-08-13 | Active 3.0.0 | Reserve `sr_` / `lpu_`; ship `src/sudoer-cli` |
