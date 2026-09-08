@@ -4,7 +4,7 @@
 # =============================================================================
 #
 # GENERAL PURPOSE:
-# Run the product test suite offline-friendly, isolated HOME, no public network.
+# Run the product test suite offline-friendly, isolated HOME, local HTTP channel, no public network.
 #
 # Usage:
 #   ./tests/run.sh
@@ -29,6 +29,8 @@ export APP_NAME
 . "${TESTS_ROOT}/test_cli.sh"
 # shellcheck source=test_local_lifecycle.sh
 . "${TESTS_ROOT}/test_local_lifecycle.sh"
+# shellcheck source=test_online_curl_install.sh
+. "${TESTS_ROOT}/test_online_curl_install.sh"
 # shellcheck source=test_domain_sr.sh
 . "${TESTS_ROOT}/test_domain_sr.sh"
 
@@ -54,6 +56,7 @@ fi
 
 run_test_cli
 run_test_local_lifecycle
+run_test_online_curl_install
 run_test_domain_sr
 
 printf '\n== summary ==\n'

@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.22.0] - 2026-09-08
+
+### Added
+
+- **Online install** (`curl | sh`) specialized from **selfmanaged** (A→B only). Default `SCRIPT_URL` is `https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli`. Companion `src/sudoer-cli.sha256`. Empty argv is Type O install-ensure. Live verbs: `install`, `version-check`, `self-update`, `self-uninstall`. **TP-CURL-*** pipe suite, **TP-CSUM-***, **TP-LC-12..18**. Ship unit **`VERSION="1.22.0"`**.
+
+### Changed
+
+- Install class is **online-installable** (not local-only). Bare `uninstall` / `where-is-me` dropped. Global place still mode **0755** and still creates `sudoer-cli-hook`.
+
+## [1.21.0] - 2026-09-06
+
+### Changed
+
+- Dest **`interactive`** (login hook included) prints the waiting grant as **YAML** for reading. The waiting file stays JSON. Type 0 `show` still dumps that JSON file. Domain **2.38.0**. **TP-SR-INT-08**. Ship unit **`VERSION="1.21.0"`**.
+
 ## [1.20.0] - 2026-09-03
 
 ### Changed

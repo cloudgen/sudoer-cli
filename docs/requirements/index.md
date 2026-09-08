@@ -1,18 +1,20 @@
 # Requirements index
 
-**Product:** sudoer-cli — a POSIX `/bin/sh` program a normal login can install, convert, and queue. A host admin who already used password sudo sets up `sudoer-adm` and reviews waiting files. Numbered list is `menu` / `main` (empty argv stays help). (Catalog: Type 0 lifecycle + domain convert/submit live; Type 1 `setup` / `interactive` live.)  
-**Workspace state:** Specialized product law (left genesis); **software-development** class; historical origin **cli-template** (no live parent ship unit). Online / Type O **absent**.  
-**Updated:** 2026-09-06 (help/menu people words; related shell REQs **Under command line for normal user only**)
+**Product:** sudoer-cli — a POSIX `/bin/sh` program a normal login can install with `curl | sh`, convert, and queue. A host admin who already used password sudo sets up `sudoer-adm` and reviews waiting files. Numbered list is `menu` / `main` (empty argv is install-ensure). (Catalog: Type 0 lifecycle + domain convert/submit live; Type 1 `setup` / `interactive` live.)  
+**Workspace state:** Specialized product law (left genesis); **software-development** class; live origin **selfmanaged** (A→B). Online / Type O **present**.  
+**Updated:** 2026-09-08 (online-installable `curl | sh`; Type O; self-update / self-uninstall; **TP-CURL-***)
 
 | ID / key | Title | Area | Status | Path | Updated |
 |----------|-------|------|--------|------|---------|
-| requirement-class-software-dev | Software-development class law + residual stack (posix-sh, local-only); ARSA + dest-fence + **coding-style** + **sudo-command** + **sudoers-file** + **cli-default-interaction** pointers; dest Fences ship Type 0 **test-purpose** `fence-test` (local test folder) | class | Active (1.9.11) | `requirement-class-software-dev.md` | 2026-09-03 |
-| requirement-bootstrap-chain | Historical origin cli-template; this product is sudoer-cli (no live parent ship unit); exactly one Active domain SSOT | architecture | Active (5.2.3) | `requirement-bootstrap-chain.md` | 2026-09-03 |
+| requirement-class-software-dev | Software-development class law + residual stack (posix-sh, online-installable); ARSA + dest-fence + **coding-style** + **sudo-command** + **sudoers-file** + **cli-default-interaction** pointers; dest Fences ship Type 0 **test-purpose** `fence-test` (local test folder) | class | Active (1.10.0) | `requirement-class-software-dev.md` | 2026-09-07 |
+| requirement-bootstrap-chain | Live origin selfmanaged; this product is sudoer-cli; Type O channel; exactly one Active domain SSOT | architecture | Active (5.3.0) | `requirement-bootstrap-chain.md` | 2026-09-07 |
 | requirement-project-folder | Project layout (`src/`), install bins; LPU home / `/etc/{{username}}/` are host paths | architecture | Active (3.1.0) | `requirement-project-folder.md` | 2026-08-14 |
-| requirement-shell-cli-interface | Shell CLI interface (Type 0 lifecycle + Type 0 operational convert/submit + Type 0 **test-purpose** `test-json-format` / `test-well-known-binary` / `fence-test`; Type 1 any-elevated approve; login-hook-symlink after global copy; claimed `menu` / `main`; help headings people-first) | shell | Active (3.10.2) | `requirement-shell-cli-interface.md` | 2026-09-06 |
-| requirement-shell-cli-zero-arguments | Empty argv Type N help (interactive ≠ empty argv; numbered list is `menu` / `main`) | shell | Active (1.2.1) | `requirement-shell-cli-zero-arguments.md` | 2026-09-06 |
-| requirement-shell-cli-default-interaction | Numbered TTY start list on verb `menu` / `main` (case 3; empty argv stays help) | shell | Active (1.0.1) | `requirement-shell-cli-default-interaction.md` | 2026-09-06 |
-| requirement-shell-local-self-management | Local install / uninstall / where-is-me; **mode 0755** multi-user; global copy creates login-hook-symlink | shell | Active (1.5.1) | `requirement-shell-local-self-management.md` | 2026-09-06 |
+| requirement-shell-cli-interface | Shell CLI interface (Type 0 lifecycle + Type 0 operational convert/submit + Type 0 **test-purpose** `test-json-format` / `test-well-known-binary` / `fence-test`; Type 1 any-elevated approve; login-hook-symlink after global copy; claimed `menu` / `main`; help headings people-first) | shell | Active (3.11.0) | `requirement-shell-cli-interface.md` | 2026-09-07 |
+| requirement-shell-cli-zero-arguments | Empty argv Type O install-ensure (numbered list is `menu` / `main`) | shell | Active (1.3.0) | `requirement-shell-cli-zero-arguments.md` | 2026-09-07 |
+| requirement-shell-cli-default-interaction | Numbered TTY start list on verb `menu` / `main` (empty argv is Type O) | shell | Active (1.1.0) | `requirement-shell-cli-default-interaction.md` | 2026-09-07 |
+| requirement-shell-self-management | Online self-management: install / version-check / self-update / self-uninstall / about | shell | Active (1.1.0) | `requirement-shell-self-management.md` | 2026-09-07 |
+| requirement-shell-automatic-checksum | Automatic companion-digest integrity (`${SCRIPT_URL}.sha256`) | shell | Active (1.1.0) | `requirement-shell-automatic-checksum.md` | 2026-09-07 |
+| requirement-shell-local-self-management | Historical local-copy package; **superseded** by online self-management | shell | Superseded (1.5.1) | `requirement-shell-local-self-management.md` | 2026-09-07 |
 | requirement-shell-output-requirements | Central `out_*` output SSOT; colors consume `TTY`; operator-readable fatals (happened / Next:); visudo-fail worked example; default-cli-main-menu-style printers used by claimed `menu` / `main` | shell | Active (1.3.1) | `requirement-shell-output-requirements.md` | 2026-09-03 |
 | requirement-shell-modular-function-design | Single-file modular prefixes; domain `sr_` / `lpu_` reserved; `prompt_*` consume `TTY`; `util_sudo` / `util_chmod` | shell | Active (3.2.1) | `requirement-shell-modular-function-design.md` | 2026-09-06 |
 | requirement-shell-script-coding | POSIX writing-style specialize-in home; **points** at sudo-command for wrappers; do-not-capture-read | shell | Active (1.4.1) | `requirement-shell-script-coding.md` | 2026-09-06 |
@@ -29,20 +31,17 @@
 | requirement-incorrect-json-format | Dest **Fence**: incorrect JSON format (independent REQ; dest table still prints; Type 0 **test-purpose** `test-json-format`; dest-written `submit_by`; dest-owned `submit_app` / `submit_version`; dest review missing stamp is warn-then-ask; garbage JSON display-then-rejected) | domain | Active (1.5.0) | `requirement-incorrect-json-format.md` | 2026-08-21 |
 | requirement-well-known-sudoer-binary-fence | Well-known sudoer binary (closed system prefixes + no interpreter Cmnd; dest **warn then ask**; Type 0 testers/convert fail closed; Type 0 **test-purpose** `test-well-known-binary`; list tester `fence-test`) | domain | Active (1.2.0) | `requirement-well-known-sudoer-binary-fence.md` | 2026-08-21 |
 | requirement-sudoers-file | Grant sudoers file (text dual; visudo-legal Cmnd arg escape; visudo -cf; operator-readable visudo-fail; stay-honest sibling service grants) | domain | Active (1.1.0) | `requirement-sudoers-file.md` | 2026-08-26 |
-| requirement-domain-sudoer-approval | **Domain SSOT** — A may submit for B; filename uses B; human decides via one-off yes/no; dest fence table; Type 0 **test-purpose** `fence-test` / `test-json-format` / `test-well-known-binary`; dest-owned `submit_app` / `submit_version`; dest-written `submit_by`; JSON-format fence match → rejected; missing stamp / untrusted Cmnd warn then ask; grant sudoers file **points** at `requirement-sudoers-file`; leftover Self-scope dropped (OPEN-BEHALF); worked samples `alice` / `webservice`; §1.1 Decide names warn-then-ask; submit `/var/{{APP_NAME}}/sudoer-request`; login-hook-symlink; hook checks `~/.profile`; rc owned by LPU; keep-latest duplicate inbound | domain | Active (2.37.1) | `requirement-domain-sudoer-approval.md` | 2026-09-06 |
+| requirement-domain-sudoer-approval | **Domain SSOT** — A may submit for B; filename uses B; human decides via one-off yes/no; dest fence table; Type 0 **test-purpose** `fence-test` / `test-json-format` / `test-well-known-binary`; dest-owned `submit_app` / `submit_version`; dest-written `submit_by`; JSON-format fence match → rejected; missing stamp / untrusted Cmnd warn then ask; grant sudoers file **points** at `requirement-sudoers-file`; leftover Self-scope dropped (OPEN-BEHALF); worked samples `alice` / `webservice`; §1.1 Decide names warn-then-ask; submit `/var/{{APP_NAME}}/sudoer-request`; login-hook-symlink; hook checks `~/.profile`; rc owned by LPU; keep-latest duplicate inbound; YAML login-hook review display | domain | Active (2.38.0) | `requirement-domain-sudoer-approval.md` | 2026-09-06 |
 
 ## Intentionally absent
 
 | Surface | Status on sudoer-cli |
 |---------|----------------------|
-| Online install / `SCRIPT_URL` / Type O empty-argv install-ensure | **Absent** |
-| `version-check` / `self-update` / `self-uninstall` | **Absent** |
-| Automatic companion `.sha256` channel integrity law | **Absent** |
 | Folder archive backup / restore / retention | **Absent** |
 | Type 2 execution context (run as LPU euid for `/etc` writes) | **Absent** — sudoer-adm is an authorizer |
 | `--purge-grants` on LPU teardown | **Absent** in v1 |
 
-**Install mode:** **local-only** (`install` + `uninstall` + `where-is-me`). Not dual-mode. Global 0755 is the production trust path for F6.
+**Install mode:** **online-installable** (`curl | sh` + `install` + `version-check` + `self-update` + `self-uninstall`). Not dual-mode. Global 0755 is the production trust path for F6.
 
 **Rules for agents:**
 
@@ -55,7 +54,7 @@
 6a. **Coding-style related REQ:** software-development requires Active `requirement-shell-script-coding` (language-matched specialize-in home). **MUST NOT** skip so portable lessons arrive raw.  
 6b. **In-tool sudo:** POSIX products that invoke sudo inside the ship unit require Active `requirement-shell-sudo-command` (sudo-wrapping function; check before sudo; chmod example). Coding-style **points**.  
 7. **Domain SSOT:** exactly one Active `requirement-domain-sudoer-approval.md`. That file **presents** the file-based JSON approval machine (roles, submit-when, JSON verify, dest fence table, Type 1 authz, login hook, `.profile` check/create, interactive loop) plus the four pillars. Help **must not** list a verb with no dispatcher arm. Type 0 domain is **routed**; Type 1 `setup` and `interactive` are **live**. Grant sudoers **file** (text dual, Cmnd arg escape, visudo -cf, visudo-fail copy) is owned by `requirement-sudoers-file`; domain **points**.  
-8. **Do not reintroduce** online install or Type 2 execution without explicit user order and registry update.  
+8. **Do not drop** online install / Type O while the product claims `curl | sh`. **Do not reintroduce** Type 2 execution without explicit user order and registry update.  
 9. **Prevention set:** `requirement-privilege-prevention-set.md` is the closed catalog of what this product **blocks** and what it **must not block**. Do **not** invent a wall that is not a row in that file.  
 10. **Dest Fence:** dest **Fence** is incorrect JSON format (`requirement-incorrect-json-format`). Well-known sudoer binary (`requirement-well-known-sudoer-binary-fence`) is dest **warn then ask** plus convert/submit/tester fail-closed. Dest tables still print and point at those REQs. Dest Fences **MUST** ship Type 0 **test-purpose** `fence-test` (unit test of a **local test folder**; sudo wrap **only** chmod/chown of that folder; **no** queue / dest / setup). Help **MUST** list testers apart from operational verbs. **MUST NOT** invent an extra dest fence. visudo reject is **not** a dest Fence (`requirement-sudoers-file`).  
 11. **ARSA:** `requirement-actor-role-subject-approver` is the consider catalog. Do **not** invent an extra approver.

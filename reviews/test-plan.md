@@ -3,9 +3,9 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.20.0  
-**Last plan update:** 2026-09-03 (claimed case-3 `menu` / `main` **TP-CLI-18..21** · **TP-ELEV-10**)  
-**Last suite run:** PASS=516 FAIL=0 SKIP=7 (2026-09-06; 1.20.0 people-first help/menu; TP-PREV-01/02 and TP-TMP-02 labeled; live Type 1 skipped)  
+**Product VERSION:** 1.22.0  
+**Last plan update:** 2026-09-08 (online-installable `curl \| sh`; Type O; **TP-CURL-*** · **TP-CSUM-*** · **TP-LC-12..18**)  
+**Last suite run:** PASS=589 FAIL=0 SKIP=9 (2026-09-08; 1.22.0 `curl \| sh` specialize from selfmanaged; live Type 1 skipped)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)
@@ -18,13 +18,13 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 |------|--------|----------|
 | Syntax `sh -n` | have | TP-CLI-01 |
 | version / help / about human + JSON | have | TP-CLI-02..06 |
-| Type N empty argv = help | have | TP-CLI-07 · **TP-CLI-18** |
+| Type O empty argv = install-ensure | have | TP-CLI-07 · **TP-CLI-18** · **TP-LC-11/14/15** · **TP-CURL-02/03/08** |
 | Numbered start list (`menu` / `main`) | have | **TP-CLI-18..21** · **TP-ELEV-10** |
 | Unknown + quiet + set -u HOME | have | TP-CLI-08..11 |
 | Storage isolation | have | TP-CLI-12 |
-| No online verbs / no SCRIPT_URL UX | have | TP-CLI-04, TP-CLI-10 |
+| Online lifecycle verbs + SCRIPT_URL UX | have | TP-CLI-04, TP-CLI-10 |
 | Trimmed parent verbs fail closed | have | TP-CLI-13 |
-| Local install / idempotent / uninstall / mode 0755 | have | TP-LC-01..10 |
+| Channel install / self-update / self-uninstall / mode 0755 | have | TP-LC-01..18 |
 | Backup / restore | n/a | Absent by design (not a backup product) |
 | Domain sudoers-request (convert / submit / queues) | have | **TP-SR-01..21** + **TP-SR-PRIV-01..04** + **TP-SR-FENCE-01..17** — `tests/test_domain_sr.sh` |
 | Privilege prevention set (closed block vs must-remain-open) | have | **TP-PREV-01..03** (aliases of PRIV-03 / SR-03 / PRIV-04) |
@@ -34,7 +34,7 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | Password-sudo / package Type 1 ladder | n/a | Not claimed; fail-closed is TP-SR-PRIV-01 |
 | Sudo escalation check (avoid `-n` unless specified) | have | **TP-ELEV-08** + **TP-SR-PRIV-02** |
 | No second actor lock after elev (**T1-SECOND-LOCK**) | have | **TP-ELEV-09** + **TP-SR-PRIV-04** + **TP-PREV-03** — **required** on full review (what-to-review **AL-6**) |
-| Online curl / companion checksum | n/a | Local-only product |
+| Online curl / companion checksum | have | **TP-CURL-01..09** · **TP-CSUM-01..05** |
 | Coding-style related REQ (POSIX writing lessons) | n/a | Review-time; `requirement-shell-script-coding`; indirect TP-CLI-01 / TP-ELEV-07 |
 | Sudo-wrapping function + check before sudo (chmod example) | have | **TP-SUDO-01..07** |
 
@@ -49,13 +49,13 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-CLI-01 | `sh -n` ship unit | `tests/test_cli.sh` | requirement-shell-cli-interface | **have** |
 | TP-CLI-02 | version human | test_cli | requirement-shell-cli-interface | **have** |
 | TP-CLI-03 | version JSON | test_cli | requirement-shell-output-requirements | **have** |
-| TP-CLI-04 | help local verbs; no online; no backup/restore/sudoers | test_cli | requirement-shell-cli-interface · bootstrap-chain | **have** |
+| TP-CLI-04 | help online lifecycle + domain; no backup/restore; no CHECKSUM | test_cli | requirement-shell-cli-interface · bootstrap-chain | **have** |
 | TP-CLI-05 | help JSON short | test_cli | requirement-shell-output-requirements | **have** |
 | TP-CLI-06 | about JSON storage; queue paths allowed | test_cli | requirement-shell-cli-storage | **have** |
-| TP-CLI-07 | empty argv Type N help | test_cli | requirement-shell-cli-zero-arguments | **have** |
+| TP-CLI-07 | empty argv Type O (dead channel non-zero, not help) | test_cli | requirement-shell-cli-zero-arguments | **have** |
 | TP-CLI-08 | unknown fail-closed | test_cli | requirement-shell-cli-interface | **have** |
 | TP-CLI-09 | quiet suppresses version | test_cli | requirement-shell-output-requirements | **have** |
-| TP-CLI-10 | online verbs rejected | test_cli | requirement-bootstrap-chain | **have** |
+| TP-CLI-10 | online verbs routed (not unknown) | test_cli | requirement-bootstrap-chain · requirement-shell-self-management | **have** |
 | TP-CLI-11 | env -u HOME version | test_cli | class / defensive | **have** |
 | TP-CLI-12 | storage isolation | test_cli | requirement-shell-cli-storage | **have** |
 | TP-CLI-13 | backup/restore/`remove-project-sudoers` unknown (`print-sudoers` is domain) | test_cli | requirement-bootstrap-chain · interface | **have** |
@@ -73,20 +73,52 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SUDO-06 | missing path: `util_chmod` nonzero, no sudo | test_cli | requirement-shell-sudo-command | **have** |
 | TP-SUDO-07 | already-root: `util_sudo` runs without sudo | test_cli | requirement-shell-sudo-command | **have** |
 
-### TP-LC (local lifecycle)
+### TP-LC (online lifecycle on local channel)
 
 | TP-ID | Intent | Suite | Primary requirement(s) | Status |
 |-------|--------|-------|------------------------|--------|
-| TP-LC-01 | install → USER_BIN | test_local_lifecycle | requirement-shell-local-self-management | **have** |
-| TP-LC-02 | installed binary version | test_local_lifecycle | local self-management | **have** |
+| TP-LC-01 | install → USER_BIN | test_local_lifecycle | requirement-shell-self-management | **have** |
+| TP-LC-02 | installed binary version | test_local_lifecycle | requirement-shell-self-management | **have** |
 | TP-LC-03 | reinstall already-installed | test_local_lifecycle | requirement-shell-idempotency | **have** |
-| TP-LC-04 | where-is-me | test_local_lifecycle | local self-management | **have** |
-| TP-LC-05 | uninstall JSON no force fail-closed | test_local_lifecycle | interactive-vs-noninteractive | **have** |
-| TP-LC-06 | uninstall --force removes | test_local_lifecycle | local self-management | **have** |
-| TP-LC-07 | uninstall absent no-op | test_local_lifecycle | idempotency | **have** |
-| TP-LC-08 | about shows installed | test_local_lifecycle | local self-management | **have** |
-| TP-LC-09 | installed mode is `0755` | test_local_lifecycle | local self-management §2.3.1 | **have** |
-| TP-LC-10 | reinstall without force heals `0711` → `0755` | test_local_lifecycle | local self-management §2.3.1 | **have** |
+| TP-LC-04 | about JSON installed + script_url | test_local_lifecycle | requirement-shell-self-management | **have** |
+| TP-LC-05 | self-uninstall JSON no force fail-closed | test_local_lifecycle | interactive-vs-noninteractive · self-management | **have** |
+| TP-LC-06 | self-uninstall --force removes | test_local_lifecycle | requirement-shell-self-management | **have** |
+| TP-LC-07 | self-uninstall absent no-op | test_local_lifecycle | idempotency | **have** |
+| TP-LC-08 | about shows installed | test_local_lifecycle | requirement-shell-self-management | **have** |
+| TP-LC-09 | installed mode is `0755` | test_local_lifecycle | requirement-shell-self-management | **have** |
+| TP-LC-10 | reinstall without force heals `0711` → `0755` | test_local_lifecycle | requirement-shell-idempotency | **have** |
+| TP-LC-11 | empty argv when local-installed is ensure, not help | test_local_lifecycle | requirement-shell-cli-zero-arguments | **have** |
+| TP-LC-12 | version-check JSON + human vs local channel | test_local_lifecycle | requirement-shell-self-management | **have** |
+| TP-LC-13 | self-update already-latest | test_local_lifecycle | requirement-shell-self-management | **have** |
+| TP-LC-14 | empty argv first install places binary | test_local_lifecycle | requirement-shell-cli-zero-arguments | **have** |
+| TP-LC-15 | empty argv when global-installed is ensure, not help | test_local_lifecycle | requirement-shell-cli-zero-arguments | **have** |
+| TP-LC-16 | self-update downgrade refuse without --force | test_local_lifecycle | requirement-shell-self-management | **have** |
+| TP-LC-17 | self-update --force allows downgrade | test_local_lifecycle | requirement-shell-self-management | **have** |
+| TP-LC-18 | `inst_maybe_install` JSON/QUIET places or fail closed | test_local_lifecycle | requirement-shell-cli-zero-arguments | **have** |
+
+### TP-CSUM (companion digest)
+
+| TP-ID | Intent | Suite | Primary requirement(s) | Status |
+|-------|--------|-------|------------------------|--------|
+| TP-CSUM-01 | Publisher sidecar matches ship unit | test_local_lifecycle | requirement-shell-automatic-checksum | **have** |
+| TP-CSUM-02 | Human --force install shows link / value / PASS | test_local_lifecycle | requirement-shell-automatic-checksum | **have** |
+| TP-CSUM-03 | CHECKSUM pin mismatch aborts | test_local_lifecycle | requirement-shell-automatic-checksum | **have** |
+| TP-CSUM-04 | CHECKSUM pin match installs | test_local_lifecycle | requirement-shell-automatic-checksum | **have** |
+| TP-CSUM-05 | help/about omit CHECKSUM | test_cli (TP-CLI-04/06) | requirement-shell-automatic-checksum · interface | **have** |
+
+### TP-CURL (`curl \| sh` pipe)
+
+| TP-ID | Intent | Suite | Primary requirement(s) | Status |
+|-------|--------|-------|------------------------|--------|
+| TP-CURL-01 | Local channel ship unit + companion | test_online_curl_install | requirement-shell-automatic-checksum | **have** |
+| TP-CURL-02 | First `curl \| sh` places USER_BIN binary | test_online_curl_install | requirement-shell-cli-zero-arguments | **have** |
+| TP-CURL-03 | Second pipe already-installed, not help, not silent | test_online_curl_install | requirement-shell-cli-zero-arguments | **have** |
+| TP-CURL-04 | Hostile `.bashrc` under set -u still loud | test_online_curl_install | interactive-vs-noninteractive | **have** |
+| TP-CURL-05 | Bad URL curl is not silent | test_online_curl_install | interactive-vs-noninteractive | **have** |
+| TP-CURL-06 | Product supports `sh` (no bash-required gate) | test_online_curl_install | requirement-shell-cli-interface | **have** |
+| TP-CURL-07 | `curl \| sh -s -- version` | test_online_curl_install | requirement-shell-cli-interface | **have** |
+| TP-CURL-08 | Unreachable channel empty argv non-zero, not silent | test_online_curl_install | requirement-shell-cli-zero-arguments | **have** |
+| TP-CURL-09 | Published online channel smoke | test_online_curl_install | self-management | **optional** |
 
 ### TP-SR (sudoers-request domain — Type 0 routed)
 
@@ -167,6 +199,7 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-INT-05 | `interactive` loop reads ids on fd 3 so `prompt_yes_no` keeps stdin | `tests/test_domain_sr.sh` | domain · prompt | **have** |
 | TP-SR-INT-06 | Dest review is one-off `prompt_yes_no` (yes=approve, no/Enter=reject; no skip/quit; no three chained y/N) | `tests/test_domain_sr.sh` | domain · prompt · approval-question | **have** |
 | TP-SR-INT-07 | Duplicate inbound same dest: keep latest; older superseded → rejected; other dest stays | `tests/test_domain_sr.sh` | domain · duplicate-inbound-request | **have** |
+| TP-SR-INT-08 | Login-hook / `interactive` prints YAML review body; waiting file stays JSON; Type 0 `show` still dumps JSON | `tests/test_domain_sr.sh` | domain · login-interactive-review-hook | **have** |
 | TP-SR-HOOK-01 | `setup` checks LPU `.profile`; missing → create source-bashrc sample | `tests/test_domain_sr.sh` | domain · LPU | **have** |
 | TP-SR-HOOK-02 | Existing `.profile` is not overwritten | `tests/test_domain_sr.sh` | domain | **have** |
 | TP-SR-HOOK-03 | Created `.profile` sources `.bashrc` (markers) | `tests/test_domain_sr.sh` | domain | **have** |
@@ -212,7 +245,7 @@ This product claims **fail-closed Type 1** (approve/setup without euid 0), **not
 
 1. Closing a **bug** finding updates the matching TP to **have**.  
 2. Do not mark TP **have** without a suite assertion (or honest skip/n/a).  
-3. Do not reintroduce online TP-CURL/TP-CSUM or TP-FOLDER-BACKUP as Core without product-mode change.  
+3. Online **TP-CURL** / **TP-CSUM** are Core for this product (online-installable). Do not reintroduce folder-archive backup/restore as Core.  
 4. Domain Type 0 convert/submit/list/show are **routed**. Type 1 `setup`/`approve` fail closed without euid 0 (**TP-SR-PRIV-01**). Bootstrap vs exclusive-LPU is **TP-SR-PRIV-02**. `setup` body is **TP-SR-PRIV-03**. Approve has no second actor lock (**TP-SR-PRIV-04** / **TP-PREV-03** / **TP-ELEV-09**). There is no Gap and no flag on `useradd`. Closed block vs must-remain-open is **requirement-privilege-prevention-set** (**TP-PREV-01/02/03**).  
 5. **TP-SR-07..09** MUST use the worked samples from `requirement-domain-sudoer-approval` (alice / webservice).  
 6. Convert tests that call `visudo` **MUST** skip honestly if `visudo` is absent (not silent pass).  

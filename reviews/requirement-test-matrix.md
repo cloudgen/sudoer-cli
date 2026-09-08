@@ -1,18 +1,20 @@
 # Requirement ↔ test matrix — sudoer-cli
 
-**Updated:** 2026-09-03 (claimed case-3 `menu` / `main` **TP-CLI-18..21** · **TP-ELEV-10**)  
-**Product VERSION:** 1.20.0  
+**Updated:** 2026-09-08 (online-installable `curl \| sh`; Type O; **TP-CURL-*** · **TP-CSUM-*** · **TP-LC-12..18**)  
+**Product VERSION:** 1.22.0  
 **Suite:** `tests/run.sh`
 
 | Requirement key | Area | TP families | Coverage notes |
 |-----------------|------|-------------|----------------|
 | requirement-class-software-dev | class | TP-CLI-01, TP-CLI-11 | Syntax + stack residual; no online package |
-| requirement-bootstrap-chain | architecture | TP-CLI-04, TP-CLI-10, TP-CLI-13 | Online and domain/backup surfaces absent |
+| requirement-bootstrap-chain | architecture | TP-CLI-04, TP-CLI-10, TP-CLI-13 | Origin selfmanaged; online verbs live; backup/restore unknown |
 | requirement-project-folder | architecture | TP-LC-01 | src ship unit + user bin |
 | requirement-shell-cli-interface | shell | TP-CLI-* (incl. **15** / **16** / **17** / **18..21**) | Commands, flags, dispatch; **test-purpose** `test-well-known-binary` / `fence-test` routed; help lists testers apart from operational; claimed `menu` / `main` |
-| requirement-shell-cli-zero-arguments | shell | TP-CLI-07 · **TP-CLI-18** | Type N help; empty argv stays help when menu claimed |
-| requirement-shell-cli-default-interaction | shell | **TP-CLI-17** · **TP-CLI-18..21** · **TP-ELEV-10** | Case 3 `menu` / `main`; membership; no `$()` of `prompt_ask` |
-| requirement-shell-local-self-management | shell | TP-LC-* (incl. **09/10** mode) | install/uninstall/where-is-me; **0755** |
+| requirement-shell-cli-zero-arguments | shell | TP-CLI-07 · **TP-CLI-18** · **TP-LC-11/14/15/18** · **TP-CURL-02/03/08** | Type O install-ensure; menu/main still numbered list |
+| requirement-shell-cli-default-interaction | shell | **TP-CLI-17** · **TP-CLI-18..21** · **TP-ELEV-10** | Case 3 `menu` / `main`; empty argv is Type O; no `$()` of `prompt_ask` |
+| requirement-shell-self-management | shell | **TP-LC-01..08/12/13/16/17** · **TP-CLI-04/10** | install / version-check / self-update / self-uninstall / about |
+| requirement-shell-automatic-checksum | shell | **TP-CSUM-01..05** · **TP-CURL-01** | Companion sidecar; pin mismatch/match; help/about omit CHECKSUM |
+| requirement-shell-local-self-management | shell | (superseded) | Historical local-copy package; online self-management owns lifecycle |
 | requirement-shell-output-requirements | shell | TP-CLI-03,05,08,09, **17**, **TP-SR-21** | JSON / quiet / errors; operator-readable fatals; visudo-fail slots; default-cli-main-menu-style printers |
 | requirement-shell-modular-function-design | shell | (indirect) | no `fb_*`; `app_main` / `out_*` |
 | requirement-shell-script-coding | shell | n/a (review-time); indirect TP-CLI-01, TP-ELEV-07, **TP-ELEV-10**, TP-SUDO-* | Specialize-in home; **points** at sudo-command; do-not-capture-read |
@@ -29,8 +31,8 @@
 | requirement-incorrect-json-format | domain | **TP-SR-FENCE-01..17**, **TP-SR-FT-01..07** | Dest Fence before yes/no; Type 0 `test-json-format`; list tester `fence-test`; dest-written `submit_by`; dest-owned `submit_app` / `submit_version`; Type 0 must not plant `submit_by`; pretty stamp first `{` only; garbage JSON display-then-rejected; missing stamp dest **warn then ask** **FENCE-17**; no `set -u` crash **FENCE-16** |
 | requirement-well-known-sudoer-binary-fence | domain | **TP-SR-WKBIN-01..11**, **TP-CLI-15**, **TP-SR-FT-01..07** | Closed system prefixes + no interpreter; Type 0 `test-well-known-binary`; list tester `fence-test`; convert/submit fail closed; dest interactive **warn then ask** **WKBIN-11**; nginx / certbot / dns-cli / gitlab-ctl |
 | requirement-sudoers-file | domain | **TP-SR-03**, **TP-SR-07..09**, **TP-SR-19..21** | Grant sudoers text dual; Cmnd arg escape `\:`; visudo -cf private copy; visudo-fail names visudo not “host validation”; `*` not glob; not a dest Fence |
-| requirement-domain-sudoer-approval | domain | **TP-SR-01..21**, **TP-SR-PRIV-01..04**, **TP-CLI-14**, **TP-CLI-15**, **TP-CLI-16**, **TP-SR-INT-01..07**, **TP-SR-HOOK-01..05**, **TP-SR-FENCE-01..17**, **TP-SR-WKBIN-01..11**, **TP-SR-FT-01..07**, **TP-SR-Q-01..03** | Type 0 convert/submit/`test-json-format`/`test-well-known-binary`/`fence-test` **have**; dest-written `submit_by`; dest-owned `submit_app` / `submit_version` **FENCE-13..17**; pretty `commands[]` fidelity **14/15/16**; A-for-B **17/18**; grant sudoers file **points** **19/20/21**; dest Fence **FENCE-*** · **WKBIN-*** · **FT-***; interactive fence → rejected **FENCE-12**; warn-then-ask **FENCE-17** / **WKBIN-11**; one-off approval-question **INT-06**; keep-latest duplicate inbound **INT-07**; elevated sudoer may approve; hook `.profile`; rc owned by LPU; login-hook-symlink **HOOK-05** |
+| requirement-domain-sudoer-approval | domain | **TP-SR-01..21**, **TP-SR-PRIV-01..04**, **TP-CLI-14**, **TP-CLI-15**, **TP-CLI-16**, **TP-SR-INT-01..08**, **TP-SR-HOOK-01..05**, **TP-SR-FENCE-01..17**, **TP-SR-WKBIN-01..11**, **TP-SR-FT-01..07**, **TP-SR-Q-01..03** | Type 0 convert/submit/`test-json-format`/`test-well-known-binary`/`fence-test` **have**; dest-written `submit_by`; dest-owned `submit_app` / `submit_version` **FENCE-13..17**; pretty `commands[]` fidelity **14/15/16**; A-for-B **17/18**; grant sudoers file **points** **19/20/21**; dest Fence **FENCE-*** · **WKBIN-*** · **FT-***; interactive fence → rejected **FENCE-12**; warn-then-ask **FENCE-17** / **WKBIN-11**; one-off approval-question **INT-06**; keep-latest duplicate inbound **INT-07**; YAML login-hook review **INT-08**; elevated sudoer may approve; hook `.profile`; rc owned by LPU; login-hook-symlink **HOOK-05** |
 
-**Absent by design (no TP Core):** online-install, remote self-management, automatic channel checksum, folder-archive backup/restore.
+**Absent by design (no TP Core):** folder-archive backup/restore. Online install / self-management / companion checksum are **Core**.
 
 **Honest Gap:** live `useradd`/`userdel` on the host is not exercised (non-root CI). Setup body is proven statically (**TP-SR-PRIV-03**). `interactive` is live (**TP-SR-INT-***).

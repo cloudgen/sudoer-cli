@@ -604,6 +604,12 @@ EOF
     assert_contains "TP-SR-INT-07 collapse archives superseded" "${_coll}" "sr_drop_superseded_inbound"
     assert_not_contains "TP-SR-INT-07 collapse has no prompt" "${_coll}" "prompt_yes_no"
     assert_contains "TP-SR-INT-07 superseded note shape" "$(sed -n '/^sr_archive_superseded_rejected()/,/^}/p' "${SCRIPT}")" "superseded"
+    _yml=$(sed -n '/^sr_print_review_yaml()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-INT-08 interactive prints YAML" "${_int}" "sr_print_review_yaml"
+    assert_not_contains "TP-SR-INT-08 interactive does not dump via show" "${_int}" "sr_show"
+    assert_contains "TP-SR-INT-08 yaml purpose key" "${_yml}" 'sr_yaml_kv "purpose"'
+    assert_contains "TP-SR-INT-08 yaml commands key" "${_yml}" 'out_plain "commands:"'
+    assert_contains "TP-SR-INT-08 yaml username key" "${_yml}" 'sr_yaml_kv "username"'
     assert_not_contains "TP-SR-INT-04 loop is not a stub" "${_int}" "not implemented yet"
     assert_contains "TP-SR-INT-04 empty inbound note" "${_int}" "no pending requests"
     assert_contains "TP-SR-INT-04 uses prompt_yes_no" "${_int}" "prompt_yes_no"
@@ -668,6 +674,14 @@ EOF
             sh "${SCRIPT}" --queue-root "${_pq}" interactive 2>&1)
         assert_eq "TP-SR-INT-06 live no-exit 0" 0 "$?"
         assert_contains "TP-SR-INT-06 live rejected note" "${_err}" "rejected"
+        assert_contains "TP-SR-INT-08 live yaml purpose" "${_err}" "purpose:"
+        assert_contains "TP-SR-INT-08 live yaml username" "${_err}" "username:"
+        assert_contains "TP-SR-INT-08 live yaml commands" "${_err}" "commands:"
+        assert_contains "TP-SR-INT-08 live yaml path" "${_err}" "path:"
+        assert_not_contains "TP-SR-INT-08 live no json username key" "${_err}" '"username":'
+        assert_not_contains "TP-SR-INT-08 live no json schema key" "${_err}" '"schema_version"'
+        assert_file_exists "TP-SR-INT-08 waiting file stayed json then moved" "${_pq}/sudoer-rejected/${_rid}"
+        assert_contains "TP-SR-INT-08 rejected archive still json" "$(cat "${_pq}/sudoer-rejected/${_rid}")" '"purpose"'
         assert_not_contains "TP-SR-INT-06 live no skip" "${_err}" "skipped"
         assert_not_contains "TP-SR-INT-06 live no quit" "${_err}" "quit; remaining"
         assert_not_contains "TP-SR-INT-06 live no Reject prompt" "${_err}" "Reject "
@@ -702,6 +716,7 @@ EOF
         t_skip "TP-SR-INT-04 empty inbound live needs Type 1"
         t_skip "TP-SR-INT-06 live reject needs Type 1"
         t_skip "TP-SR-INT-07 live duplicate collapse needs Type 1"
+        t_skip "TP-SR-INT-08 live YAML review needs Type 1"
     fi
 
     # TP-SR-FENCE: dest Fence before yes/no; reject re-validates; action mismatch; subject mismatch is not a fence

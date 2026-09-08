@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-class-software-dev.md  
-**Status**: Active (Version 1.9.11 – residual points at numbered start list; VERSION 1.20.0)  
+**Status**: Active (Version 1.10.0 – online-installable; VERSION 1.22.0)  
 **Area**: class  
 **Key**: `requirement-class-software-dev`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -16,7 +16,7 @@ This file is **not** a second copy of install, output, storage, or writing-style
 
 | Box | Meaning | Example |
 |-----|---------|---------|
-| You / this login | Use and install `sudoer-cli` without becoming root | `sh src/sudoer-cli install` |
+| You / this login | Use and install `sudoer-cli` without becoming root | `curl -fsSL …/src/sudoer-cli \| sh` |
 | The other role | Host admin who already used password `sudo` | `sudo sudoer-cli setup` |
 | Not this file | Domain verbs, dest fences, Type map, writing-style body | `requirement-domain-sudoer-approval` · `requirement-actor-role-subject-approver` · `requirement-shell-script-coding` |
 
@@ -128,8 +128,8 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | **Primary runtime / OS family** | POSIX Linux (and compatible UNIX where `/bin/sh` + `mktemp` + `date` exist) |
 | **Architectures supported** | any arch with POSIX sh and the external tools the script invokes |
 | **Git surface** | used when product is published |
-| **Ship unit / install** | yes — `src/sudoer-cli` → `${USER_BIN}/sudoer-cli` (default `~/.local/bin/sudoer-cli`); **local-only** install (no online channel) |
-| **Product version SSOT** | `VERSION="1.20.0"` hard-assign in `src/sudoer-cli` |
+| **Ship unit / install** | yes — `src/sudoer-cli`; **online-installable** (`curl \| sh` via `SCRIPT_URL`) |
+| **Product version SSOT** | `VERSION="1.22.0"` hard-assign in `src/sudoer-cli` |
 | **Bootstrap origin** | Historical **cli-template**. This product is **sudoer-cli**. No live parent ship unit. |
 
 **Residual ownership table:**
@@ -151,16 +151,16 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | In-tool sudo / chmod wrappers | `requirement-shell-sudo-command` | Sudo-wrapping function; check before sudo; chmod example |
 | Project layout / ship path | `requirement-project-folder` | `src/` + bin targets |
 | Type 0 CLI surface / flags / dispatch | `requirement-shell-cli-interface` | Do not duplicate |
-| Empty argv Type N help | `requirement-shell-cli-zero-arguments` | Local-only |
-| Numbered TTY start list | `requirement-shell-cli-default-interaction` | Case 3: empty argv stays help; verb `menu` / `main` |
-| Local self-managed lifecycle | `requirement-shell-local-self-management` | install / uninstall / where-is-me |
+| Empty argv Type O install-ensure | `requirement-shell-cli-zero-arguments` | Online-installable |
+| Numbered TTY start list | `requirement-shell-cli-default-interaction` | Verb `menu` / `main`; empty argv is Type O |
+| Online self-managed lifecycle | `requirement-shell-self-management` | install / version-check / self-update / self-uninstall |
 | Output SSOT (`out_*`) | `requirement-shell-output-requirements` | Do not duplicate |
 | Scratch/cache storage resolve | `requirement-shell-cli-storage` | Do not duplicate |
 | Idempotency / re-run safety | `requirement-shell-idempotency` | Do not duplicate |
 | Interactive vs non-interactive | `requirement-shell-interactive-vs-noninteractive` | Do not duplicate |
 | Modular prefixes / single-file layout | `requirement-shell-modular-function-design` | Do not duplicate |
 | Folder archive backup / restore / retention | **intentionally absent** | Not this product’s domain (sibling folder-backup) |
-| Online install / remote self-management / companion checksum | **intentionally absent** | Not this product’s channel |
+| Companion checksum | `requirement-shell-automatic-checksum` | `${SCRIPT_URL}.sha256` |
 
 ---
 
@@ -192,7 +192,7 @@ This file is **not** a second copy of install, output, storage, or writing-style
 3. Hard-code secrets, personal owner identity, or production host FQDNs into core rules as universal law.  
 4. Duplicate full peer requirement bodies into this residual section.  
 5. Leave Implementation Notes as hollow stubs when Status claims Active.  
-6. Reintroduce Active **online-install** / remote **self-update** / **self-uninstall** / channel **checksum** law without explicit user order (product is **local-only** by design).  
+6. Drop Active **online-install** / remote **self-update** / **self-uninstall** / channel **checksum** law while the product claims `curl \| sh`.  
 7. Treat this file as server-maintenance allowlist law, or register an Active server-maintenance class file in parallel.  
 8. Invent a second primary language SSOT that contradicts peer modular/CLI requirements.  
 9. Skip the actor / role / subject / approver consider, or invent an extra approver.  
@@ -229,7 +229,9 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | `requirement-bootstrap-chain` | This product is hop 0 / origin |
 | `requirement-project-folder` | Layout and install locations |
 | `requirement-shell-cli-interface` | Command surface, flags, dispatch |
-| `requirement-shell-cli-zero-arguments` | Type N empty argv |
+| `requirement-shell-cli-zero-arguments` | Type O empty argv |
+| `requirement-shell-self-management` | Online lifecycle |
+| `requirement-shell-automatic-checksum` | Companion digest |
 | `requirement-shell-cli-default-interaction` | Numbered start list on `menu` / `main` |
 | `requirement-shell-local-self-management` | Local install lifecycle |
 | `requirement-shell-output-requirements` | `out_*` SSOT |
@@ -276,9 +278,10 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | 2026-09-03 | Active 1.9.9 | Stay-honest Implementation Notes `VERSION` 1.18.0 (login-hook-symlink) |
 | 2026-09-03 | Active 1.9.10 | Residual **points** at `requirement-shell-cli-default-interaction`; `VERSION` 1.19.0 |
 | 2026-09-03 | Active 1.9.11 | Stay-honest Implementation Notes `VERSION` 1.20.0 (keep-latest duplicate inbound) |
+| 2026-09-06 | Active 1.9.12 | Stay-honest Implementation Notes `VERSION` 1.21.0 (YAML login-hook review display) |
 
 ---
 
-**Last Updated**: 2026-09-03  
+**Last Updated**: 2026-09-06  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

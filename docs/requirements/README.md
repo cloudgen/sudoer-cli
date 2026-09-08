@@ -2,17 +2,17 @@
 
 Authoritative specialized product law for **sudoer-cli** lives here.
 
-**Current state (2026-09-06):** This folder is the live product law for sudoer-cli: a POSIX `/bin/sh` program you install yourself. A normal login converts and queues JSON; a host admin who already used password `sudo` runs first-time setup and review. Historical starter was **cli-template**. One domain file owns the waiting-folder machine. Registry: `index.md`. (Catalog versions: domain **2.37.1**; dest Fence **1.5.0**; well-known **1.2.0**; class **1.9.11**; CLI **3.10.2**; default interaction **1.0.1**; output **1.3.1**; coding style **1.4.1**; prompt **1.2.1**; interactive **1.5.1**; ARSA **1.0.0**; prevention **1.6.4**.)
+**Current state (2026-09-08):** This folder is the live product law for sudoer-cli: a POSIX `/bin/sh` program you install with `curl | sh`. A normal login converts and queues JSON; a host admin who already used password `sudo` runs first-time setup and review. Live origin **selfmanaged** (A→B). One domain file owns the waiting-folder machine. Registry: `index.md`. (Catalog versions: domain **2.38.0**; dest Fence **1.5.0**; well-known **1.2.0**; class **1.10.0**; CLI **3.11.0**; default interaction **1.1.0**; Type O **1.3.0**; self-management **1.1.0**; automatic-checksum **1.1.0**; output **1.3.1**; coding style **1.4.1**; prompt **1.2.1**; interactive **1.5.1**; ARSA **1.0.0**; prevention **1.6.4**.)
 
 ## Product identity (summary)
 
 | Field | Value |
 |-------|--------|
 | Product / `APP_NAME` | `sudoer-cli` |
-| Version SSOT | `1.20.0` (ship unit hard-assign) |
+| Version SSOT | `1.22.0` (ship unit hard-assign) |
 | Ship unit | `src/sudoer-cli` |
-| Default install | `~/.local/bin/sudoer-cli` (global `/usr/local/bin/sudoer-cli` so `sudoer-adm` can review without a password) |
-| Install mode | **Local-only** |
+| Default install | `curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli \| sh` → `~/.local/bin/sudoer-cli` (global `/usr/local/bin/sudoer-cli` so `sudoer-adm` can review without a password) |
+| Install mode | **online-installable** (`curl \| sh`) |
 | Domain surface | File-based JSON approval: convert/submit/list/show as yourself; `setup` / `interactive` after password `sudo` |
 
 ## Class requirement gate

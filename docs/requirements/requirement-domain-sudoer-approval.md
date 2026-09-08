@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-domain-sudoer-approval.md  
-**Status**: Active (Version 2.37.1) — keep-latest duplicate inbound; unused on Termux / Git Bash / Windows cmd  
+**Status**: Active (Version 2.38.0) — YAML login-hook review display; keep-latest duplicate inbound; unused on Termux / Git Bash / Windows cmd  
 **Area**: domain  
 **Key**: `requirement-domain-sudoer-approval`  
 **id**: RQ-DOMAIN-SUDOER-APPROVAL  
@@ -25,7 +25,7 @@ Privilege types and F6 Cmnds are owned by `requirement-three-layer-privilege-mod
 
 | Includes | Excludes |
 |----------|----------|
-| Roles, submit-when, verify table, dest fence table, verbs, basename, hook, review loop, keep-latest duplicate inbound | Ticket DB; inventing a dest fence; `SUDO_USER` must be `sudoer-adm` |
+| Roles, submit-when, verify table, dest fence table, verbs, basename, hook, review loop, keep-latest duplicate inbound, YAML login-hook review display | Ticket DB; inventing a dest fence; `SUDO_USER` must be `sudoer-adm` |
 
 | Surface | What you open | What for |
 |---------|---------------|----------|
@@ -453,12 +453,12 @@ Session `SUDOER_CLI_HOOK_RAN` **MUST** prevent a second `interactive` if both lo
 4. Resolve queues once. Type 1 **MAY** readdir inbound. Consider only regular, non-symlink files whose basename matches the request grammar.  
 5. Empty inbound → human note (or JSON success) and exit **0**. Do not hang.  
 5a. **Duplicate inbound:** **before** fencing and **before** yes/no, dest **MUST** group remaining inbound files by dest identity (JSON `username` + `service` — one live `/etc/sudoers.d/{{service}}-{{username}}`). For each group with more than one file: **keep the latest**; move every older file inbound → rejected (snapshot + LPU owner + mode `0640` + unlink inbound). Latest = newer inbound mtime; equal mtime → later allocated basename. Files with no dest identity stay ungrouped. Different dest identities stay. **MUST NOT** dest-write `/etc/sudoers.d`. **MUST NOT** stamp `submit_by` on older copies. **MUST NOT** ask the approval question on them. **MUST NOT** treat this as a dest Fence. **MUST** print `superseded {old} (kept {new})`. **MUST NOT** say “skipped”. Standalone `approve` / `reject` of a remaining id stay **non-interactive**.  
-6. For each pending id (basename sort): **fence first** (`requirement-incorrect-json-format` — garbage JSON / symlink / action mismatch). If a fence **matches**: display the match in people/folder words; **MUST NOT** ask the approval question; **then** move inbound → rejected (snapshot + LPU owner + mode `0640` + unlink inbound; **MUST NOT** dest-write `/etc/sudoers.d`; **MUST NOT** stamp `submit_by`; **MUST NOT** call standalone `reject` re-validate). Continue to the next file. If **no** fence: **warn** on missing `submit_app` / `submit_version` and on a Cmnd that is not a well-known system binary (`requirement-well-known-sudoer-binary-fence`); show purpose + body (same contract as `show`); print `queued by {submit_app} {submit_version}` when those strings are present (expand under `set -u` only with defaults — **INC-20260821-002**); ask the **approval question** (term `approval-question`): **one-off yes/no** via **one** `prompt_yes_no`. **Yes** = approve. **No** (including Enter) = reject. **MUST NOT** offer skip / quit / maybe. **MUST NOT** chain Approve then Reject then Quit as three `(y/N)` questions. **MUST NOT** dest-drain a waiting grant solely for missing stamp or untrusted Cmnd.  
+6. For each pending id (basename sort): **fence first** (`requirement-incorrect-json-format` — garbage JSON / symlink / action mismatch). If a fence **matches**: display the match in people/folder words; **MUST NOT** ask the approval question; **then** move inbound → rejected (snapshot + LPU owner + mode `0640` + unlink inbound; **MUST NOT** dest-write `/etc/sudoers.d`; **MUST NOT** stamp `submit_by`; **MUST NOT** call standalone `reject` re-validate). Continue to the next file. If **no** fence: **warn** on missing `submit_app` / `submit_version` and on a Cmnd that is not a well-known system binary (`requirement-well-known-sudoer-binary-fence`); print purpose + body as **YAML** (login-hook / `interactive` human display; **MUST NOT** dump inbound JSON as the review body); print `queued by {submit_app} {submit_version}` when those strings are present (expand under `set -u` only with defaults — **INC-20260821-002**); ask the **approval question** (term `approval-question`): **one-off yes/no** via **one** `prompt_yes_no`. **Yes** = approve. **No** (including Enter) = reject. **MUST NOT** offer skip / quit / maybe. **MUST NOT** chain Approve then Reject then Quit as three `(y/N)` questions. **MUST NOT** dest-drain a waiting grant solely for missing stamp or untrusted Cmnd. The waiting file **MUST** stay JSON. Type 0 `show` still dumps that JSON file.  
 7. **yes** / **no** **MUST** run the same re-validate + dest/move as the standalone `approve` / `reject` verbs. Remaining inbound files stay in this loop (no quit). Direct `approve` / `reject` with a request id stay **non-interactive**.  
 8. A validate failure on one id **MUST NOT** abort the rest; emit the error and continue.  
 9. Empty argv **MUST NOT** reach this handler.
 
-The handler is **live**. Non-TTY / `--json` / `--quiet` fail closed `confirm_required`. `--force` does **not** auto-approve. Duplicate inbound files for the same dest are collapsed first (latest kept; older superseded → rejected). Each remaining unfenced id uses **one** `prompt_yes_no` (default no = reject), including after a **warn** on missing stamp or untrusted Cmnd. Each JSON-format fenced id is displayed, then archived to rejected, with no prompt.
+The handler is **live**. Non-TTY / `--json` / `--quiet` fail closed `confirm_required`. `--force` does **not** auto-approve. Duplicate inbound files for the same dest are collapsed first (latest kept; older superseded → rejected). Each remaining unfenced id prints a YAML review body, then uses **one** `prompt_yes_no` (default no = reject), including after a **warn** on missing stamp or untrusted Cmnd. Each JSON-format fenced id is displayed, then archived to rejected, with no prompt.
 
 #### Warnings (not hard reject)
 
@@ -494,7 +494,7 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | **Hook marker** | `# BEGIN sudoer-cli login hook` … `# END sudoer-cli login hook` |
 | **Hook env** | `SUDOER_CLI_HOOK_RAN` |
 | **Hook command** | `sudo -n /usr/local/bin/sudoer-cli-hook interactive` (symlink to `/usr/local/bin/sudoer-cli`; create if missing; do not overwrite) |
-| **Approval question** | One-off yes/no (`prompt_yes_no "Approve this request"`). Yes = approve. No / Enter = reject. No skip / quit / maybe. Term `approval-question`. Duplicate inbound (same `username`+`service`): keep latest; older superseded → rejected (no question). JSON-format Fence match: no question; display then rejected. Missing stamp / untrusted Cmnd: warn, then ask. |
+| **Approval question** | One-off yes/no (`prompt_yes_no "Approve this request"`). Yes = approve. No / Enter = reject. No skip / quit / maybe. Term `approval-question`. Duplicate inbound (same `username`+`service`): keep latest; older superseded → rejected (no question). JSON-format Fence match: no question; display then rejected. Missing stamp / untrusted Cmnd: warn, then ask. Unfenced review body is **YAML** (waiting file stays JSON). |
 | **`.profile` create** | Missing → write source-bashrc sample (`# BEGIN sudoer-cli profile source-bashrc`). Existing never overwritten. |
 | **Routed now** | Type 0 **operational** convert/submit/list/show/print-sudoers; Type 0 **test-purpose** `test-json-format`/`test-well-known-binary`/`fence-test`; Type 1 `setup`/`remove-lpu`/`approve`/`reject`/`interactive` live |
 | **`fence-test` sample JSON** | `tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json` — `--file` that path; test-purpose; sudo wrap only chmod/chown of the local test folder; does not queue |
@@ -570,7 +570,8 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 29. Treat a **test-purpose** verb (`fence-test`, `test-json-format`, `test-well-known-binary`) as **operational** (queue, dest-write, `setup`, `approve`), mix testers into operational help grouping, or `sudo` except wrapping **chmod** / **chown** of the **local test folder** (check before sudo).  
 30. Dest-drain a waiting grant in `interactive` solely because `submit_app` / `submit_version` is missing or a Cmnd is not a well-known system binary. Warn, then ask (**INC-20260821-002**).  
 31. Expand unset `SR_D_SUBMIT_APP` / `SR_D_SUBMIT_VERSION` in the `interactive` parent after a subshell Fence check (`set -u` crash).  
-32. In `interactive` (login hook included), walk every inbound copy of the same dest (`username` + `service`). **MUST** keep the latest and move older duplicates to rejected without dest-write and without yes/no. **MUST NOT** add “duplicate” as a dest Fence.
+32. In `interactive` (login hook included), walk every inbound copy of the same dest (`username` + `service`). **MUST** keep the latest and move older duplicates to rejected without dest-write and without yes/no. **MUST NOT** add “duplicate” as a dest Fence.  
+33. In `interactive` (login hook included), print the unfenced grant as **YAML**. **MUST NOT** dump inbound JSON as the review body. The waiting file **MUST** stay JSON. Type 0 `show` still dumps that JSON file. **MUST NOT** add “yaml” as a dest Fence.
 
 **Violating this rule is a critical domain-SSOT / privilege regression.**
 
@@ -633,6 +634,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | **TP-SR-INT-05** | `tests/test_domain_sr.sh` | have | Review loop reads ids on fd 3; `prompt_yes_no` keeps stdin |
 | **TP-SR-INT-06** | `tests/test_domain_sr.sh` | have | One-off approval question: one `prompt_yes_no`; yes=approve; no/Enter=reject; no skip/quit |
 | **TP-SR-INT-07** | `tests/test_domain_sr.sh` | have | Duplicate inbound same dest: keep latest; older superseded → rejected; no dest write; no extra yes/no |
+| **TP-SR-INT-08** | `tests/test_domain_sr.sh` | have | Login-hook / `interactive` prints YAML review body; waiting file stays JSON; Type 0 `show` still dumps JSON |
 | **TP-SR-Q-01** | `tests/test_domain_sr.sh` | have | Public `/var/{{APP_NAME}}/` + `sudoer-request` + 3773/0700/0755 |
 | **TP-SR-Q-02** | `tests/test_domain_sr.sh` | have | Submit `0640`; approve archives snapshot; **no** owner_mismatch / self-scope wall |
 | **TP-SR-Q-03** | `tests/test_domain_sr.sh` | have | F7 `lpu_remove_public_queues` |
@@ -661,6 +663,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-09-06 | Active 2.38.0 | Login-hook / `interactive` human display is **YAML**; waiting file stays JSON; Type 0 `show` still dumps JSON. Protection rule 33; **TP-SR-INT-08**. |
 | 2026-09-06 | Active 2.37.1 | Under command line for normal user only |
 | 2026-08-13 | Active 1.0.0 | Initial domain SSOT; `DATE-user-type-n` text body |
 | 2026-08-14 | Active 2.0.0 | JSON body; `sudoer-` + `.json` basename; conversion verbs; queue-dir resolve; dest per user+service |
@@ -705,6 +708,6 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 ---
 
-**Last Updated**: 2026-09-03  
+**Last Updated**: 2026-09-06  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

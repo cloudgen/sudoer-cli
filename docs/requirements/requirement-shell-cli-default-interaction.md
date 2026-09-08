@@ -1,16 +1,16 @@
 **file**: docs/requirements/requirement-shell-cli-default-interaction.md  
-**Status**: Active (Version 1.0.1)  
+**Status**: Active (Version 1.1.0)  
 **Area**: shell  
 **Key**: `requirement-shell-cli-default-interaction`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
 
 ## 1. Purpose
 
-This requirement is the **project Single Source of Truth** for sudoer-cli’s **numbered start list** on a real terminal. Empty argv already means help. The list is therefore the live commands **`menu`** and **`main`**, not a bare `sudoer-cli`.
+This requirement is the **project Single Source of Truth** for sudoer-cli’s **numbered start list** on a real terminal. Empty argv is Type O install-ensure (owned by the zero-arguments requirement). The list is therefore the live commands **`menu`** and **`main`**, not a bare `sudoer-cli`.
 
 ### 1.1 Human-facing
 
-**In one sentence:** Type `sudoer-cli menu` at a real terminal to open a numbered list of live work commands; typing only the program name still prints help.
+**In one sentence:** Type `sudoer-cli menu` at a real terminal to open a numbered list of live work commands; typing only the program name installs or confirms install.
 
 | Box | Meaning | Example |
 |-----|---------|---------|
@@ -20,7 +20,7 @@ This requirement is the **project Single Source of Truth** for sudoer-cli’s **
 
 | Includes | Excludes |
 |----------|----------|
-| Numbered live work commands; Exit **99** (fifteen rows); look with nametag and gray italic descriptions | The `help` row; install / uninstall / where-is-me / setup; version / about; unit-test commands; `menu` / `main` as a choice; a hang in a pipe |
+| Numbered live work commands; Exit **99** (fifteen rows); look with nametag and gray italic descriptions | The `help` row; install / self-update / self-uninstall / setup; version / about; unit-test commands; `menu` / `main` as a choice; a hang in a pipe |
 
 | Surface | What you open | What for |
 |---------|---------------|----------|
@@ -31,7 +31,7 @@ This requirement is the **project Single Source of Truth** for sudoer-cli’s **
 |---------|---------------|---------------|
 | See the start list | The first line is the program nametag with version. Each row is `command: what it does`. Last extra number is Exit. | `sudoer-cli menu` |
 | Leave without running a command | Type the Exit number, or `exit` / `quit`. | `99` |
-| Run with no arguments | Help still prints. The list is not that path. | `sudoer-cli` |
+| Run with no arguments | That path is install-ensure. The list is `menu`. | `sudoer-cli menu` |
 
 ---
 
@@ -41,7 +41,7 @@ This requirement is the **project Single Source of Truth** for sudoer-cli’s **
 
 1. This product **claims** a numbered start list.  
 2. A specialized zero-argument requirement **exists** (`requirement-shell-cli-zero-arguments`). This product is **not** online-installable.  
-3. **Case 3 applies.** Empty argv **MUST** stay Type N help. This requirement **MUST NOT** attach the list to empty argv.  
+3. **Case 3 applies.** Empty argv is owned by the zero-arguments requirement (**Type O**). This requirement **MUST NOT** attach the list to empty argv.  
 4. The list **MUST** be live commands **`menu`** and **`main`** (same handler).
 
 ### 2.2 `menu` / `main` mode check (case 3)
@@ -86,7 +86,7 @@ This requirement is the **project Single Source of Truth** for sudoer-cli’s **
 | **Claimed** | **yes** |
 | **Case** | **3** (zero-argument REQ owns empty argv; menu is verb `menu` / `main`) |
 | **Handler** | `app_main_menu` / `app_main_menu_print`; dispatch via `app_run_command` |
-| **Empty argv** | Still Type N help (`requirement-shell-cli-zero-arguments`) |
+| **Empty argv** | Type O install-ensure (`requirement-shell-cli-zero-arguments`) |
 | **N** | **15** operational rows after exclusions → Exit **99** |
 | **Numbered rows (kept-list order)** | `sudoers-to-json`, `json-to-sudoers`, `print-sudoers`, `print-sudoers-install-script`, `add-sudoer-request`, `update-sudoer-request`, `remove-sudoer-request`, `list-approving`, `list-approved`, `list-rejected`, `show`, `remove-lpu`, `approve`, `reject`, `interactive` |
 | **Excluded (live but not numbered)** | `install`, `uninstall`, `where-is-me`, `version`, `about`, `help`, `setup`, `test-json-format`, `test-well-known-binary`, `fence-test`, `menu`, `main` |
@@ -187,9 +187,9 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 | TP family / ID | Suite | Status | Note |
 |----------------|-------|--------|------|
-| **TP-CLI-07** | `tests/test_cli.sh` | have | Empty argv still help (case 3) |
+| **TP-CLI-07** | `tests/test_cli.sh` | have | Empty argv is Type O (not help) |
 | **TP-CLI-17** | `tests/test_cli.sh` | have | Look printers; claimed menu header uses them |
-| **TP-CLI-18** | `tests/test_cli.sh` | have | `menu` / `main` routed; empty argv still help |
+| **TP-CLI-18** | `tests/test_cli.sh` | have | `menu` / `main` routed; empty argv is Type O |
 | **TP-CLI-19** | `tests/test_cli.sh` | have | Off-TTY `menu` is help; `--json` is JSON help; `--quiet` does not swallow |
 | **TP-CLI-20** | `tests/test_cli.sh` | have | Membership + Exit **99** |
 | **TP-CLI-21** | `tests/test_cli.sh` | have | Interactive `menu --json` still draws the list (JSON ignored) |

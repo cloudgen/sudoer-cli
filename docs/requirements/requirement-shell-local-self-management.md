@@ -1,14 +1,14 @@
 **file**: docs/requirements/requirement-shell-local-self-management.md  
-**Status**: Active (Version 1.5.1)  
+**Status**: Superseded (Version 1.5.1 → online package 1.22.0)  
 **Area**: shell  
 **Key**: `requirement-shell-local-self-management`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
 
 ## 1. Purpose
 
-This requirement is the **project Single Source of Truth** for **local self-managed lifecycle** of the sudoer-cli POSIX shell CLI: **`install`**, **`uninstall`**, and **`where-is-me`**, plus the local diagnostics package contract for **`version`**, **`about`**, and **`help`** (wiring owned with CLI interface).
+**Superseded.** This product is now **online-installable**. Live lifecycle law is `requirement-shell-self-management` (plus Type O empty argv and automatic checksum). Do **not** keep a second local-only class path (`uninstall` / `where-is-me`).
 
-**Install mode:** **local-only**. Online channel install, remote version-check, self-update, and self-uninstall are **out of scope** (intentionally absent).
+This file is kept as the historical local-copy contract. New work **MUST** follow the online package.
 
 ### 1.1 Human-facing
 

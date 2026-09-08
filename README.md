@@ -1,6 +1,6 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.20.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.22.0-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
@@ -11,13 +11,13 @@ This program lets a normal login **ask for a sudo grant for themselves** by putt
 |-----|--------------|------------------------|
 | **You** (ordinary login) | Turn a sudoers fragment into JSON, or submit JSON you already have. This program **names** the file and puts it in the waiting folder. No root login is required. | Write `/etc`. Approve or reject the file. |
 | **Approver** (the host admin who already typed password `sudo`, `sudoer-adm`, or a real root login) | Open that same JSON again. If it is valid, **move** it to accepted or declined. On accept, install `/etc/sudoers.d/<service>-<username>`. The password `sudo` **is** that decision. File owner and parsed name do **not** block the move. | Write `/etc/passwd` or the main `/etc/sudoers` file. |
-| **Host admin** | Run `sudo sudoer-cli setup`. A password is OK. That creates `sudoer-adm`, the waiting/accepted/declined folders, and the sudoers fragment that lets `sudoer-adm` review without a password. Setup then prints how you submit a request as yourself. The same password `sudo` can then approve. | Treat setup as “approve this request.” Let an ordinary login create the `sudoer-adm` account. Treat a bare `sudoer-cli` (no arguments) as a review — that still only prints help. |
+| **Host admin** | Run `sudo sudoer-cli setup`. A password is OK. That creates `sudoer-adm`, the waiting/accepted/declined folders, and the sudoers fragment that lets `sudoer-adm` review without a password. Setup then prints how you submit a request as yourself. The same password `sudo` can then approve. | Treat setup as “approve this request.” Let an ordinary login create the `sudoer-adm` account. Treat a bare `sudoer-cli` (no arguments) as a review — that installs or confirms install. |
 
 Where the program is **installed** is still **both**:
 - **your user bin** → `~/.local/bin/sudoer-cli` (ordinary login)
 - **the system bin** → `/usr/local/bin/sudoer-cli` (needs root / `--global`) — later required so `sudoer-adm` can run the program without a password. Global setup also creates `/usr/local/bin/sudoer-cli-hook` (a symlink) and plants that name in the approver’s `.bashrc`.
 
-There is **no** online install (`curl|sh`). “Local” vs “global” here means **which directory the binary lives in**, not online vs offline.
+Install is **online**: `curl | sh` places the program. “Local” vs “global” here still means **which directory the binary lives in**.
 
 ## How file-based JSON approval works
 
@@ -50,15 +50,15 @@ approved   rejected
 | Test dest fences | **Unit test** of a local test folder. Point at a JSON file. **No sudo** except wrap chmod/chown of that folder. Does not queue. | `sh src/sudoer-cli fence-test --file tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json` |
 | Submit | Hand that JSON to this program. It **chooses the filename** and writes it into `/var/sudoer-cli/sudoer-request/`. You still do not need to be root. | `sudoer-cli add-sudoer-request --file request.json` |
 | Wait | The file sits in the waiting folder. Anyone can drop a file in; they cannot list or steal someone else’s file. | `sudoer-cli list-approving` |
-| Decide | A host admin who already used password `sudo` (or `sudoer-adm`, or a real root login) re-reads the JSON. If the JSON is broken, dest says so, does **not** ask, and moves the file to rejected. If a command lives under someone’s home (or the queue stamp is missing), dest **warns** and still asks yes/no. Moving a valid file *is* the decision. First-time setup must already have been run. | `sudo sudoer-cli interactive` |
+| Decide | A host admin who already used password `sudo` (or `sudoer-adm`, or a real root login) re-reads the waiting file and **shows it as YAML**. If the JSON is broken, dest says so, does **not** ask, and moves the file to rejected. If a command lives under someone’s home (or the queue stamp is missing), dest **warns** and still asks yes/no. Moving a valid file *is* the decision. First-time setup must already have been run. | `sudo sudoer-cli interactive` |
 | Live grant | Only after accept: a fragment at `/etc/sudoers.d/<service>-<subject>` (for example `folder-backup-bob` when the JSON `username` is bob). This program never writes `/etc/passwd` or the main `/etc/sudoers` file. | (the approve path) |
 
 Pretty-printed and compact JSON are the same grant. If the request looks incomplete (it lists more commands than could be read), **do not approve it** — fix the file and convert or submit again.
 
 ## Features
 
-- **Install and remove yourself** — `install`, `uninstall`, `where-is-me`, `version`, `about`, `help` work in your user bin and in `/usr/local/bin`
-- **No arguments shows help** — it does not install, and it does not start a review
+- **Install and keep yourself** — `install`, `version-check`, `self-update`, `self-uninstall`, `version`, `about`, `help` work in your user bin and in `/usr/local/bin`
+- **No arguments installs** — empty argv is install-ensure (`curl | sh`); it does not start a review
 - **Numbered start list** — `sudoer-cli menu` (or `main`) on a real terminal; a pipe still prints help
 - **Everyone can run the installed program** — mode `0755`
 - **Unknown commands fail** (non-zero exit)
@@ -70,10 +70,46 @@ Pretty-printed and compact JSON are the same grant. If the request looks incompl
 
 ## Quick Installation
 
-**Local (your user bin):**
+**Per-user (non-root):**
 
 ```sh
-# From this repository checkout
+curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli | sh
+```
+
+**System-wide (root / elevated):**
+
+```sh
+sudo curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli | sudo sh
+```
+
+Then verify:
+
+```sh
+sudoer-cli about
+```
+
+### Integrity (automatic checksum)
+
+**Primary path:** the program downloads the companion digest **itself**. You do **not** set `CHECKSUM` for normal online install or self-update.
+
+Online install / self-update does **not** only trust the download blindly:
+
+| Mode | When | Algorithm | What happens |
+|------|------|-----------|--------------|
+| **Automatic (default)** | `CHECKSUM` **unset** (default one-liner) | **SHA-256** via `sha256sum` | After download, fetch companion **`${SCRIPT_URL}.sha256`**. Human mode shows the companion **link**, expected **value**, and **result**. **Match** → install continues. **Mismatch** → install **aborts**. **Sidecar missing** → **warning**, install continues (best-effort). |
+| **Strict pin (optional)** | `CHECKSUM` set to an out-of-band hex digest | **SHA-256** | Download must match the pin exactly; **mismatch aborts**. Secondary—CI / freeze installs only. |
+
+Default channel companion path (`${SCRIPT_URL}.sha256`):
+
+```text
+https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli.sha256
+```
+
+In this repository the companion file is **`src/sudoer-cli.sha256`** (bare 64-char hex of `src/sudoer-cli`). Same-channel SHA-256 proves **consistency** of the two files on that channel; it is not a substitute for signed releases.
+
+**From this repository checkout** (same channel, or override `SCRIPT_URL` in tests):
+
+```sh
 sh src/sudoer-cli install
 # or force refresh after updates
 sh src/sudoer-cli install --force
@@ -97,13 +133,13 @@ sudo sh src/sudoer-cli install
 sudo sudoer-cli setup
 ```
 
-This product is **local-only** for its install channel (no default `SCRIPT_URL` online install). Global vs local here means install *location*, not an online channel.
+This product is **online-installable**. Global vs local here means install *location* (user bin vs `/usr/local/bin`).
 
-**Numbered start list** (after install; running with no arguments still prints help):
+**Numbered start list** (after install; running with no arguments installs or confirms install):
 
 ```text
 $ sudoer-cli menu
-[INFO] **sudoer-cli**(*1.20.0*) — numbered list of live commands
+[INFO] **sudoer-cli**(*1.22.0*) — numbered list of live commands
 1. sudoers-to-json: Convert sudoers fragment to request JSON
 2. json-to-sudoers: Convert request JSON to sudoers fragment
 3. print-sudoers: Print the sudoers fragment that lets sudoer-adm review without a password
@@ -123,7 +159,7 @@ $ sudoer-cli menu
 ```
 
 **Source repository:** [cloudgen/sudoer-cli](https://github.com/cloudgen/sudoer-cli)  
-Config identity: `REPO_USER=cloudgen`, `REPO_NAME=sudoer-cli` (override with env if needed; does not enable online install while `SCRIPT_URL` is empty).
+Config identity: `REPO_USER=cloudgen`, `REPO_NAME=sudoer-cli`. Default channel: `https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli`.
 
 ## Usage
 
@@ -134,8 +170,9 @@ sudoer-cli about
 sudoer-cli --json about
 
 sudoer-cli install
-sudoer-cli where-is-me
-sudoer-cli uninstall --force
+sudoer-cli version-check
+sudoer-cli self-update
+sudoer-cli self-uninstall --force
 
 # File-based JSON approval
 sudoer-cli sudoers-to-json --file draft.sudoers --action add --purpose "Reload nginx"
@@ -151,18 +188,18 @@ sudoer-cli show sudoer-20260814-folder-backup-alice-add-1.json
 |----------|------|
 | `REPO_USER` | Git host owner (default `cloudgen`) |
 | `REPO_NAME` | Git repository name (default `sudoer-cli`) |
-| `SCRIPT_URL` | Online install channel (default **empty** — local only) |
+| `SCRIPT_URL` | Online install channel (default `https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli`) |
 | `USER_BIN` | Per-user install destination (default `~/.local/bin`) |
 | `GLOBAL_BIN` | Global install destination (default `/usr/local/bin`) |
 
 ## Examples
 
 ```sh
-# Local install (user bin)
-sh src/sudoer-cli install
+# Online install (user bin)
+curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli | sh
 
-# Global install (system bin)
-sudo sh src/sudoer-cli install
+# Online install (system bin)
+sudo curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli | sudo sh
 
 # Convert a sudoers fragment to request JSON (does not queue)
 sudoer-cli sudoers-to-json --file draft.sudoers --action add --purpose "Allow backup and restore"
@@ -206,6 +243,7 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
+2026-09-08 — version **1.22.0** (online-installable: `curl | sh`, Type O empty argv, `version-check` / `self-update` / `self-uninstall`; specialized from selfmanaged).
 2026-09-03 — version **1.20.0** (dest `interactive` keeps the latest duplicate inbound grant per dest; help and numbered list use people/folder words).
 2026-09-03 — version **1.19.0** (numbered start list on `sudoer-cli menu` / `main`; empty argv still prints help).
 2026-09-03 — version **1.18.0** (login-hook-symlink `/usr/local/bin/sudoer-cli-hook`; setup heals old `.bashrc` hook path; default-cli-main-menu-style printers).

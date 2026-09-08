@@ -13,9 +13,10 @@ Inventory from the dispatcher. Help is not a route. Empty argv is not a verb.
 
 | verb | handler | privilege | last modified date | human-readable |
 |------|---------|-----------|--------------------|----------------|
-| install | `inst_local_install` | you | 2026-08-09 | `install: Install sudoer-cli (root→global, user→~/.local/bin)` |
-| uninstall | `inst_local_uninstall` | you | 2026-08-03 | `uninstall: Remove managed binary (confirm or --force)` |
-| where-is-me | `app_where_is_me` | you | 2026-08-03 | `where-is-me: Show running and install paths` |
+| install | `inst_perform_install` | you | 2026-09-07 | `install: Place sudoer-cli from the install channel` |
+| version-check | `ver_check` | you | 2026-09-07 | `version-check: Compare local version to the install channel` |
+| self-update | `inst_self_update` | you | 2026-09-07 | `self-update: Fetch a newer copy from the install channel` |
+| self-uninstall | `inst_self_uninstall` | you | 2026-09-07 | `self-uninstall: Remove the managed binary (confirm or --force)` |
 | version | `app_version` | you | missing | `version: Show local version` |
 | about | `app_about` | you | 2026-08-13 | `about: Show diagnostics and resolved queue paths` |
 | help | `app_help` | you | missing | `help: Show this help` |

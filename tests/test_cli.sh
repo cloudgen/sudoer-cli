@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/test_cli.sh — CLI surface (local-only; no network)
+# tests/test_cli.sh — CLI surface (online-installable Type O)
 # =============================================================================
 # Primary REQs: requirement-shell-cli-interface, requirement-shell-cli-zero-arguments,
 # requirement-shell-cli-default-interaction, requirement-shell-output-requirements,
@@ -35,13 +35,14 @@ run_test_cli() {
     assert_contains "TP-CLI-03 app field" "$_out" "\"app\":\"${APP_NAME}\""
     assert_contains "TP-CLI-03 version field" "$_out" "\"version\":\"${PRODUCT_VERSION}\""
 
-    # TP-CLI-04 help lists local lifecycle; not online; not trimmed parent domain
+    # TP-CLI-04 help lists online lifecycle; not trimmed parent domain
     _out=$(sh "${SCRIPT}" help 2>/dev/null)
     _ec=$?
     assert_eq "TP-CLI-04 help exit 0" 0 "$_ec"
     assert_contains "TP-CLI-04 help install" "$_out" "install"
-    assert_contains "TP-CLI-04 help uninstall" "$_out" "uninstall"
-    assert_contains "TP-CLI-04 help where-is-me" "$_out" "where-is-me"
+    assert_contains "TP-CLI-04 help self-update" "$_out" "self-update"
+    assert_contains "TP-CLI-04 help self-uninstall" "$_out" "self-uninstall"
+    assert_contains "TP-CLI-04 help version-check" "$_out" "version-check"
     assert_contains "TP-CLI-04 help menu" "$_out" "menu / main"
     assert_contains "TP-CLI-04 help --json" "$_out" "--json"
     assert_not_contains "TP-CLI-04 no backup verb" "$_out" "backup <"
@@ -62,11 +63,10 @@ run_test_cli() {
     assert_contains "TP-CLI-04 help print-sudoers-install-script" "$_out" "print-sudoers-install-script"
     assert_contains "TP-CLI-04 help list-approved" "$_out" "list-approved"
     assert_contains "TP-CLI-04 help list-rejected" "$_out" "list-rejected"
-    assert_not_contains "TP-CLI-04 no self-update" "$_out" "self-update"
-    assert_not_contains "TP-CLI-04 no self-uninstall" "$_out" "self-uninstall"
-    assert_not_contains "TP-CLI-04 no version-check" "$_out" "version-check"
-    assert_not_contains "TP-CLI-04 no SCRIPT_URL channel" "$_out" "SCRIPT_URL"
+    assert_contains "TP-CLI-04 help SCRIPT_URL" "$_out" "SCRIPT_URL"
     assert_not_contains "TP-CLI-04 no CHECKSUM" "$_out" "CHECKSUM"
+    assert_not_contains "TP-CLI-04 no where-is-me" "$_out" "where-is-me"
+    assert_not_contains "TP-CLI-04 no bare uninstall row" "$_out" "  uninstall            "
 
     # TP-CLI-05 help json
     _out=$(sh "${SCRIPT}" --json help 2>/dev/null)
@@ -83,14 +83,21 @@ run_test_cli() {
     assert_not_contains "TP-CLI-06 no deposit_dir" "$_out" '"deposit_dir"'
     assert_not_contains "TP-CLI-06 no restore_host_default" "$_out" '"restore_host_default"'
     assert_not_contains "TP-CLI-06 no CHECKSUM" "$_out" "CHECKSUM"
-    assert_not_contains "TP-CLI-06 no SCRIPT_URL" "$_out" "SCRIPT_URL"
+    assert_contains "TP-CLI-06 json script_url" "$_out" '"script_url"'
+    assert_not_contains "TP-CLI-06 no CHECKSUM key" "$_out" '"checksum"'
 
-    # TP-CLI-07 empty argv = Type N help (not install)
-    _out=$(sh "${SCRIPT}" 2>/dev/null)
+    # TP-CLI-07 empty argv is Type O install-ensure, not help
+    ci_isolated_env
+    _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        SCRIPT_URL="http://127.0.0.1:1/sudoer-cli-unreachable" sh "${SCRIPT}" </dev/null 2>/dev/null)
     _ec=$?
-    assert_eq "TP-CLI-07 empty argv exit 0" 0 "$_ec"
-    assert_contains "TP-CLI-07 empty argv is help" "$_out" "Usage:"
-    assert_contains "TP-CLI-07 empty argv mentions Type N or help" "$_out" "help"
+    if [ "${_ec}" -ne 0 ]; then
+        t_pass "TP-CLI-07 empty argv dead channel exits non-zero"
+    else
+        t_fail "TP-CLI-07 empty argv dead channel expected non-zero"
+    fi
+    assert_not_contains "TP-CLI-07 empty argv is not help" "${_out}" "Usage:"
+    ci_cleanup_env
 
     # TP-CLI-08 unknown command fail-closed
     _err=$(sh "${SCRIPT}" no-such-command 2>&1 >/dev/null)
@@ -114,13 +121,18 @@ run_test_cli() {
         t_fail "TP-CLI-09 quiet expected empty stdout, got '$(_trunc "$_out")'"
     fi
 
-    # TP-CLI-10 online verbs rejected
-    _err=$(sh "${SCRIPT}" self-update 2>&1 >/dev/null)
-    assert_eq "TP-CLI-10 self-update exit 1" 1 "$?"
-    assert_contains "TP-CLI-10 self-update unknown" "$_err" "Unknown command"
-
-    _err=$(sh "${SCRIPT}" version-check 2>&1 >/dev/null)
-    assert_eq "TP-CLI-10 version-check exit 1" 1 "$?"
+    # TP-CLI-10 online verbs are routed (not unknown)
+    ci_isolated_env
+    _err=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        SCRIPT_URL="http://127.0.0.1:1/sudoer-cli-unreachable" sh "${SCRIPT}" self-update 2>&1 >/dev/null)
+    assert_not_contains "TP-CLI-10 self-update not unknown" "${_err}" "Unknown command"
+    _err=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        SCRIPT_URL="http://127.0.0.1:1/sudoer-cli-unreachable" sh "${SCRIPT}" version-check 2>&1 >/dev/null)
+    assert_not_contains "TP-CLI-10 version-check not unknown" "${_err}" "Unknown command"
+    _err=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        sh "${SCRIPT}" self-uninstall --force 2>&1 >/dev/null)
+    assert_not_contains "TP-CLI-10 self-uninstall not unknown" "${_err}" "Unknown command"
+    ci_cleanup_env
 
     # TP-CLI-11 set -u HOME unset still works for version
     _out=$(env -u HOME sh "${SCRIPT}" version 2>/dev/null)
@@ -197,7 +209,7 @@ run_test_cli() {
     assert_contains "TP-CLI-17 TTY row keeps unstyled name" "${_out}" "ONROW:1. convert: "
     rm -rf "${_th}"
 
-    # TP-CLI-18: menu / main routed; empty argv still help (case 3)
+    # TP-CLI-18: menu / main routed; empty argv is Type O (not help)
     _out=$(sh "${SCRIPT}" menu 2>/dev/null)
     _ec=$?
     assert_eq "TP-CLI-18 menu off-TTY exit 0" 0 "${_ec}"
@@ -207,9 +219,12 @@ run_test_cli() {
     _ec=$?
     assert_eq "TP-CLI-18 main off-TTY exit 0" 0 "${_ec}"
     assert_contains "TP-CLI-18 main off-TTY is help" "${_out}" "Usage:"
-    _out=$(sh "${SCRIPT}" 2>/dev/null)
-    assert_contains "TP-CLI-18 empty argv still help" "${_out}" "Usage:"
+    ci_isolated_env
+    _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        SCRIPT_URL="http://127.0.0.1:1/sudoer-cli-unreachable" sh "${SCRIPT}" </dev/null 2>/dev/null)
+    assert_not_contains "TP-CLI-18 empty argv not help" "${_out}" "Usage:"
     assert_not_contains "TP-CLI-18 empty argv not Choice prompt" "${_out}" "Choice:"
+    ci_cleanup_env
 
     # TP-CLI-19: off-TTY menu follows json; --quiet must not swallow help
     _out=$(sh "${SCRIPT}" --json menu 2>/dev/null)

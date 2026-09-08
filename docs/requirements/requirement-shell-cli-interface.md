@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-interface.md  
-**Status**: Active (Version 3.10.2)  
+**Status**: Active (Version 3.11.0)  
 **Area**: shell  
 **Key**: `requirement-shell-cli-interface`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -8,7 +8,7 @@
 
 This requirement is the **project Single Source of Truth** for the **POSIX shell CLI interface** of sudoer-cli: live command surface, privilege typing, global flags, dispatcher behavior, help/about contracts, and mode rules.
 
-Help lists only commands that actually run. As yourself you install, convert, queue, list, show, and run the local testers. After password `sudo` you run `setup` and review. Help **MUST** list testers apart from everyday commands. Being a normal login is **not** the same as “unit test.” Domain catalog and fail-closed review are owned by `requirement-domain-sudoer-approval.md` and `requirement-three-layer-privilege-model.md`. Help **MUST NOT** list a verb with no `case` arm. Full lifecycle rules live in `requirement-shell-local-self-management.md`. (Catalog: Type 0 operational convert/submit/list/show/print-sudoers; Type 0 test-purpose `test-json-format` / `test-well-known-binary` / `fence-test`; Type 1 `setup` / review.)
+Help lists only commands that actually run. As yourself you install, convert, queue, list, show, and run the local testers. After password `sudo` you run `setup` and review. Help **MUST** list testers apart from everyday commands. Being a normal login is **not** the same as “unit test.” Domain catalog and fail-closed review are owned by `requirement-domain-sudoer-approval.md` and `requirement-three-layer-privilege-model.md`. Help **MUST NOT** list a verb with no `case` arm. Full lifecycle rules live in `requirement-shell-self-management.md`. (Catalog: Type 0 operational convert/submit/list/show/print-sudoers; Type 0 test-purpose `test-json-format` / `test-well-known-binary` / `fence-test`; Type 1 `setup` / review.)
 
 ### 1.1 Human-facing
 
@@ -43,7 +43,7 @@ Every command **MUST** map to exactly one privilege type. Unclassified commands 
 
 | Category | Privilege | Meaning |
 |----------|-----------|---------|
-| **Type 0 – CLI lifecycle + diagnostics + domain convert** | Invoking user | Lifecycle (**operational**): `install`, `uninstall`, `where-is-me`, `version`, `about`, `help`, **`menu` / `main`**. Domain Type 0 **operational**: convert / submit / list / show / `print-sudoers` (catalog on domain SSOT). Domain Type 0 **test-purpose**: `test-json-format` / `test-well-known-binary` / `fence-test` (unit test; local test folder; catalog on domain SSOT) |
+| **Type 0 – CLI lifecycle + diagnostics + domain convert** | Invoking user | Lifecycle (**operational**): `install`, `version-check`, `self-update`, `self-uninstall`, `version`, `about`, `help`, **`menu` / `main`**. Domain Type 0 **operational**: convert / submit / list / show / `print-sudoers` (catalog on domain SSOT). Domain Type 0 **test-purpose**: `test-json-format` / `test-well-known-binary` / `fence-test` (unit test; local test folder; catalog on domain SSOT) |
 | **Type 1 – Narrow elevated host ops** | Controlled sudo | Names **routed**; **fail closed** without euid 0. **`setup` / `remove-lpu`**: any host admin already euid 0 (`sudo {{APP}} setup`, password OK; not `sudo -n`; not limited to `sudoer-adm`). Live: useradd, F6, hook; after setup print submit next-step. **`approve` / `reject` / `interactive`**: any already euid-0 host admin (password `sudo`), or F6 `sudoer-adm`, or real root. Review-loop body is **live** |
 | **Type 2 – Dedicated system user app ops** | Dedicated app user euid | **Not used** (sudoer-adm is an authorizer, not a Type 2 execution context) |
 
@@ -63,7 +63,7 @@ Help **MUST** list test-purpose under a heading apart from operational Type 0.
 | `--quiet`, `-q` | `QUIET=1` | Suppress non-error human output; errors still visible |
 | `--json` | `JSON=1` (implies quiet) | Machine-readable structured output |
 | `--debug` | `DEBUG=1` | Extra diagnostics on stderr; must not break JSON purity on stdout |
-| `--force` | `FORCE=1` / force policy | Skip uninstall confirm or force reinstall only where documented |
+| `--force` | `FORCE=1` / force policy | Skip self-uninstall confirm or force reinstall only where documented |
 | `--global` | `FORCE_GLOBAL=1` | Install to `GLOBAL_BIN` |
 
 Additional flags **MAY** be added only when documented here (or a superseding requirement) and wired in the dispatcher.
@@ -74,7 +74,7 @@ Additional flags **MAY** be added only when documented here (or a superseding re
 
 1. **Single entry:** `app_main` **MUST** parse global flags and route commands.  
 2. **Unknown command:** **MUST** fail loudly with pointer to `help` (via output SSOT).  
-3. **Empty argv:** **Type N → help** (`requirement-shell-cli-zero-arguments.md`).  
+3. **Empty argv:** **Type O → install-ensure** (`requirement-shell-cli-zero-arguments.md`).  
 4. **No raw user I/O:** User-facing messages **MUST** go through `out_*`.  
 5. Script end **MUST** call `app_main "$@"` (no basename gate that blocks dispatch).  
 6. Trimmed parent verbs (`backup`, `restore`, `remove-project-sudoers`) **MUST** fail as unknown. `print-sudoers` and `print-sudoers-install-script` are **domain Type 0** (not trimmed).
@@ -86,7 +86,7 @@ Additional flags **MAY** be added only when documented here (or a superseding re
 - Usage line  
 - Every supported Type 0 command with one-line purpose  
 - Global flags  
-- Honest note that this product is local-only (no curl\|sh)
+- Honest install channel (`curl \| sh` / `SCRIPT_URL`); **MUST NOT** advertise `CHECKSUM`
 
 In JSON mode, help **MUST NOT** dump long human text; return a short structured success/note object.
 
@@ -100,11 +100,11 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | **Primary executable** | `src/sudoer-cli` (POSIX `/bin/sh`, single-file ship unit) |
 | **Dispatcher** | `app_main` |
 | **Output SSOT** | `out_text` + wrappers (`out_info`, `out_success`, `out_warn`, `out_error`, `out_die`, `out_plain`, `out_json`, …) |
-| **Version SSOT** | `VERSION="1.20.0"` hard-assign in ship unit |
+| **Version SSOT** | `VERSION="1.22.0"` hard-assign in ship unit |
 | **Install paths** | Global: `GLOBAL_BIN` default `/usr/local/bin`; User: `USER_BIN` default `${HOME}/.local/bin` |
-| **Primary install story** | User bin: `~/.local/bin/sudoer-cli`; global `/usr/local/bin/sudoer-cli` for production F6; login-hook-symlink `/usr/local/bin/sudoer-cli-hook` after global copy |
-| **Default CLI main menu** | **Claimed (case 3).** Empty argv stays Type N help. Verb `menu` / `main` opens the numbered list. Topic owner: `requirement-shell-cli-default-interaction`. Look printers: `util_app_ident` / `out_menu_choice` (**TP-CLI-17**) |
-| **Online channel env** | **Not product UX** (trimmed) |
+| **Primary install story** | `curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli \| sh` → user bin; `sudo curl … \| sudo sh` → global; login-hook-symlink `/usr/local/bin/sudoer-cli-hook` after global place |
+| **Default CLI main menu** | **Claimed.** Empty argv is Type O install-ensure. Verb `menu` / `main` opens the numbered list. Topic owner: `requirement-shell-cli-default-interaction`. Look printers: `util_app_ident` / `out_menu_choice` (**TP-CLI-17**) |
+| **Online channel env** | `SCRIPT_URL` composed `https://raw.githubusercontent.com/${REPO_USER}/${REPO_NAME}/main/src/${APP_NAME}` |
 | **Type 1 / Type 2 commands** | Type 1 **routed, fail closed** without euid 0; setup = any admin sudo (live useradd/F6/hook); approve = same elev (F6 extra); Type 2 **not used** |
 | **Dedicated system user** | `sudoer-adm` (authorizer; see LPU REQ) |
 | **About** | Type 0 only until domain about pillar is routed |
@@ -113,14 +113,15 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 
 | Command | Type | Handler family | Required behavior |
 |---------|------|----------------|-------------------|
-| *(no args — empty argv)* | Type 0 | `app_main` → `app_help` | **Type N help** — not install |
-| `install` | Type 0 | `inst_local_install` | Copy running ship unit to privilege-correct bin; idempotent unless `--force` |
-| `uninstall` | Type 0 | `inst_local_uninstall` | Remove managed binary; confirm unless `--force` |
-| `where-is-me` | Type 0 | `app_where_is_me` | Running + install paths + installed flag |
+| *(no args — empty argv)* | Type 0 | `app_main` → `inst_perform_install` / `inst_maybe_install` | **Type O install-ensure** — not help |
+| `install` | Type 0 | `inst_perform_install` | Place from `SCRIPT_URL`; idempotent unless `--force` |
+| `version-check` | Type 0 | `ver_check` | Local vs remote on channel; fail loud if channel missing |
+| `self-update` | Type 0 | `inst_self_update` | Fetch newer from channel; no silent downgrade |
+| `self-uninstall` | Type 0 | `inst_self_uninstall` | Remove managed binary; confirm unless `--force` |
 | `version` | Type 0 | `app_version` | Local `VERSION` only; no network |
-| `about` | Type 0 | `app_about` | Diagnostics: install presence, paths, user, shell, TTY, storage, **resolved queue paths**; **no** channel one-liner; **no** backup/restore fields |
+| `about` | Type 0 | `app_about` | Diagnostics: install presence, paths, user, shell, TTY, storage, **resolved queue paths**, install channel; **no** `CHECKSUM`; **no** backup/restore fields |
 | `help` | Type 0 | `app_help` | Full usage in human mode; short JSON note in JSON mode |
-| `menu` / `main` | Type 0 | `app_main_menu` | Numbered TTY start list. Empty argv stays help. Dual mention on `requirement-shell-cli-default-interaction`. |
+| `menu` / `main` | Type 0 | `app_main_menu` | Numbered TTY start list. Empty argv is Type O. Dual mention on `requirement-shell-cli-default-interaction`. |
 | `sudoers-to-json` | Type 0 | `sr_sudoers_to_json` | Named here; text dual / visudo on `requirement-sudoers-file`; convert catalog on domain SSOT |
 | `json-to-sudoers` | Type 0 | `sr_json_to_sudoers` | Named here; text dual / visudo on `requirement-sudoers-file`; convert catalog on domain SSOT |
 | `test-json-format` | Type 0 **test-purpose** | `sr_test_json_format` | Named here; Fence body on `requirement-incorrect-json-format`. Unit test; local test folder. |
@@ -151,13 +152,12 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 #### Dispatcher acceptance criteria
 
 1. Unknown token after flag parse → `out_die` with pointer to `sudoer-cli help`.  
-2. Zero-arg → help (not install).  
+2. Zero-arg → Type O install-ensure (not help).  
 3. Command routing table in `app_main` **must** include every lifecycle row above **and** the live domain Type 0 verbs from the domain SSOT, and **no** trimmed parent verbs (`backup` / `restore` / `remove-project-sudoers`).  
 4. Help text **must** stay aligned with that table.
 
 #### Explicitly out of scope
 
-- Online: `version-check`, `self-update`, `self-uninstall`, channel `install` via URL  
 - Domain: `backup`, `restore`  
 - Parent leftovers: `backup`, `restore`, `remove-project-sudoers`  
 - Type 2 app runtime euid under sudoer-adm  
@@ -204,9 +204,9 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 **Future AI assistants, Grok, or maintainers MUST NOT**:
 
 1. List a verb in `help` that has no dispatcher arm, or reintroduce `backup` / `restore`.  
-2. Change empty argv from Type N help to install-ensure.  
+2. Change empty argv from Type O install-ensure back to help while `SCRIPT_URL` is the product channel.  
 3. Bypass `out_*` for user-facing messages.  
-4. Advertise an online install channel in help/about.  
+4. Hide the install channel in help/about, or advertise `CHECKSUM` as everyday UX.  
 5. Collapse Type 1/2 into “just run as root.”  
 6. Mix **test-purpose** verbs into **operational** help grouping, or treat a tester as submit / dest review / `setup` / host install.  
 7. `sudo` on a test-purpose verb except wrapping **chmod** / **chown** of the **local test folder** (check before sudo).
@@ -232,7 +232,9 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 |-----|--------------|
 | `requirement-shell-cli-zero-arguments` | Empty argv |
 | `requirement-shell-cli-default-interaction` | Dual mention of `menu` / `main`; numbered-list membership |
-| `requirement-shell-local-self-management` | install / uninstall / where-is-me |
+| `requirement-shell-self-management` | version-check / self-update / self-uninstall / about |
+| `requirement-shell-cli-zero-arguments` | Type O empty argv |
+| `requirement-shell-automatic-checksum` | companion `${SCRIPT_URL}.sha256` |
 | `requirement-shell-output-requirements` | `out_*` |
 | `requirement-bootstrap-chain` | Historical origin |
 | `requirement-domain-sudoer-approval` | File-based JSON approval + verb catalog (Type 0 routed; Type 1 setup live) |
@@ -253,7 +255,8 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | **TP-CLI-01..16** | `tests/test_cli.sh` | have | includes stripped-verb fail-closed + convert / `test-json-format` / `test-well-known-binary` / `fence-test` routed |
 | **TP-CLI-17** | `tests/test_cli.sh` | have | default-cli-main-menu-style printers (claimed menu uses them) |
 | **TP-CLI-18..21** | `tests/test_cli.sh` | have | `menu` / `main` routed; off-TTY help; membership; interactive `--json` still list |
-| **TP-LC-*** | `tests/test_local_lifecycle.sh` | have | lifecycle |
+| **TP-LC-*** | `tests/test_local_lifecycle.sh` | have | online lifecycle |
+| **TP-CURL-*** | `tests/test_online_curl_install.sh` | have | `curl \| sh` pipe |
 | **TP-SR-PRIV-03** | `tests/test_domain_sr.sh` | have | live setup body (static) |
 
 **Matrix:** `reviews/requirement-test-matrix.md`  
@@ -287,9 +290,10 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | 2026-09-03 | Active 3.9.0 | Login-hook-symlink after global copy; default main menu **not** claimed; look printers **TP-CLI-17**; `VERSION` 1.18.0 |
 | 2026-09-03 | Active 3.10.0 | Claimed case-3 `menu` / `main`; empty argv stays help; `VERSION` 1.19.0 |
 | 2026-09-03 | Active 3.10.1 | Stay-honest Implementation Notes `VERSION` 1.20.0 |
+| 2026-09-06 | Active 3.10.3 | Stay-honest Implementation Notes `VERSION` 1.21.0 |
 
 ---
 
-**Last Updated**: 2026-09-03 (3.10.1 — stay-honest `VERSION` 1.20.0)  
+**Last Updated**: 2026-09-06 (3.10.3 — stay-honest `VERSION` 1.21.0)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

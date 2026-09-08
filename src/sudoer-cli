@@ -3,18 +3,19 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 # =============================================================================
 #
-# Specialized A → B from cli-template Type 0 architecture (CIAO / CIAO-Lite).
-# Historical origin: cloned from cli-template. No live parent ship unit in-tree.
-# Direction: cli-template → sudoer-cli only. Never reverse-copy this body onto A.
+# Specialized A → B from selfmanaged Type 0 architecture (CIAO / CIAO-Lite).
+# Bootstrap origin A: selfmanaged (live sibling). This product is B: sudoer-cli.
+# Direction: selfmanaged → sudoer-cli only. Never reverse-copy this body onto A.
 #
 # Project requirements (docs/requirements/ only — never cite templates here):
 # - requirement-class-software-dev.md
 # - requirement-bootstrap-chain.md
 # - requirement-project-folder.md
 # - requirement-shell-cli-interface.md
-# - requirement-shell-cli-zero-arguments.md  (Type N empty argv = help)
-# - requirement-shell-cli-default-interaction.md  (TTY menu / main; empty argv stays help)
-# - requirement-shell-local-self-management.md
+# - requirement-shell-cli-zero-arguments.md  (Type O empty argv = install-ensure)
+# - requirement-shell-cli-default-interaction.md  (TTY menu / main; empty argv is Type O)
+# - requirement-shell-self-management.md
+# - requirement-shell-automatic-checksum.md
 # - requirement-shell-cli-storage.md
 # - requirement-shell-idempotency.md
 # - requirement-shell-modular-function-design.md
@@ -38,7 +39,7 @@
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
 # APP NAME: hard-assign APP_NAME="sudoer-cli"
-# VERSION: hard-assign VERSION="1.20.0"
+# VERSION: hard-assign VERSION="1.22.0"
 #
 # =============================================================================
 
@@ -55,13 +56,14 @@ APP_NAME="sudoer-cli"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
 : "${DESCRIPTION:=POSIX /bin/sh CLI: convert a sudoers fragment to JSON, queue it, and let a host admin who already used password sudo accept or decline it. First-time setup creates sudoer-adm.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.20.0"
-: "${VERSION:=1.0.0}"
+VERSION="1.22.0"
+: "${VERSION:=1.22.0}"
 # Repository identity SSOT (git host owner/repo for project-repository alignment).
-# Install remains local-only: SCRIPT_URL stays empty (no online curl|sh channel).
+# Channel: raw GitHub path includes src/ because the ship unit lives under src/.
 : "${REPO_USER:=cloudgen}"
 : "${REPO_NAME:=sudoer-cli}"
-: "${SCRIPT_URL:=}"
+: "${SCRIPT_URL:=https://raw.githubusercontent.com/${REPO_USER}/${REPO_NAME}/main/src/${APP_NAME}}"
+: "${CHECKSUM:=}"
 
 # Runtime flags (safe defaults)
 : "${QUIET:=0}"
@@ -802,6 +804,59 @@ path_add_shell() {
 # Digests are data returns for $(util_sha256_file …), not product UI.
 # =============================================================================
 
+util_sha256_file() {
+    local file="${1-}" dig=""
+    if [ -z "${file}" ] || [ ! -f "${file}" ]; then
+        return 1
+    fi
+    if command -v sha256sum >/dev/null 2>&1; then
+        dig=$(sha256sum "${file}" 2>/dev/null | awk '{ print $1; exit }')
+    elif command -v shasum >/dev/null 2>&1; then
+        dig=$(shasum -a 256 "${file}" 2>/dev/null | awk '{ print $1; exit }')
+    elif command -v openssl >/dev/null 2>&1; then
+        # openssl dgst -sha256 → "SHA256(file)= hex" or "SHA2-256(file)= hex"
+        dig=$(openssl dgst -sha256 "${file}" 2>/dev/null | awk '{ print $NF; exit }')
+    else
+        return 1
+    fi
+    if [ -z "${dig}" ]; then
+        return 1
+    fi
+    printf '%s\n' "${dig}"
+    return 0
+}
+
+# =============================================================================
+# util_fetch_remote_version() - Extract VERSION="…" from remote SCRIPT_URL body
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Download SCRIPT_URL with curl or wget and print the remote VERSION value.
+# Empty stdout on failure (caller fails loud). Class B return-via-stdout.
+# =============================================================================
+
+util_fetch_remote_version() {
+    local url="${1-}"
+    local body=""
+    if [ -z "${url}" ]; then
+        return 1
+    fi
+    if command -v curl >/dev/null 2>&1; then
+        body=$(curl -fsSL "${url}" 2>/dev/null) || body=""
+    elif command -v wget >/dev/null 2>&1; then
+        body=$(wget -qO- "${url}" 2>/dev/null) || body=""
+    else
+        return 1
+    fi
+    if [ -z "${body}" ]; then
+        return 1
+    fi
+    printf '%s\n' "${body}" | grep '^VERSION="' | head -n1 | cut -d'"' -f2
+    return 0
+}
+
+# =============================================================================
+
 util_get_install_bin_path() {
     # --- Safe Variable Defaults ----
     # Defensive defaults - never assume globals are set
@@ -1344,252 +1399,1071 @@ util_resolve_running_path() {
 }
 
 # =============================================================================
-# inst_local_install() - Local copy install (no network)
+# =============================================================================
+# ver_gt() - Pure POSIX semantic version comparison
 # =============================================================================
 #
 # GENERAL PURPOSE:
-# Copy the running ship unit to the privilege-correct bin path.
-# Root → GLOBAL_BIN; non-root → USER_BIN. Idempotent unless FORCE/FORCE_REINSTALL.
+# Returns 0 (true) if ver1 > ver2, otherwise returns 1 (false).
+# Used by ver_check() and inst_self_update() to prevent incorrect downgrades.
 #
-# ALIGNMENT:
-# - requirement-shell-local-self-management.md
-# - requirement-shell-idempotency.md
+# Safe Variable Defaults
+# Respects CIAO zero-dependency rule — no external tools (no sort -V).
 #
+# CRITICAL DESIGN CHOICE:
+# This function was added because previous AI suggestions using `sort -V`
+# were not portable enough for harsh environments (Alpine ash, busybox,
+# minimal containers, Git Bash, etc.).
+#
+# !!! DO NOT MODIFY OR SIMPLIFY THIS FUNCTION !!!
+# Past AI assistants have repeatedly tried to replace this with:
+#   - `sort -V` one-liners
+#   - Inline string comparisons
+#   - "Cleaner" but less robust logic
+#
+# Any such change re-introduces downgrade bugs and breaks portability.
+# This function must remain pure POSIX and self-contained.
+#
+# AI assistants are explicitly required to:
+# - Never remove or inline this function
+# - Always use it for all version comparisons in grokrec
+# - Preserve all defensive comments
+# - Study the test script provided by the user before suggesting changes
+#
+# This is part of the battle-field-tested defensive layer.
+#
+# Last reviewed: 29 April 2026
+# =============================================================================
+
+ver_gt() {
+    # --- Safe Variable Defaults ----
+    v1=$1
+    v2=$2
+
+    while [ -n "$v1" ] || [ -n "$v2" ]; do
+        p1=${v1%%.*}
+        p2=${v2%%.*}
+
+        [ -z "$p1" ] && p1=0
+        [ -z "$p2" ] && p2=0
+
+        if [ "$p1" -gt "$p2" ]; then
+            return 0
+        fi
+        if [ "$p1" -lt "$p2" ]; then
+            return 1
+        fi
+
+        if [ "$v1" = "${v1#*.}" ]; then
+            v1=""
+        else
+            v1=${v1#*.}
+        fi
+
+        if [ "$v2" = "${v2#*.}" ]; then
+            v2=""
+        else
+            v2=${v2#*.}
+        fi
+    done
+
+    return 1    # versions are equal
+}
+
+# =============================================================================
+# ver_check() - Check for newer version from remote source
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Compares the locally installed version of ${APP_NAME} against the remote
+# version available at SCRIPT_URL. Supports both human-readable output and
+# clean JSON mode. Used by the `version-check` command and as a helper for
+# self-update decision logic.
+#
+# CIAO PRINCIPLES APPLIED:
+# - Caution (Principle 1): Never assumes SCRIPT_URL is set; graceful failure
+#   with actionable error when remote version cannot be fetched.
+# - Intentional (Principle 2): Explicit safe defaults, clear separation of
+#   version fetching vs comparison, and consistent behavior in JSON/quiet modes.
+# - Anti-fragile (Principle 3): Works whether the tool is installed globally,
+#   per-user, or not yet installed; survives network or parsing failures.
+# - Over-protect (Principle 18): Full defensive header, Protection Zone,
+#   Lessons Learned traceability, and strict avoidance of hard-coded
+#   project-specific URLs or repository paths.
+#
+# ALIGNMENT (live requirements only):
+# - requirement-shell-self-management.md
+# - requirement-shell-cli-interface.md
+# - requirement-shell-output-requirements.md
+#
+# !!! DO NOT MODIFY OR SIMPLIFY THIS FUNCTION !!!
+# This function is the single source of truth for remote version comparison.
+# Any change must preserve the SCRIPT_URL handling contract and the exact
+# JSON output shape expected by consumers.
+#
+# Lessons Learned (CIAO Reflection):
+# 2026-06-26: Original version contained a hardcoded project-specific default
+#             URL pointing to an unrelated repository (porting artifact).
+#             Corrected to empty safe default + explicit comment. Removed
+#             all hard-coded distribution details to comply with generalization
+#             and hardcoding-prevention rules.
+#
+# Last reviewed: 2026-06-26
+# =============================================================================
+
+ver_check() {
+    # --- Safe Variable Defaults ----
+    # Defensive defaults - never assume globals are set
+    : "${APP_NAME:=sudoer-cli}"
+    : "${JSON:=0}"
+    : "${QUIET:=0}"
+    : "${SCRIPT_URL:=}"
+
+    # SCRIPT_URL is Config SSOT (composed default from REPO_USER/REPO_NAME/APP_NAME).
+    # Override via env for forks or offline channels. Empty → network steps fail loud.
+
+    # Fetch remote version (curl or wget)
+    REMOTE_VERSION=$(util_fetch_remote_version "${SCRIPT_URL}")
+
+    if [ -z "$REMOTE_VERSION" ]; then
+        if [ "${JSON}" -eq 1 ]; then
+            out_json_error "Failed to fetch remote version" "network_error"
+        else
+            out_error "Failed to fetch remote version (SCRIPT_URL may be unset or unreachable)"
+        fi
+        return 1
+    fi
+
+    local local_version
+    local_version=$(inst_get_version)
+
+    if [ "${JSON}" -eq 1 ]; then
+        # out_json type message key value … — empty message so fields stay key/value pairs
+        local _is_latest="false"
+        if [ "$local_version" = "$REMOTE_VERSION" ]; then
+            _is_latest="true"
+        elif ver_gt "$local_version" "$REMOTE_VERSION" 2>/dev/null; then
+            _is_latest="true"
+        fi
+        out_json "ver_check" "" \
+            "local_version" "$local_version" \
+            "remote_version" "$REMOTE_VERSION" \
+            "is_latest" "${_is_latest}"
+    else
+        if [ "${QUIET}" -eq 0 ]; then
+            out_info "Checking latest version of ${APP_NAME}..."
+            out_plain "Local version : ${local_version}"
+            out_plain "Latest version: ${REMOTE_VERSION}"
+            out_empty_line
+
+            if [ "$local_version" = "$REMOTE_VERSION" ]; then
+                out_success "You are running the latest version."
+            elif ver_gt "$local_version" "$REMOTE_VERSION"; then
+                out_success "You are running a newer development version (${local_version} > ${REMOTE_VERSION})"
+            elif [ "$local_version" = "not installed" ]; then
+                out_warn "${APP_NAME} is not installed yet."
+            else
+                out_warn "A newer version is available (${REMOTE_VERSION})"
+            fi
+        fi
+    fi
+}
+
+
+# =============================================================================
+
 # Mode SSOT for managed binary (shell ship unit needs world-read for non-owners).
 # Do NOT use chmod +x alone after mktemp (0600|0111 → 0711 breaks multi-user exec).
 INST_MANAGED_MODE="0755"
 
-# Last reviewed: 2026-08-09 — mode 0755 multi-user (requirement-shell-local-self-management §2.3.1)
+# inst_perform_install() - Perform the actual installation (v2 with checksum)
 # =============================================================================
-inst_local_install() {
-    : "${APP_NAME:=cli-template}"
-    : "${HOME:=/tmp}"
+#
+# GENERAL PURPOSE:
+# Orchestrates the complete installation flow:
+#   1. Privilege-aware path setup (root → /usr/local/bin, normal user → ~/.local/bin)
+#   2. Early exit if already installed (unless --force / FORCE_REINSTALL=1)
+#   3. Target directory preparation
+#   4. Secure download with layered checksum verification:
+#        - If CHECKSUM env var is set → strict verification (user/CI pinned version)
+#        - Otherwise → best-effort verification via ${SCRIPT_URL}.sha256 (if present)
+#   5. Atomic move + chmod + PATH update via inst_perform_install_atomic_install()
+#
+# This is the SINGLE SOURCE OF TRUTH for all installation operations
+# (initial install, self-update, and forced reinstall).
+#
+# CIAO PRINCIPLES APPLIED:
+# - Caution (Principle 1): Never trust network download without verification when possible.
+#   Always use mktemp, explicit error checks, and atomic mv.
+# - Intentional (Principle 2): Clear step-by-step flow with explicit if/then blocks.
+#   Behavior is fully predictable in interactive, quiet, JSON, and non-TTY modes.
+# - Anti-fragile (Principle 3): Works for both root and normal users, survives partial
+#   failures, and maintains backward compatibility when no CHECKSUM is provided.
+# - Over-protect (Principle 18): Strong Protection Zone, safe defaults, checksum layers,
+#   and cleanup on every error path. Designed to be reusable across CIAO-Lite projects.
+#
+# !!! DO NOT MODIFY OR SIMPLIFY THIS FUNCTION !!!
+# This is the central installation orchestrator. Any change must preserve the
+# checksum decision logic, atomic install step, and variable scoping for helpers.
+#
+# Lessons Learned (CIAO Reflection):
+# 2026-06-26:
+#   - Original implementation was a stub (created tmp_file then returned 0).
+#     This made self-update and the core install path completely non-functional.
+#   - Updated to wire the existing v2 download helpers + atomic install helper.
+#   - Changed mktemp error handling to explicit if (matching the style enforced
+#     in inst_perform_install_download_without_checksum).
+#   - Added safe defaults for FORCE_REINSTALL and CHECKSUM.
+#   - Ensured tmp_file is always cleaned on failure paths.
+#   - Preserved full original defensive header and only appended this Lessons Learned section.
+#
+# Last reviewed: 2026-06-26
+# =============================================================================
+
+inst_perform_install() {
+    # --- Safe Variable Defaults ---
     : "${GLOBAL_BIN:=/usr/local/bin}"
     : "${USER_BIN:=${HOME}/.local/bin}"
-    : "${FORCE:=0}"
+    : "${INSTALL_PATH:=${GLOBAL_BIN}/${APP_NAME}}"
     : "${FORCE_REINSTALL:=0}"
-    : "${FORCE_GLOBAL:=0}"
-    : "${JSON:=0}"
-    : "${QUIET:=0}"
-    : "${INST_MANAGED_MODE:=0755}"
+    : "${CHECKSUM:=}"
+    : "${SCRIPT_URL:=}"
+    : "${REMOTE_VERSION:=}"
 
+    : "${FORCE_GLOBAL:=0}"
+    if [ "$(id -u 2>/dev/null || echo 1)" -eq 0 ] || [ "${FORCE_GLOBAL}" -eq 1 ]; then
+        IS_ROOT=1
+        INSTALL_PATH="${GLOBAL_BIN}/${APP_NAME}"
+    else
+        IS_ROOT=0
+        INSTALL_PATH="${USER_BIN}/${APP_NAME}"
+    fi
+
+    if [ -z "$REMOTE_VERSION" ]; then
+        REMOTE_VERSION=${VERSION}
+    fi
+
+    if [ "${JSON}" -eq 0 ]; then
+        out_info "Starting installation of ${APP_NAME} ${REMOTE_VERSION}..."
+    fi
+
+    if inst_is_installed && [ "${FORCE_REINSTALL}" -eq 0 ]; then
+        : "${INST_MANAGED_MODE:=0755}"
+        chmod "${INST_MANAGED_MODE}" "${INSTALL_PATH}" 2>/dev/null || true
+        if [ "$IS_ROOT" -eq 1 ]; then
+            lpu_ensure_login_hook_symlink
+        fi
+        if [ "${JSON}" -eq 1 ]; then
+            out_json "out_success" "${APP_NAME} is already installed."
+        else
+            # Success no-op: re-running curl | sh / install does not require --force.
+            # --force is only for deliberate re-download/replace (see self-update).
+            out_success "${APP_NAME} is already installed."
+            out_info "Use --force only to reinstall deliberately (or run: ${APP_NAME} self-update)."
+        fi
+        return 0
+    fi
+
+    # Step 1: Prepare target folder
+    if ! inst_perform_install_prepare_target; then
+        return 1
+    fi
+
+    local tmp_file
+    tmp_file=$(mktemp "${EFFECTIVE_STORAGE_DIR:-/tmp}/${APP_NAME}.XXXXXX" 2>/dev/null || mktemp -t "${APP_NAME}.XXXXXX")
+    if [ -z "${tmp_file}" ]; then
+        if [ "${JSON}" -eq 1 ]; then
+            out_json_error "Failed to create temporary file" "io_error"
+        else
+            out_error "Failed to create temporary file"
+        fi
+        return 1
+    fi
+
+    local downloaded_checksum_ok=0
+    : "${INST_AUTO_CHECKSUM_OK:=0}"
+
+    if [ -n "${CHECKSUM}" ]; then
+        # Strict user/CI-provided checksum (highest security)
+        if inst_perform_install_download_with_checksum "${tmp_file}"; then
+            downloaded_checksum_ok=1
+        else
+            rm -f "${tmp_file}" 2>/dev/null || true
+            return 1
+        fi
+    else
+        # Automatic verification via ${SCRIPT_URL}.sha256 (primary integrity path)
+        INST_AUTO_CHECKSUM_OK=0
+        if ! inst_perform_install_download_without_checksum "${tmp_file}"; then
+            rm -f "${tmp_file}" 2>/dev/null || true
+            return 1
+        fi
+        # Set only when companion matched (not on missing-sidecar continue)
+        downloaded_checksum_ok=${INST_AUTO_CHECKSUM_OK:-0}
+    fi
+
+    # Step 4: Atomic move to final location + PATH update + success message
+    if ! inst_perform_install_atomic_install "${tmp_file}" "${downloaded_checksum_ok}"; then
+        rm -f "${tmp_file}" 2>/dev/null || true
+        return 1
+    fi
+
+    return 0
+}
+
+# =============================================================================
+# inst_perform_install_prepare_target() - Step 1: Target folder preparation
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Creates the correct installation directory (global or user) with proper
+# permissions check.
+#
+# Last reviewed: 29 April 2026
+# =============================================================================
+
+inst_perform_install_prepare_target() {
+    if [ "$IS_ROOT" -eq 1 ]; then
+        if ! mkdir -p "${GLOBAL_BIN}" 2>/dev/null; then
+            if [ "${JSON}" -eq 1 ]; then
+                out_json_error "Failed to create ${GLOBAL_BIN}" "io_error"
+            else
+                out_error "Failed to create ${GLOBAL_BIN}"
+            fi
+            return 1
+        fi
+    else
+        if ! mkdir -p "${USER_BIN}" 2>/dev/null; then
+            if [ "${JSON}" -eq 1 ]; then
+                out_json_error "Failed to create ${USER_BIN}" "io_error"
+            else
+                out_error "Failed to create ${USER_BIN}"
+            fi
+            return 1
+        fi
+    fi
+    return 0
+}
+
+# =============================================================================
+# inst_perform_install_download_with_checksum() - Step 2: Download with explicit CHECKSUM
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Downloads the script and verifies it against user-provided CHECKSUM (strict).
+#
+# PRINTF EXCEPTION (class D – tool protocol / computation pipe):
+# printf '%s  %s\n' … | sha256sum -c feeds the verifier only (not product UI).
+# Status/errors still go through out_* / out_json_error / out_die.
+# See requirement-shell-output-requirements.md §2.1.1.
+#
+# Last reviewed: 2026-07-12
+# =============================================================================
+
+inst_perform_install_download_with_checksum() {
+    local tmp_file="$1"
+
+    if [ "${JSON}" -eq 0 ]; then
+        out_info "Verifying download against provided CHECKSUM..."
+    fi
+
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL "${SCRIPT_URL}" -o "${tmp_file}" || {
+            if [ "${JSON}" -eq 1 ]; then
+                out_json_error "Download failed (curl)" "network_error"
+            else
+                out_error "Download failed (curl)"
+            fi
+            return 1
+        }
+    elif command -v wget >/dev/null 2>&1; then
+        wget -qO "${tmp_file}" "${SCRIPT_URL}" || {
+            if [ "${JSON}" -eq 1 ]; then
+                out_json_error "Download failed (wget)" "network_error"
+            else
+                out_error "Download failed (wget)"
+            fi
+            return 1
+        }
+    else
+        if [ "${JSON}" -eq 1 ]; then
+            out_json_error "Neither curl nor wget found" "missing_dependency"
+        else
+            out_error "Neither curl nor wget found"
+        fi
+        return 1
+    fi
+
+    # Verify provided CHECKSUM (sha256sum | shasum | openssl — util_sha256_file)
+    local actual
+    actual=$(util_sha256_file "${tmp_file}") || actual=""
+    if [ -n "${actual}" ] && [ "${CHECKSUM}" = "${actual}" ]; then
+        if [ "${JSON}" -eq 0 ]; then
+            out_success "Checksum verification passed (user-provided CHECKSUM)."
+        fi
+        return 0
+    else
+        if [ "${JSON}" -eq 1 ]; then
+            out_json_error "Checksum verification failed (provided CHECKSUM does not match)" "checksum_mismatch"
+        else
+            out_die "Checksum verification failed. The downloaded file does not match the provided CHECKSUM. Installation aborted for security."
+        fi
+        return 1
+    fi
+}
+
+# =============================================================================
+# inst_perform_install_download_without_checksum() - Step 3: Download with automatic .sha256
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Downloads the script and attempts best-effort verification via ${SCRIPT_URL}.sha256.
+# Falls back gracefully if no .sha256 file exists (backward compatible).
+# Uses robust, auditable hash comparison that actually works.
+#
+# CIAO PRINCIPLES APPLIED:
+# - Caution (Principle 1): Never trust download without verification when possible.
+# - Intentional (Principle 2): Explicit HTTP code capture and clear hash comparison.
+#   All error handling uses explicit if/then blocks (no || {} or compact || return).
+# - Anti-fragile (Principle 3): Tolerates minor whitespace in .sha256 file.
+# - Over-protect (Principle 18): Security-critical install path now has working
+#   verification and follows current coding standards.
+#
+# ALIGNMENT (live requirements only):
+# - requirement-shell-self-management.md (install download / integrity path)
+# - requirement-shell-output-requirements.md (out_* status and errors)
+# - requirement-shell-modular-function-design.md (inst_* ownership, headers)
+# Source comments cite only files under docs/requirements/ that exist on disk.
+#
+# !!! DO NOT MODIFY OR SIMPLIFY THIS FUNCTION !!!
+# Designed to be reusable in other CIAO-Lite projects.
+#
+# Lessons Learned (CIAO Reflection):
+# 2026-06-07:
+#   - Fixed fundamentally broken verification: `sha256sum -c ... < "${tmp_file}"`
+#     does not work as intended.
+#   - Removed all `|| {}` and `|| return 1` patterns in this function to comply
+#     with updated coding standard.
+#   - Both curl and wget paths now use consistent, explicit error handling.
+# 2026-07-12: ALIGNMENT retargeted to live docs/requirements/ files only;
+#             removed citations to non-existent requirements / templates.
+# 2026-07-14: requirement-shell-automatic-checksum transparency (link/value/result);
+#             first-field digest parse (sha256sum "hash  file" lines); set
+#             INST_AUTO_CHECKSUM_OK=1 on companion match so atomic install can
+#             report verified success (was always 0 on automatic path).
+#
+# Last reviewed: 2026-07-14
+# =============================================================================
+
+inst_perform_install_download_without_checksum() {
+    local tmp_file="$1"
+    # Caller (inst_perform_install) reads this after return 0.
+    # 1 = companion present and digests match; 0 = missing sidecar (warn+continue) or unset.
+    INST_AUTO_CHECKSUM_OK=0
+    : "${SCRIPT_URL:=}"
+
+    if [ "${JSON}" -eq 0 ]; then
+        out_info "No CHECKSUM pin → automatic integrity via companion ${SCRIPT_URL}.sha256"
+        out_info "Companion link: ${SCRIPT_URL}.sha256"
+    fi
+
+    if command -v curl >/dev/null 2>&1; then
+        if ! curl -fsSL "${SCRIPT_URL}" -o "${tmp_file}"; then
+            if [ "${JSON}" -eq 1 ]; then
+                out_json_error "Download failed (curl)" "network_error"
+            else
+                out_error "Download failed (curl)"
+            fi
+            return 1
+        fi
+
+        local sha_file
+        sha_file=$(mktemp -t "${APP_NAME}.sha256.XXXXXX")
+        if [ -z "${sha_file}" ]; then
+            if [ "${JSON}" -eq 1 ]; then
+                out_json_error "Failed to create temporary file for checksum" "io_error"
+            else
+                out_error "Failed to create temporary file for checksum"
+            fi
+            return 1
+        fi
+
+        # Capture HTTP code cleanly
+        local http_code
+        http_code=$(curl -fsSL -w "%{http_code}" "${SCRIPT_URL}.sha256" -o "${sha_file}" 2>/dev/null)
+
+        if [ "${http_code}" = "200" ]; then
+            # First field only: bare hex or standard "hash  filename" lines
+            local expected actual
+            expected=$(awk 'NF { print $1; exit }' "${sha_file}" 2>/dev/null)
+            actual=$(util_sha256_file "${tmp_file}") || actual=""
+
+            if [ -n "${expected}" ] && [ -n "${actual}" ] && [ "${expected}" = "${actual}" ]; then
+                INST_AUTO_CHECKSUM_OK=1
+                if [ "${JSON}" -eq 0 ]; then
+                    out_info "Expected SHA-256: ${expected}"
+                    out_info "Actual SHA-256:   ${actual}"
+                    out_success "Automatic checksum result: PASS (match ${SCRIPT_URL}.sha256)."
+                fi
+            else
+                rm -f "${sha_file}"
+                if [ "${JSON}" -eq 1 ]; then
+                    out_json_error "Automatic checksum verification failed" "checksum_mismatch"
+                else
+                    out_info "Expected SHA-256: ${expected:-"(empty)"}"
+                    out_info "Actual SHA-256:   ${actual:-"(empty)"}"
+                    out_die "Checksum verification failed (mismatch with ${SCRIPT_URL}.sha256). Installation aborted for security."
+                fi
+                return 1
+            fi
+        else
+            if [ "${JSON}" -eq 0 ]; then
+                out_warn "No .sha256 companion at ${SCRIPT_URL}.sha256 → continuing without automatic verification."
+            fi
+        fi
+        rm -f "${sha_file}" 2>/dev/null || true
+
+    elif command -v wget >/dev/null 2>&1; then
+        if ! wget -qO "${tmp_file}" "${SCRIPT_URL}"; then
+            if [ "${JSON}" -eq 1 ]; then
+                out_json_error "Download failed (wget)" "network_error"
+            else
+                out_error "Download failed (wget)"
+            fi
+            return 1
+        fi
+
+        local sha_file
+        sha_file=$(mktemp -t "${APP_NAME}.sha256.XXXXXX")
+        if [ -z "${sha_file}" ]; then
+            if [ "${JSON}" -eq 1 ]; then
+                out_json_error "Failed to create temporary file for checksum" "io_error"
+            else
+                out_error "Failed to create temporary file for checksum"
+            fi
+            return 1
+        fi
+
+        if wget -q --server-response "${SCRIPT_URL}.sha256" -O "${sha_file}" 2>&1 | grep -qE "HTTP/[0-9.]+ 200"; then
+            local expected actual
+            expected=$(awk 'NF { print $1; exit }' "${sha_file}" 2>/dev/null)
+            actual=$(util_sha256_file "${tmp_file}") || actual=""
+
+            if [ -n "${expected}" ] && [ -n "${actual}" ] && [ "${expected}" = "${actual}" ]; then
+                INST_AUTO_CHECKSUM_OK=1
+                if [ "${JSON}" -eq 0 ]; then
+                    out_info "Companion link: ${SCRIPT_URL}.sha256"
+                    out_info "Expected SHA-256: ${expected}"
+                    out_info "Actual SHA-256:   ${actual}"
+                    out_success "Automatic checksum result: PASS (match ${SCRIPT_URL}.sha256)."
+                fi
+            else
+                rm -f "${sha_file}"
+                if [ "${JSON}" -eq 1 ]; then
+                    out_json_error "Automatic checksum verification failed" "checksum_mismatch"
+                else
+                    out_info "Expected SHA-256: ${expected:-"(empty)"}"
+                    out_info "Actual SHA-256:   ${actual:-"(empty)"}"
+                    out_die "Checksum verification failed (mismatch with ${SCRIPT_URL}.sha256). Installation aborted for security."
+                fi
+                return 1
+            fi
+        else
+            if [ "${JSON}" -eq 0 ]; then
+                out_warn "No .sha256 companion at ${SCRIPT_URL}.sha256 → continuing without automatic verification."
+            fi
+        fi
+        rm -f "${sha_file}" 2>/dev/null || true
+
+    else
+        if [ "${JSON}" -eq 1 ]; then
+            out_json_error "Neither curl nor wget found" "missing_dependency"
+        else
+            out_error "Neither curl nor wget found"
+        fi
+        return 1
+    fi
+
+    return 0
+}
+
+# =============================================================================
+# inst_perform_install_atomic_install() - Step 4: Atomic copy to target location
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Makes the downloaded file executable and atomically moves it to the final
+# INSTALL_PATH. Also handles PATH addition for user installs and out_success output.
+#
+# Last reviewed: 29 April 2026
+# =============================================================================
+
+inst_perform_install_atomic_install() {
+    local tmp_file="$1"
+    local downloaded_checksum_ok="$2"
+
+    : "${INST_MANAGED_MODE:=0755}"
+    chmod "${INST_MANAGED_MODE}" "${tmp_file}" 2>/dev/null || true
+
+    rm -f "${INSTALL_PATH}" 2>/dev/null
+    if ! mv "${tmp_file}" "${INSTALL_PATH}" 2>/dev/null; then
+        rm -f "${tmp_file}"
+        if [ "${JSON}" -eq 1 ]; then
+            out_json_error "Failed to move to ${INSTALL_PATH}" "io_error"
+        else
+            out_error "Failed to move to ${INSTALL_PATH}"
+        fi
+        return 1
+    fi
+    chmod "${INST_MANAGED_MODE}" "${INSTALL_PATH}" 2>/dev/null || true
+
+    # Add ~/.local/bin to PATH for normal user installs
+    if [ "$IS_ROOT" -eq 0 ]; then
+        path_add_shell
+    fi
+    # Global place creates login-hook-symlink (do not overwrite; test-mode skips).
+    if [ "$IS_ROOT" -eq 1 ]; then
+        lpu_ensure_login_hook_symlink
+    fi
+    
+    if [ "${JSON}" -eq 1 ]; then
+        out_json "out_success" "${APP_NAME} ${REMOTE_VERSION} successfully installed to ${INSTALL_PATH}" "path" "${INSTALL_PATH}"
+    else
+        out_success "${APP_NAME} ${REMOTE_VERSION} successfully installed to ${INSTALL_PATH}"
+        if [ "${downloaded_checksum_ok}" -eq 1 ]; then
+            out_success "✓ Download was cryptographically verified."
+        fi
+    fi
+    return 0
+}
+
+# =============================================================================
+# inst_maybe_install() - Friendly installation prompt
+# =============================================================================
+#
+# Respects both --quiet and --json modes.
+# Quiet/JSON: no prompt — MUST call inst_perform_install (not return 0 skip).
+# Interactive gate consumes process TTY (set once at startup), not a second [ -t.
+# Uses prompt_yes_no() as single source of truth for confirmation.
+#
+# !!! DO NOT MODIFY OR SIMPLIFY !!!
+# Designed to be reusable in other projects.
+#
+# Lessons Learned (CIAO Reflection):
+# 2026-07-13:
+#   - Under set -u, recommended-install branch used IS_ROOT / SH before any
+#     assignment (those were only set inside inst_perform_install). Crash:
+#     "IS_ROOT: parameter not set" after printing "Recommended installation
+#     command:". Fixed with local privilege detection + SH/SCRIPT_URL defaults.
+# 2026-09-02:
+#   - JSON/QUIET returned 0 without placing (SM-BUG-01). Specializees that
+#     copy this helper as Case A SSOT inherited silent success. Now calls
+#     inst_perform_install and returns its status. Prompt gate reads TTY.
+#
+# Last updated: 2026-09-02
+# =============================================================================
+
+inst_maybe_install() {
+    : "${QUIET:=0}"
+    : "${JSON:=0}"
+    : "${TTY:=0}"
+    : "${FORCE_REINSTALL:=0}"
+    : "${SCRIPT_URL:=}"
+    : "${SH:=sh}"
+    # Privilege for recommended install command (set -u safe; same rule as inst_perform_install)
     if [ "$(id -u 2>/dev/null || echo 1)" -eq 0 ]; then
         IS_ROOT=1
     else
         IS_ROOT=0
     fi
-    : "${IS_ROOT:=0}"
 
-    # Root or --global / FORCE_GLOBAL → system-wide path (production elevation story).
-    if [ "${FORCE_GLOBAL}" -eq 1 ] || [ "${IS_ROOT}" -eq 1 ]; then
-        _target_dir="${GLOBAL_BIN}"
-    else
-        _target_dir="${USER_BIN}"
+    if inst_is_installed && [ "${FORCE_REINSTALL}" -eq 0 ]; then
+        return 0
     fi
-    _target="${_target_dir}/${APP_NAME}"
-    INSTALL_PATH="${_target}"
+    # Quiet or JSON: place with no prompt (requirement-shell-cli-zero-arguments §2.4).
+    if [ "${JSON}" -eq 1 ] || [ "${QUIET}" -eq 1 ]; then
+        inst_perform_install
+        return $?
+    fi
+    out_empty_line
+    out_plain "Note: '${APP_NAME}' is not installed yet."
+    out_plain "     Version: ${VERSION}"
+    out_empty_line
+    out_plain "Recommended installation command:"
+    out_empty_line
 
-    if [ -x "${_target}" ] || [ -f "${_target}" ]; then
-        if [ "${FORCE}" -eq 0 ] && [ "${FORCE_REINSTALL}" -eq 0 ]; then
-            # Mode heal: prior chmod +x after mktemp left 0711/0700; keep multi-user runnable.
-            util_chmod "${INST_MANAGED_MODE}" "${_target}" 2>/dev/null || true
-            out_success "${APP_NAME} already installed at ${_target}"
-            if [ "${_target_dir}" = "${USER_BIN}" ] && [ "${JSON}" -eq 0 ]; then
-                out_info "Local install is user-rewritable. Global install: sudo ${APP_NAME} install  (${GLOBAL_BIN})"
-            fi
-            if [ "${JSON}" -eq 1 ]; then
-                out_json "install" "already installed" \
-                    "app" "${APP_NAME}" \
-                    "path" "${_target}" \
-                    "status" "already_installed" \
-                    "mode" "${INST_MANAGED_MODE}"
-            fi
-            if [ "${_target_dir}" = "${GLOBAL_BIN}" ]; then
-                lpu_ensure_login_hook_symlink
-            fi
+    if [ "$IS_ROOT" -eq 1 ]; then
+        out_plain "     sudo curl -fsSL ${SCRIPT_URL} | sudo ${SH}"
+    else
+        out_plain "     curl -fsSL ${SCRIPT_URL} | ${SH}"
+    fi
+    out_empty_line
+
+    _maybe_should_install=0
+
+    if [ "${TTY}" -eq 1 ]; then
+        if prompt_yes_no "Install ${APP_NAME} ${VERSION} now?"; then
+            _maybe_should_install=1
+        else
+            out_plain "Installation skipped by user."
             return 0
         fi
+    else
+        out_plain "Non-interactive mode detected → installing automatically..."
+        _maybe_should_install=1
     fi
 
-    _src=$(util_resolve_running_path)
-    if [ -z "${_src}" ] || [ ! -f "${_src}" ]; then
-        out_die "Cannot resolve running ship unit path for local install (not a file path)."
-    fi
-
-    if [ ! -d "${_target_dir}" ]; then
-        if ! mkdir -p "${_target_dir}" 2>/dev/null; then
-            if [ "${_target_dir}" = "${GLOBAL_BIN}" ]; then
-                out_die "Cannot create ${GLOBAL_BIN} (need root). Run: sudo ${APP_NAME} install   or: sudo sh <ship-unit> install"
-            fi
-            out_die "Cannot create install directory ${_target_dir}"
-        fi
-    fi
-
-    if [ ! -w "${_target_dir}" ] 2>/dev/null; then
-        if [ "${_target_dir}" = "${GLOBAL_BIN}" ]; then
-            out_die "Cannot write ${GLOBAL_BIN} (need root). Run: sudo ${APP_NAME} install   or: sudo sh <ship-unit> install --global"
-        fi
-        out_die "Install directory not writable: ${_target_dir}"
-    fi
-
-    _stage=$(mktemp "${EFFECTIVE_STORAGE_DIR:-/tmp}/${APP_NAME}.install.XXXXXX" 2>/dev/null || mktemp)
-    if ! cp "${_src}" "${_stage}"; then
-        rm -f "${_stage}" 2>/dev/null || true
-        out_die "Failed to stage ship unit for install"
-    fi
-    # Absolute 0755 required: shell scripts need group/other *read* for non-owner exec.
-    # chmod +x on a mktemp file (often 0600) yields 0711 — look executable, fail for others.
-    if ! util_chmod "${INST_MANAGED_MODE}" "${_stage}"; then
-        rm -f "${_stage}" 2>/dev/null || true
-        out_die "Failed to chmod ${INST_MANAGED_MODE} staged ship unit"
-    fi
-    if ! mv -f "${_stage}" "${_target}"; then
-        rm -f "${_stage}" 2>/dev/null || true
-        out_die "Failed to install to ${_target}"
-    fi
-    # Re-assert mode after mv (some filesystems / policies may alter bits).
-    if ! util_chmod "${INST_MANAGED_MODE}" "${_target}"; then
-        out_die "Installed ${_target} but failed to set mode ${INST_MANAGED_MODE}"
-    fi
-    if [ ! -r "${_target}" ] || [ ! -x "${_target}" ]; then
-        out_die "Installed ${_target} is not readable+executable (mode heal failed)"
-    fi
-
-    out_success "Installed ${APP_NAME} to ${_target}"
-    if [ "${_target_dir}" = "${GLOBAL_BIN}" ]; then
-        lpu_ensure_login_hook_symlink
-    fi
-    if [ "${_target_dir}" = "${USER_BIN}" ]; then
-        # Best-effort PATH integration for user bin (function, not external)
-        path_add_shell 2>/dev/null || true
-        if [ "${JSON}" -eq 0 ]; then
-            out_info "Local install is user-rewritable. Multi-user hosts may prefer: sudo ${APP_NAME} install"
-        fi
-    fi
-    if [ "${JSON}" -eq 1 ]; then
-        out_json "install" "installed" \
-            "app" "${APP_NAME}" \
-            "path" "${_target}" \
-            "status" "installed" \
-            "mode" "${INST_MANAGED_MODE}"
+    if [ "${_maybe_should_install}" -eq 1 ]; then
+        inst_perform_install
+        return $?
     fi
     return 0
 }
 
 # =============================================================================
-# inst_local_uninstall() - Local remove managed binary only
+# inst_self_update() - Perform atomic self-update to latest version
 # =============================================================================
 #
 # GENERAL PURPOSE:
-# Remove the managed binary at the privilege-correct path. Confirm when
-# interactive unless --force. Non-interactive without force fails closed.
-# Does NOT delete user data or unrelated binaries.
+# Orchestrates self-update for the installed ${APP_NAME} binary.
+# Fetches the remote VERSION string, compares it with the locally installed
+# version, and (if different or --force) delegates to inst_perform_install
+# with FORCE_REINSTALL=1. Designed to be safe, idempotent-friendly, and
+# respectful of the current installation type (user vs global).
 #
-# ALIGNMENT:
-# - requirement-shell-local-self-management.md
-# - requirement-shell-interactive-vs-noninteractive.md
+# CIAO PRINCIPLES APPLIED:
+# - Caution (Principle 1): Never downgrades without explicit FORCE; always
+#   verifies remote version before proceeding; uses centralized output.
+# - Intentional (Principle 2): Clear separation between version check and
+#   actual install; explicit variable handling and error paths.
+# - Anti-fragile (Principle 3): Works for both root and normal users;
+#   survives missing SCRIPT_URL (graceful error) and network failures.
+# - Over-protect (Principle 18): Full CIAO header, safe defaults, Protection
+#   Zone comment, and Lessons Learned traceability. Reusable pattern for
+#   other CIAO-Lite self-managed tools.
 #
-# Last reviewed: 2026-08-03
+# ALIGNMENT (live requirements only):
+# - requirement-shell-self-management.md
+# - requirement-shell-cli-interface.md
+# - requirement-shell-output-requirements.md
+# - requirement-shell-idempotency.md
+#
+# !!! DO NOT MODIFY OR SIMPLIFY THIS FUNCTION !!!
+# This is the canonical self-update entry point. Any change must preserve
+# the REMOTE_VERSION visibility contract with inst_perform_install and
+# the centralized output discipline.
+#
+# Lessons Learned (CIAO Reflection):
+# 2026-06-26: Original implementation was a stub. Updated to call the v2
+#             inst_perform_install path with checksum support.
+# 2026-06-26 (correction): Removed accidental `local` on REMOTE_VERSION
+#             (was invisible to inst_perform_install). Added safe default
+#             for SCRIPT_URL and explicit comment about distribution URL
+#             requirement. No hard-coded project-specific values introduced.
+#
+# Last reviewed: 2026-06-26
 # =============================================================================
-inst_local_uninstall() {
-    : "${APP_NAME:=cli-template}"
-    : "${HOME:=/tmp}"
-    : "${GLOBAL_BIN:=/usr/local/bin}"
-    : "${USER_BIN:=${HOME}/.local/bin}"
-    : "${FORCE:=0}"
+
+inst_self_update() {
+    # --- Safe Variable Defaults ---
+    : "${APP_NAME:=sudoer-cli}"
     : "${JSON:=0}"
     : "${QUIET:=0}"
-    : "${TTY:=0}"
+    : "${FORCE:=0}"
+    : "${FORCE_REINSTALL:=0}"
+    : "${SCRIPT_URL:=}"
 
-    _target=$(util_get_install_bin_path)
+    # Align force aliases (CLI --force sets both)
+    if [ "${FORCE}" -eq 1 ]; then
+        FORCE_REINSTALL=1
+    fi
 
-    if [ ! -e "${_target}" ]; then
-        out_success "${APP_NAME} is not installed (nothing to uninstall)"
+    if [ "${JSON}" -eq 0 ]; then
+        out_info "Starting self-update of ${APP_NAME}..."
+    fi
+
+    # SCRIPT_URL is Config SSOT (composed default from REPO_* / APP_NAME).
+    # Override via env for forks or offline channels. Empty → fail loud below.
+
+    REMOTE_VERSION=$(util_fetch_remote_version "${SCRIPT_URL}")
+
+    if [ -z "$REMOTE_VERSION" ]; then
         if [ "${JSON}" -eq 1 ]; then
-            out_json "uninstall" "already absent" \
-                "app" "${APP_NAME}" \
-                "path" "${_target}" \
-                "status" "already_uninstalled"
+            out_json_error "Failed to fetch latest version" "network_error"
+        else
+            out_error "Failed to fetch latest version (SCRIPT_URL may be unset or unreachable)"
+        fi
+        return 1
+    fi
+
+    local local_version
+    local_version=$(inst_get_version)
+
+    if [ "$local_version" = "$REMOTE_VERSION" ] && [ "${FORCE_REINSTALL}" -eq 0 ]; then
+        if [ "${JSON}" -eq 1 ]; then
+            out_json "out_success" "Already running the latest version (${REMOTE_VERSION})."
+        else
+            out_success "Already running the latest version (${REMOTE_VERSION})."
         fi
         return 0
     fi
 
-    if [ "${FORCE}" -eq 0 ]; then
-        if [ "${JSON}" -eq 1 ] || [ "${QUIET}" -eq 1 ] || [ "${TTY}" -eq 0 ]; then
-            out_die "Uninstall requires confirmation. Re-run with --force in non-interactive mode."
+    # No silent downgrade: remote older than local requires --force
+    # (requirement-shell-self-management.md)
+    if [ "$local_version" != "not installed" ] && \
+       [ "$local_version" != "unknown" ] && \
+       ver_gt "$local_version" "$REMOTE_VERSION" && \
+       [ "${FORCE_REINSTALL}" -eq 0 ]; then
+        if [ "${JSON}" -eq 1 ]; then
+            out_json_error "Refusing downgrade from ${local_version} to ${REMOTE_VERSION} (use --force)" "downgrade_blocked"
+        else
+            out_error "Refusing silent downgrade: local ${local_version} is newer than remote ${REMOTE_VERSION}."
+            out_info "Re-run with --force to reinstall/downgrade deliberately."
         fi
-        if ! prompt_yes_no "Remove managed binary ${_target}?"; then
-            out_info "Uninstall cancelled"
-            return 0
+        return 1
+    fi
+
+    if [ "$local_version" != "$REMOTE_VERSION" ] && [ "${JSON}" -eq 0 ]; then
+        if ver_gt "$REMOTE_VERSION" "$local_version" 2>/dev/null || [ "$local_version" = "not installed" ]; then
+            out_info "Updating from ${local_version} → ${REMOTE_VERSION}"
+        else
+            out_warn "Force reinstall/downgrade: ${local_version} → ${REMOTE_VERSION}"
         fi
     fi
 
-    if ! rm -f "${_target}"; then
-        out_die "Failed to remove ${_target}"
+    FORCE_REINSTALL=1
+    inst_perform_install
+}
+
+# =============================================================================
+# inst_self_uninstall() - Main orchestrator for uninstallation
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Removes the installed ${APP_NAME} binary (global or user) and optionally
+# cleans up PATH entries.
+#
+# Respects --force, --quiet, and --json.
+# Works for both root and user installations.
+#
+# DESIGN:
+# Split into three clear steps for readability while preserving original
+# behavior and safety.
+#
+# Last reviewed: 29 April 2026
+# =============================================================================
+
+inst_self_uninstall() {
+    # Align force aliases (CLI --force)
+    : "${FORCE:=0}"
+    : "${FORCE_REINSTALL:=0}"
+    if [ "${FORCE}" -eq 1 ]; then
+        FORCE_REINSTALL=1
     fi
-    out_success "Removed ${APP_NAME} from ${_target}"
+
+    if [ "${JSON}" -eq 0 ]; then
+        out_info "Starting self-uninstall of ${APP_NAME}..."
+    fi
+
+    # Step 1: Determine which installation to remove
+    local bin_path
+    bin_path=$(inst_self_uninstall_determine_bin)
+    if [ -z "$bin_path" ]; then
+        if [ "${JSON}" -eq 1 ]; then
+            out_json "out_success" "${APP_NAME} is not installed. Nothing to uninstall."
+        else
+            out_warn "${APP_NAME} is not installed. Nothing to uninstall."
+        fi
+        return 0
+    fi
+
+    # Step 2: Confirm (if needed) and perform removal
+    if ! inst_self_uninstall_confirm_and_remove "$bin_path"; then
+        return 1
+    fi
+
+    # Step 3: Clean up PATH entries (user installs only)
+    inst_self_uninstall_cleanup_path
+
     if [ "${JSON}" -eq 1 ]; then
-        out_json "uninstall" "removed" \
-            "app" "${APP_NAME}" \
-            "path" "${_target}" \
-            "status" "uninstalled"
+        out_json "out_success" "${APP_NAME} has been uninstalled."
+    else
+        out_success "${APP_NAME} has been uninstalled."
     fi
     return 0
 }
 
 # =============================================================================
-# app_where_is_me() - Report running + install paths
+# inst_self_uninstall_determine_bin() - Step 1: Determine which installation to remove
 # =============================================================================
 #
-# ALIGNMENT:
-# - requirement-shell-local-self-management.md
+# GENERAL PURPOSE:
+# Decides the correct binary path to remove based on current user,
+# FORCE_GLOBAL, and actual file presence.
 #
-# Last reviewed: 2026-08-03
+# Returns the full path to remove, or empty string if nothing to uninstall.
+#
+# PRINTF EXCEPTION (class B – function return-via-stdout):
+# Final printf '%s' "$bin_path" is a data return for $(…) capture by the
+# uninstall orchestrator — not a product user message. User-facing text in
+# this helper uses out_warn. Callers must capture the path; do not treat
+# this printf as a substitute for out_*.
+# See requirement-shell-output-requirements.md §2.1.1.
+#
+# CRITICAL: Respects root vs user logic exactly as before.
+#
+# Last reviewed: 2026-07-12
 # =============================================================================
-app_where_is_me() {
-    : "${APP_NAME:=cli-template}"
-    : "${JSON:=0}"
-    : "${QUIET:=0}"
 
-    _running=$(util_resolve_running_path)
-    _install=$(util_get_install_bin_path)
-    _installed="false"
-    if [ -x "${_install}" ]; then
-        _installed="true"
-    fi
+inst_self_uninstall_determine_bin() {
+    # Prefer shared path SSOT (util_get_install_bin_path); only return if file exists.
+    : "${APP_NAME:=sudoer-cli}"
+    : "${GLOBAL_BIN:=/usr/local/bin}"
+    : "${HOME:=/tmp}"
+    : "${USER_BIN:=${HOME}/.local/bin}"
 
-    if [ "${JSON}" -eq 1 ]; then
-        out_json "where-is-me" "" \
-            "app" "${APP_NAME}" \
-            "running_path" "${_running:-}" \
-            "install_path" "${_install}" \
-            "installed" "${_installed}"
+    local bin_path=""
+    bin_path=$(util_get_install_bin_path)
+    if [ -n "${bin_path}" ] && [ -f "${bin_path}" ]; then
+        printf '%s' "${bin_path}"
         return 0
     fi
+    # Empty → not installed (caller treats as nothing to uninstall)
+    printf '%s' ""
+}
 
-    if [ -n "${_running}" ]; then
-        out_info "Running path:  ${_running}"
-    else
-        out_warn "Running path:  (unresolvable — not a file path / pipe?)"
+# =============================================================================
+# inst_self_uninstall_confirm_and_remove() - Step 2: Confirm and remove binary
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Handles confirmation (unless --force) and actual file removal.
+# Interactive TTY uses prompt_yes_no(); non-interactive / --json / --quiet
+# fail closed with an explicit --force requirement (never auto-delete).
+#
+# Returns 0 on out_success, non-zero on failure/cancel.
+#
+# Last reviewed: 2026-07-13
+# =============================================================================
+
+inst_self_uninstall_confirm_and_remove() {
+    local bin_path="$1"
+
+    # Confirm before removal (unless --force / FORCE_REINSTALL).
+    # Non-interactive / --json / --quiet: fail closed — never auto-delete.
+    # Do not report that as "cancelled by user" (user never answered a prompt).
+    if [ "${FORCE_REINSTALL:-0}" -eq 0 ] && [ "${FORCE:-0}" -eq 0 ]; then
+        : "${JSON:=0}"
+        : "${QUIET:=0}"
+
+        : "${TTY:=0}"
+        if [ "${JSON}" -eq 1 ] || [ "${QUIET}" -eq 1 ] || [ "${TTY}" -eq 0 ]; then
+            # requirement-shell-interactive-vs-noninteractive.md: destructive ops need --force
+            if [ "${JSON}" -eq 1 ]; then
+                out_json_error "Uninstall requires --force in non-interactive mode (refusing to remove ${bin_path})." "confirm_required"
+            else
+                out_error "Uninstall requires --force in non-interactive mode (refusing to remove ${bin_path})."
+                out_info "Re-run with: ${APP_NAME} self-uninstall --force"
+            fi
+            return 1
+        fi
+
+        if prompt_yes_no "This will remove: ${bin_path}"; then
+            :  # confirmed on TTY
+        else
+            # Interactive TTY: user answered no / empty (default N)
+            out_plain "Uninstall cancelled by user."
+            return 1
+        fi
     fi
-    out_info "Install path:  ${_install}"
-    if [ "${_installed}" = "true" ]; then
-        out_success "Installed:     yes"
+
+    # Remove the binary
+    if rm -f "$bin_path" 2>/dev/null; then
+        return 0
     else
-        out_info "Installed:     no"
+        if [ "${JSON}" -eq 1 ]; then
+            out_json_error "Failed to remove ${bin_path} (permission denied?)" "permission_denied"
+        else
+            out_error "Failed to remove ${bin_path} (permission denied?)"
+        fi
+        return 1
     fi
 }
 
-
-
+# =============================================================================
+# inst_self_uninstall_cleanup_path() - Step 3: Clean up PATH entries
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Removes installer-added PATH entries from shell config files
+# (bash, zsh, fish) for user-level installations **only if** USER_BIN
+# is empty or does not exist.
+#
+# SAFETY RULE:
+# If USER_BIN still contains other files (other tools, scripts, etc.),
+# we deliberately keep the PATH entry to avoid breaking the user's environment.
+# This follows CIAO-Lite "Caution" and "Anti-fragile" principles.
+#
+# Last reviewed: 2026-07-14
 # =============================================================================
 
+inst_self_uninstall_cleanup_path() {
+    # Only attempt cleanup for non-root installs
+    if [ "$(id -u)" -eq 0 ]; then
+        return 0
+    fi
+
+    : "${HOME:=/tmp}"
+    : "${USER_BIN:=${HOME}/.local/bin}"
+    local bin_dir="${USER_BIN}"
+    local should_clean_path=1
+
+    # === SAFETY CHECK: Only clean PATH if USER_BIN is empty ===
+    if [ -d "$bin_dir" ]; then
+        if [ -n "$(ls -A "$bin_dir" 2>/dev/null)" ]; then
+            # Directory exists and is not empty → keep PATH for other tools
+            should_clean_path=0
+            if [ "${JSON}" -eq 0 ]; then
+                out_warn "Keeping ${bin_dir} in PATH because it still contains files."
+            fi
+        fi
+    fi
+
+    if [ "$should_clean_path" -eq 0 ]; then
+        return 0
+    fi
+
+    # Directory is empty or missing → safe to remove our PATH entries
+    local cleaned=0
+    local escaped_bin
+    # Escape sed | delimiter characters in USER_BIN for path-line removal
+    escaped_bin=$(printf '%s' "${bin_dir}" | sed 's/[\\/&|]/\\&/g')
+
+    for config in "${HOME}/.bashrc" "${HOME}/.zshrc" "${HOME}/.config/fish/config.fish"; do
+        if [ -f "$config" ]; then
+            if sed -i.bak \
+                -e '/# Added by .* installer/d' \
+                -e "\|${escaped_bin}|d" \
+                "$config" 2>/dev/null; then
+                cleaned=1
+            fi
+            rm -f "${config}.bak" 2>/dev/null || true
+        fi
+    done
+
+    if [ "$cleaned" -eq 1 ] && [ "${JSON}" -eq 0 ]; then
+        out_plain "→ Cleaned ${APP_NAME} PATH entries from shell config files"
+        out_plain "→ You may want to restart your terminal"
+    fi
+}
+
+# =============================================================================
 # =============================================================================
 # app_version() - Local VERSION only (no network)
 # =============================================================================
 app_version() {
-    : "${APP_NAME:=cli-template}"
-    : "${VERSION:=1.0.0}"
+    : "${APP_NAME:=sudoer-cli}"
+    : "${VERSION:=1.22.0}"
     : "${JSON:=0}"
     if [ "${JSON}" -eq 1 ]; then
         out_json "version" "" "app" "${APP_NAME}" "version" "${VERSION}"
@@ -1612,10 +2486,10 @@ app_about() {
     : "${JSON:=0}"
     : "${QUIET:=0}"
     : "${APP_NAME:=sudoer-cli}"
-    : "${VERSION:=1.1.0}"
+    : "${VERSION:=1.22.0}"
     : "${REPO_USER:=cloudgen}"
     : "${REPO_NAME:=sudoer-cli}"
-    : "${SCRIPT_URL:=}"
+    : "${SCRIPT_URL:=https://raw.githubusercontent.com/${REPO_USER}/${REPO_NAME}/main/src/${APP_NAME}}"
     : "${GLOBAL_BIN:=/usr/local/bin}"
     : "${HOME:=/tmp}"
     : "${USER_BIN:=${HOME}/.local/bin}"
@@ -1674,18 +2548,14 @@ app_about() {
         out_success "${APP_NAME} is properly installed."
     else
         out_warn "${APP_NAME} is NOT installed in a managed bin path."
-        out_info "   Recommended: ${APP_NAME} install   (local copy → ${USER_BIN}/${APP_NAME})"
+        out_info "   Recommended: curl -fsSL ${SCRIPT_URL} | sh"
     fi
     out_empty_line
     out_info "Global install  (${GLOBAL_BIN}/${APP_NAME}):   ${_global_ver}"
     out_info "Local install   (${USER_BIN}/${APP_NAME}):    ${_local_ver}"
     out_empty_line
     out_info "Repository:        ${REPO_USER}/${REPO_NAME}"
-    if [ -n "${SCRIPT_URL}" ]; then
-        out_info "Install channel:   ${SCRIPT_URL}"
-    else
-        out_info "Install channel:   (empty — local install only)"
-    fi
+    out_info "Install channel:   ${SCRIPT_URL}"
     out_empty_line
     out_info "Current user:      ${_user}"
     if [ "$(id -u)" -eq 0 ]; then
@@ -1710,7 +2580,8 @@ app_about() {
     out_empty_line
     out_info "Useful commands:"
     out_info "   ${APP_NAME} help            → Full usage"
-    out_info "   ${APP_NAME} install         → Local install to ~/.local/bin"
+    out_info "   ${APP_NAME} install         → Place from the install channel"
+    out_info "   ${APP_NAME} version-check   → Compare local vs channel"
     out_info "   ${APP_NAME} --json          → Machine-readable output"
 }
 
@@ -3377,6 +4248,132 @@ sr_archive_fenced_rejected() {
     fi
 }
 
+# =============================================================================
+# sr_yaml_scalar() - YAML scalar for login-hook review display
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Quote a decoded JSON string as a YAML scalar. Simple tokens stay unquoted;
+# anything else is a double-quoted YAML string (JSON-style escapes).
+# Class B helper: printf return, not a product message.
+#
+# ALIGNMENT:
+# - requirement-domain-sudoer-approval.md
+#
+# Last updated: 2026-09-06
+# =============================================================================
+sr_yaml_scalar() {
+    _ys="${1-}"
+    case "${_ys}" in
+        ""|*[!A-Za-z0-9._/@+-]*)
+            printf '"%s"' "$(util_json_escape "${_ys}")"
+            ;;
+        *)
+            printf '%s' "${_ys}"
+            ;;
+    esac
+}
+
+# =============================================================================
+# sr_yaml_kv() - One YAML key: value line on the review TTY
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Print one mapping line through out_plain for the login-hook review body.
+#
+# ALIGNMENT:
+# - requirement-domain-sudoer-approval.md
+# - requirement-shell-output-requirements.md
+#
+# Last updated: 2026-09-06
+# =============================================================================
+sr_yaml_kv() {
+    _yk="$1"
+    _yv="${2-}"
+    _ysc=$(sr_yaml_scalar "${_yv}")
+    out_plain "${_yk}: ${_ysc}"
+}
+
+# =============================================================================
+# sr_print_review_yaml() - Human YAML body of a decoded inbound grant
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Login-hook / interactive review shows YAML for readability. The waiting
+# file stays JSON. Type 0 show still dumps that JSON file. Not a dest Fence.
+#
+# ALIGNMENT:
+# - requirement-domain-sudoer-approval.md
+#
+# Last updated: 2026-09-06
+# =============================================================================
+sr_print_review_yaml() {
+    : "${SR_D_VER:=}"
+    : "${SR_D_KIND:=}"
+    : "${SR_D_PURPOSE:=}"
+    : "${SR_D_USER:=}"
+    : "${SR_D_SVC:=}"
+    : "${SR_D_ACT:=}"
+    : "${SR_D_SUBMIT_APP:=}"
+    : "${SR_D_SUBMIT_VERSION:=}"
+    : "${SR_D_SUBMIT_BY:=}"
+    : "${SR_D_HAS_CMDS:=0}"
+    : "${SR_D_CMDS:=}"
+    if [ -n "${SR_D_VER}" ]; then
+        out_plain "schema_version: ${SR_D_VER}"
+    fi
+    if [ -n "${SR_D_KIND}" ]; then
+        sr_yaml_kv "kind" "${SR_D_KIND}"
+    fi
+    sr_yaml_kv "purpose" "${SR_D_PURPOSE}"
+    sr_yaml_kv "username" "${SR_D_USER}"
+    sr_yaml_kv "service" "${SR_D_SVC}"
+    if [ -n "${SR_D_ACT}" ]; then
+        sr_yaml_kv "action" "${SR_D_ACT}"
+    fi
+    if [ -n "${SR_D_SUBMIT_APP}" ]; then
+        sr_yaml_kv "submit_app" "${SR_D_SUBMIT_APP}"
+    fi
+    if [ -n "${SR_D_SUBMIT_VERSION}" ]; then
+        sr_yaml_kv "submit_version" "${SR_D_SUBMIT_VERSION}"
+    fi
+    if [ -n "${SR_D_SUBMIT_BY}" ]; then
+        sr_yaml_kv "submit_by" "${SR_D_SUBMIT_BY}"
+    fi
+    if [ "${SR_D_HAS_CMDS}" -ne 1 ]; then
+        return 0
+    fi
+    out_plain "commands:"
+    if [ -z "${SR_D_CMDS}" ]; then
+        out_plain "  []"
+        return 0
+    fi
+    _ytf=$(util_mktemp)
+    printf '%s' "${SR_D_CMDS}" >"${_ytf}"
+    while IFS='|' read -r _yr _ytg _yp _ya || [ -n "${_yp-}" ]; do
+        [ -n "${_yp}" ] || continue
+        out_plain "  - runas: $(sr_yaml_scalar "${_yr:-root}")"
+        if [ -n "${_ytg}" ]; then
+            out_plain "    tags:"
+            out_plain "      - $(sr_yaml_scalar "${_ytg}")"
+        else
+            out_plain "    tags: []"
+        fi
+        out_plain "    path: $(sr_yaml_scalar "${_yp}")"
+        if [ -n "${_ya}" ]; then
+            out_plain "    args:"
+            set -f
+            for _yarg in ${_ya}; do
+                out_plain "      - $(sr_yaml_scalar "${_yarg}")"
+            done
+            set +f
+        else
+            out_plain "    args: []"
+        fi
+    done <"${_ytf}"
+    rm -f "${_ytf}"
+}
+
 sr_interactive() {
     : "${TTY:=0}"
     : "${JSON:=0}"
@@ -3434,12 +4431,13 @@ sr_interactive() {
         sr_dest_review_warn
         if [ -n "${_orig_owner}" ]; then
             sr_stamp_submit_by "${_in}/${_bn}" "${_orig_owner}"
+            SR_D_SUBMIT_BY="${_orig_owner}"
         fi
         if [ -n "${SR_D_SUBMIT_APP-}" ] || [ -n "${SR_D_SUBMIT_VERSION-}" ]; then
             out_plain "queued by ${SR_D_SUBMIT_APP-} ${SR_D_SUBMIT_VERSION-}"
         fi
-        SR_OPERAND="${_bn}"
-        sr_show
+        # Waiting file stays JSON. Login-hook review body is YAML.
+        sr_print_review_yaml
         # One-off approval question (requirement-domain-sudoer-approval): yes=approve, no/Enter=reject.
         if prompt_yes_no "Approve this request"; then
             if ! ( SR_OPERAND="${_bn}"; sr_approve ); then
@@ -3996,7 +4994,7 @@ app_main_menu_print() {
 }
 
 # =============================================================================
-# app_main_menu() - Case 3 TTY menu (verb menu / main; empty argv stays help)
+# app_main_menu() - TTY menu (verb menu / main; empty argv is Type O install-ensure)
 # =============================================================================
 #
 # GENERAL PURPOSE:
@@ -4083,9 +5081,10 @@ app_run_command() {
     case "${COMMAND}" in
         version)      app_version ;;
         about)        app_about ;;
-        install)      inst_local_install ;;
-        uninstall)    inst_local_uninstall ;;
-        where-is-me)  app_where_is_me ;;
+        install)      inst_perform_install ;;
+        version-check) ver_check ;;
+        self-update)  inst_self_update ;;
+        self-uninstall) inst_self_uninstall ;;
         menu|main)    app_main_menu ;;
         sudoers-to-json) sr_sudoers_to_json ;;
         json-to-sudoers) sr_json_to_sudoers ;;
@@ -4115,12 +5114,12 @@ app_run_command() {
 # =============================================================================
 app_help() {
     : "${SHORT_DESCRIPTION:=${APP_DESC:-Least-privilege sudoers-request approval CLI}}"
-    : "${DESCRIPTION:=POSIX /bin/sh CLI: install, uninstall, where-is-me, version, about, help.}"
+    : "${DESCRIPTION:=POSIX /bin/sh CLI: install, version-check, self-update, self-uninstall, version, about, help.}"
 
     if [ "${JSON}" -eq 1 ]; then
         out_json "success" "Help text available in human-readable mode. Run without --json." \
             "command" "help" \
-            "note" "Use --json with version, about, install, uninstall, where-is-me."
+            "note" "Use --json with version, about, install, version-check, self-update, self-uninstall."
         return 0
     fi
     if [ "${QUIET}" -eq 1 ]; then
@@ -4133,13 +5132,14 @@ app_help() {
     out_info "Usage:"
     out_plain "  ${APP_NAME} [command] [options]"
     out_empty_line
-    out_info "Install and remove (no root required):"
-    out_plain "  install              Install ${APP_NAME} (root→global, user→~/.local/bin)"
+    out_info "Install and keep this program:"
+    out_plain "  install              Place ${APP_NAME} from the install channel (root→global, user→~/.local/bin)"
     out_plain "  install --global     Force global path (${GLOBAL_BIN}; needs write/root)"
-    out_plain "  uninstall            Remove managed binary (confirm or --force)"
-    out_plain "  where-is-me          Show running and install paths"
-    out_plain "  version              Show local version"
-    out_plain "  about                Show diagnostics and resolved queue paths"
+    out_plain "  version-check        Compare local version to the install channel"
+    out_plain "  self-update          Fetch a newer copy from the install channel"
+    out_plain "  self-uninstall       Remove the managed binary (confirm or --force)"
+    out_plain "  version              Show local version (no network)"
+    out_plain "  about                Show diagnostics, channel, and resolved queue paths"
     out_plain "  menu / main          Numbered list of live work commands (real terminal)"
     out_plain "  help                 Show this help"
     out_empty_line
@@ -4170,7 +5170,7 @@ app_help() {
     out_info "Global Options:"
     out_plain "  --quiet, -q          Suppress info/success (errors still shown)"
     out_plain "  --json               Machine-readable JSON (implies --quiet)"
-    out_plain "  --force              Force reinstall / skip uninstall confirm"
+    out_plain "  --force              Force reinstall / skip self-uninstall confirm"
     out_plain "  --global             Install to GLOBAL_BIN"
     out_plain "  --debug              Debug diagnostics on stderr"
     out_plain "  --file PATH          Input file (xor stdin xor --dir)"
@@ -4185,18 +5185,22 @@ app_help() {
     out_empty_line
     out_info "Environment:"
     out_plain "  USER_BIN / GLOBAL_BIN  install destinations"
-    out_plain "  REPO_USER / REPO_NAME  repository identity (not an install channel)"
+    out_plain "  REPO_USER / REPO_NAME  repository identity (compose SCRIPT_URL)"
+    out_plain "  SCRIPT_URL             install channel (override for forks / tests)"
     out_empty_line
     out_info "Examples:"
+    out_plain "  curl -fsSL ${SCRIPT_URL} | sh"
     out_plain "  ${APP_NAME} install               # any user → ~/.local/bin"
     out_plain "  sudo ${APP_NAME} install          # any admin → /usr/local/bin (password sudo OK)"
     out_plain "  sudo ${APP_NAME} setup            # any admin bootstrap (password sudo OK; not -n)"
     out_plain "  sudo ${APP_NAME} interactive      # any admin after setup (password sudo is the approval)"
-    out_plain "  ${APP_NAME} menu                  # numbered list (real terminal; empty argv stays help)"
+    out_plain "  ${APP_NAME} menu                  # numbered list (real terminal)"
     out_plain "  ${APP_NAME} version"
     out_plain "  ${APP_NAME} about"
     out_plain "  ${APP_NAME} --json about"
-    out_plain "  ${APP_NAME} uninstall --force"
+    out_plain "  ${APP_NAME} version-check"
+    out_plain "  ${APP_NAME} self-update"
+    out_plain "  ${APP_NAME} self-uninstall --force"
     out_plain "  ${APP_NAME} sudoers-to-json --file grant.sudoers --action add --purpose '…'"
     out_plain "  ${APP_NAME} test-json-format --file request.json"
     out_plain "  ${APP_NAME} test-well-known-binary --file request.json"
@@ -4204,7 +5208,7 @@ app_help() {
     out_plain "  ${APP_NAME} fence-test --dir tests/fixtures/fence-test/pass"
     out_plain "  ${APP_NAME} fence-test --dir tests/fixtures/fence-test/match --expect-match"
     out_empty_line
-    out_info "Empty argv shows help (Type N — local-only; no curl|sh install-ensure)."
+    out_info "Empty argv installs or confirms install (Type O — curl|sh install-ensure). Help is: ${APP_NAME} help"
 }
 
 # =============================================================================
@@ -4213,7 +5217,7 @@ app_help() {
 #
 # GENERAL PURPOSE:
 # Single dispatcher: Type 0 lifecycle + routed domain verbs.
-# Empty argv = Type N help (not install-ensure; not interactive; not the menu).
+# Empty argv = Type O install-ensure (not help; not interactive; not the menu).
 # Verb menu / main = TTY numbered list (requirement-shell-cli-default-interaction).
 #
 # ALIGNMENT:
@@ -4257,8 +5261,16 @@ app_main() {
     trap util_scratch_cleanup EXIT INT TERM
 
     if [ $# -eq 0 ]; then
-        app_help
-        return 0
+        if [ "${JSON}" -eq 1 ] || [ "${QUIET}" -eq 1 ]; then
+            inst_perform_install
+            return $?
+        elif inst_is_installed; then
+            inst_perform_install
+            return $?
+        else
+            inst_maybe_install
+            return $?
+        fi
     fi
 
     while [ $# -gt 0 ]; do
@@ -4316,7 +5328,7 @@ app_main() {
             --orphans)    SR_ORPHANS=1 ;;
             --uninstall)  SR_UNINSTALL=1 ;;
             --purge-queues) SR_PURGE_QUEUES=1 ;;
-            version|about|help|install|uninstall|where-is-me|menu|main|\
+            version|about|help|install|version-check|self-update|self-uninstall|menu|main|\
             sudoers-to-json|json-to-sudoers|test-json-format|test-well-known-binary|fence-test|print-sudoers|print-sudoers-install-script|\
             add-sudoer-request|update-sudoer-request|remove-sudoer-request|\
             list-approving|list-approved|list-rejected|show|approve|reject|\
@@ -4351,6 +5363,6 @@ app_main() {
 # BOOTSTRAP
 # =============================================================================
 # Always invoke app_main. No basename gate (pipe-safe entry).
-# Product law: requirement-shell-cli-zero-arguments.md (Type N).
+# Product law: requirement-shell-cli-zero-arguments.md (Type O).
 # =============================================================================
 app_main "$@"
