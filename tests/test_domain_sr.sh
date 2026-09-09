@@ -1,6 +1,6 @@
 # =============================================================================
-# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..05, TP-SR-FENCE-01..17, TP-SR-INT-01..07, TP-SR-19..21, TP-PREV-01..03, TP-TMP-02)
-# Primary REQ: requirement-domain-sudoer-approval.md · requirement-sudoers-file.md (TP-SR-19..21)
+# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..06, TP-SR-FENCE-01..17, TP-SR-INT-01..09, TP-SR-19..21, TP-PREV-01..03, TP-TMP-02)
+# Primary REQ: requirement-domain-sudoer-approval.md · requirement-sudoers-file.md (TP-SR-19..21) · requirement-login-interactive-review-hook.md (TP-SR-HOOK-*)
 # =============================================================================
 
 # shellcheck source=helpers.sh
@@ -519,6 +519,53 @@ EOF
     _brc2=$(cat "${_th}/home/.bashrc")
     assert_contains "TP-SR-HOOK-05 heal rewrites old binary to hook" "${_brc2}" "sudoer-cli-hook interactive"
     assert_not_contains "TP-SR-HOOK-05 heal removes old product-binary sudo" "${_brc2}" "sudoer-cli interactive"
+    _revfn=$(sed -n '/^lpu_review_old_login_hook()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-HOOK-06 review helper exists" "${_revfn}" "lpu_rc_has_old_product_hook"
+    assert_contains "TP-SR-HOOK-06 review skips missing home" "${_revfn}" 'LPU_HOME'
+    _intfn=$(sed -n '/^sr_interactive()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-HOOK-06 interactive reviews old hook" "${_intfn}" "lpu_review_old_login_hook"
+    _setupfn=$(sed -n '/^lpu_setup()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-HOOK-06 setup reviews old hook" "${_setupfn}" "lpu_review_old_login_hook"
+    _runner6="${_th}/run-review.sh"
+    {
+        printf '%s\n' 'sr_die() { printf "%s\n" "$*" >&2; exit 1; }'
+        printf '%s\n' 'out_info() { :; }'
+        printf '%s\n' 'getent() { return 1; }'
+        printf '%s\n' 'id() { if [ "$1" = "-u" ]; then printf "%s\n" "0"; return 0; fi; command id "$@"; }'
+        sed -n '/^util_sudo()/,/^}/p' "${SCRIPT}"
+        sed -n '/^util_chmod()/,/^}/p' "${SCRIPT}"
+        sed -n '/^lpu_defaults()/,/^}/p' "${SCRIPT}"
+        sed -n '/^lpu_own_user_rc()/,/^}/p' "${SCRIPT}"
+        sed -n '/^lpu_hook_text()/,/^}/p' "${SCRIPT}"
+        sed -n '/^lpu_hook_strip()/,/^}/p' "${SCRIPT}"
+        sed -n '/^lpu_hook_apply()/,/^}/p' "${SCRIPT}"
+        sed -n '/^lpu_rc_has_old_product_hook()/,/^}/p' "${SCRIPT}"
+        sed -n '/^lpu_drop_old_product_hook_lines()/,/^}/p' "${SCRIPT}"
+        sed -n '/^lpu_profile_sources_bashrc()/,/^}/p' "${SCRIPT}"
+        sed -n '/^lpu_ensure_login_hook_symlink()/,/^}/p' "${SCRIPT}"
+        sed -n '/^lpu_review_old_login_hook()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' "LPU_HOME='${_th}/home'"
+        printf '%s\n' "LPU_USER=sudoer-adm"
+        printf '%s\n' "APP_NAME=sudoer-cli"
+        printf '%s\n' "GLOBAL_BIN='${_th}/gbin'"
+        printf '%s\n' "SUDOER_CLI_ALLOW_TEST_ROOTS=0"
+        printf '%s\n' 'mkdir -p "${LPU_HOME}" "${GLOBAL_BIN}"'
+        printf '%s\n' 'printf "%s\n" "#!/bin/sh" >"${GLOBAL_BIN}/${APP_NAME}"'
+        printf '%s\n' 'chmod 0755 "${GLOBAL_BIN}/${APP_NAME}"'
+        printf '%s\n' 'lpu_review_old_login_hook'
+    } >"${_runner6}"
+    printf '%s\n' \
+        "# BEGIN sudoer-cli login hook" \
+        "sudo -n /usr/local/bin/sudoer-cli interactive" \
+        "# END sudoer-cli login hook" >"${_th}/home/.bashrc"
+    sh "${_runner6}"
+    _brc3=$(cat "${_th}/home/.bashrc")
+    assert_contains "TP-SR-HOOK-06 review replaces old product-binary hook" "${_brc3}" "sudoer-cli-hook interactive"
+    assert_not_contains "TP-SR-HOOK-06 review removes old product-binary sudo" "${_brc3}" "sudoer-cli interactive"
+    _sum1=$(cksum "${_th}/home/.bashrc")
+    sh "${_runner6}"
+    _sum2=$(cksum "${_th}/home/.bashrc")
+    assert_eq "TP-SR-HOOK-06 already-new rc is not rewritten" "${_sum1}" "${_sum2}"
     rm -rf "${_th}"
 
     # Isolated symlink: create when missing; do not overwrite; test-mode skip live path.
@@ -605,11 +652,17 @@ EOF
     assert_not_contains "TP-SR-INT-07 collapse has no prompt" "${_coll}" "prompt_yes_no"
     assert_contains "TP-SR-INT-07 superseded note shape" "$(sed -n '/^sr_archive_superseded_rejected()/,/^}/p' "${SCRIPT}")" "superseded"
     _yml=$(sed -n '/^sr_print_review_yaml()/,/^}/p' "${SCRIPT}")
+    _yline=$(sed -n '/^sr_yaml_line()/,/^}/p' "${SCRIPT}")
+    _ykv=$(sed -n '/^sr_yaml_kv()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-INT-08 interactive prints YAML" "${_int}" "sr_print_review_yaml"
     assert_not_contains "TP-SR-INT-08 interactive does not dump via show" "${_int}" "sr_show"
     assert_contains "TP-SR-INT-08 yaml purpose key" "${_yml}" 'sr_yaml_kv "purpose"'
-    assert_contains "TP-SR-INT-08 yaml commands key" "${_yml}" 'out_plain "commands:"'
+    assert_contains "TP-SR-INT-08 yaml commands key" "${_yml}" 'sr_yaml_line "commands:"'
     assert_contains "TP-SR-INT-08 yaml username key" "${_yml}" 'sr_yaml_kv "username"'
+    assert_contains "TP-SR-INT-09 yaml line prefixes two spaces" "${_yline}" 'out_plain "  $*"'
+    assert_contains "TP-SR-INT-09 yaml kv uses line helper" "${_ykv}" "sr_yaml_line"
+    assert_contains "TP-SR-INT-09 interactive queued by uses yaml line" "${_int}" 'sr_yaml_line "queued by ${SR_D_SUBMIT_APP-} ${SR_D_SUBMIT_VERSION-}"'
+    assert_not_contains "TP-SR-INT-09 request id stays unindented" "${_int}" 'sr_yaml_line "Request'
     assert_not_contains "TP-SR-INT-04 loop is not a stub" "${_int}" "not implemented yet"
     assert_contains "TP-SR-INT-04 empty inbound note" "${_int}" "no pending requests"
     assert_contains "TP-SR-INT-04 uses prompt_yes_no" "${_int}" "prompt_yes_no"
@@ -678,6 +731,9 @@ EOF
         assert_contains "TP-SR-INT-08 live yaml username" "${_err}" "username:"
         assert_contains "TP-SR-INT-08 live yaml commands" "${_err}" "commands:"
         assert_contains "TP-SR-INT-08 live yaml path" "${_err}" "path:"
+        assert_contains "TP-SR-INT-09 live yaml group indent purpose" "${_err}" "  purpose:"
+        assert_contains "TP-SR-INT-09 live yaml group indent commands" "${_err}" "  commands:"
+        assert_contains "TP-SR-INT-09 live queued by indent" "${_err}" "  queued by"
         assert_not_contains "TP-SR-INT-08 live no json username key" "${_err}" '"username":'
         assert_not_contains "TP-SR-INT-08 live no json schema key" "${_err}" '"schema_version"'
         assert_file_exists "TP-SR-INT-08 waiting file stayed json then moved" "${_pq}/sudoer-rejected/${_rid}"
@@ -717,6 +773,7 @@ EOF
         t_skip "TP-SR-INT-06 live reject needs Type 1"
         t_skip "TP-SR-INT-07 live duplicate collapse needs Type 1"
         t_skip "TP-SR-INT-08 live YAML review needs Type 1"
+        t_skip "TP-SR-INT-09 live YAML group indent needs Type 1"
     fi
 
     # TP-SR-FENCE: dest Fence before yes/no; reject re-validates; action mismatch; subject mismatch is not a fence

@@ -1,12 +1,12 @@
 # What to review — sudoer-cli
 
 **Living checklist** (review plan). Product: **sudoer-cli** (Type 0 live; **Type 0 operational** convert/submit/list/show **plus Type 0 test-purpose** `test-json-format`/`test-well-known-binary`/`fence-test` routed; Type 1 `setup` / `interactive` live).  
-**Class:** software-development · **one** Active domain SSOT (`requirement-domain-sudoer-approval` **2.38.0**) · **online-installable** (`curl \| sh`).  
+**Class:** software-development · **one** Active domain SSOT (`requirement-domain-sudoer-approval` **2.40.0**) · independent login hook (`requirement-login-interactive-review-hook` **1.0.0**) · **online-installable** (`curl \| sh`).  
 **Always load first:** `reviews/lessons.md`  
 **Latest report:** `reviews/reports/2026-09-06-human-readability-and-coverage.md` (README/help people words; related-shell **Under command line**; TP vs matrix). Prior: 2026-08-21 shell CLI suite; dest-owned stamps. Actor lock: INC-20260818-001. Cmnd identity: **INC-20260821-001** / **L-CMND-PATH-01**. Dest auto-reject / `set -u`: **INC-20260821-002** / **L-FENCE-ASK-01** / **L-INT-SETU-01**.
 
-**Last plan update:** 2026-09-08  
-**Ship unit VERSION:** 1.22.0  
+**Last plan update:** 2026-09-09  
+**Ship unit VERSION:** 1.25.0  
 **Suite baseline:** see `reviews/test-plan.md`
 
 ---
@@ -15,10 +15,10 @@
 
 | # | Check | Notes |
 |---|--------|--------|
-| P1 | Read `docs/requirements/index.md` | Class + shell + three-layer + LPU + **prevention-set 1.6.4** + **domain 2.38.0** + ARSA + dest Fence + coding-style + sudo-command + default-interaction |
-| P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.22.0**) |
+| P1 | Read `docs/requirements/index.md` | Class + shell + three-layer + LPU + **prevention-set 1.6.4** + **domain 2.40.0** + **login-interactive-review-hook 1.0.0** + ARSA + dest Fence + coding-style + sudo-command + default-interaction |
+| P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.25.0**) |
 | P3 | Load `reviews/lessons.md` and re-check open L-* that still apply | Skip parent backup L-SUDOERS except **L-JSON-CMDS-01** |
-| P4 | Run `./tests/run.sh` | Record PASS/FAIL/SKIP; **must include TP-CURL-02/03**, **TP-LC-12..18**, **TP-CSUM-01..04**, **TP-SR-14/15/16**, **TP-SR-PRIV-04** / **TP-ELEV-09** / **TP-PREV-01..03**, **TP-SR-HOOK-01..05**, **TP-CLI-18..21** / **TP-ELEV-10**, **TP-SR-INT-07**, and **TP-SR-INT-08** |
+| P4 | Run `./tests/run.sh` | Record PASS/FAIL/SKIP; **must include TP-CURL-02/03**, **TP-LC-12..18**, **TP-CSUM-01..04**, **TP-SR-14/15/16**, **TP-SR-PRIV-04** / **TP-ELEV-09** / **TP-PREV-01..03**, **TP-SR-HOOK-01..06**, **TP-CLI-18..21** / **TP-ELEV-10**, **TP-SR-INT-07**, **TP-SR-INT-08**, and **TP-SR-INT-09** |
 | P5 | Confirm install **channel** is B’s `SCRIPT_URL` | `curl \| sh` one-liner; not selfmanaged’s channel |
 | P6 | Confirm trimmed verbs stay unknown | backup / restore / `remove-project-sudoers` (`print-sudoers` is domain) |
 | P7 | **JSON re-encode fidelity** | Complete section below. **Revise/Block** if skipped. |
@@ -36,6 +36,7 @@
 | Empty argv Type O | `requirement-shell-cli-zero-arguments.md` | Empty = install-ensure |
 | Numbered start list | `requirement-shell-cli-default-interaction.md` | Case 3: `menu` / `main`; empty argv is Type O |
 | Online self-management | `requirement-shell-self-management.md` | install / version-check / self-update / self-uninstall |
+| Path / shell-rc | `requirement-shell-path-and-shell-support.md` | This-login PATH + profile; sibling unify; **TP-LC-20..22, 27..31**; `rc-test` |
 | Automatic checksum | `requirement-shell-automatic-checksum.md` | `${SCRIPT_URL}.sha256`; help/about omit CHECKSUM |
 | Local self-management | `requirement-shell-local-self-management.md` | **Superseded** — do not revive `uninstall` / `where-is-me` |
 | Output SSOT | `requirement-shell-output-requirements.md` | `out_*`; JSON errors; colors consume `TTY`; **operator-readable fatals** (`Next:`) |
@@ -83,6 +84,7 @@
 | R20 | Dest `interactive` asks one-off yes/no (yes=approve, no/Enter=reject; no skip/quit; no three chained y/N) | **have** (1.12.0; domain 2.24.0; **TP-SR-INT-06**) |
 | R27 | Dest `interactive` keeps the latest inbound file per dest (`username`+`service`); older duplicates superseded → rejected (no dest-write, no extra yes/no) | **have** (1.20.0; domain 2.37.0; **TP-SR-INT-07**) |
 | R28 | Dest `interactive` / login hook prints YAML review body; waiting file stays JSON; Type 0 `show` still dumps JSON | **have** (1.21.0; domain 2.38.0; **TP-SR-INT-08**) |
+| R29 | Dest `interactive` / login hook indents each request body (`queued by` + YAML) by two spaces | **have** (1.23.0; domain 2.39.0; **TP-SR-INT-09**) |
 | R18 | OPEN-BEHALF: A may submit/remove for B; inbound and dest use B | **have** (1.8.1; **TP-SR-17** / **TP-SR-18**) |
 | R16 | After hook install, LPU can **read** `${LPU_HOME}/.profile` (not `root:root` `0600`); existence is not enough | **open** (checkout 1.8.1 + **TP-SR-HOOK-04**; host still `root:root` `0600`; global **1.8.0**; **L-HOOK-PROFILE-02**; INC-20260818-003 · INC-20260819-001) |
 | R22 | Dest apply of `login-hook-elev` does not install a `.ci-homes` / test-gbin Cmnd; live dest `/etc/sudoers.d/dns-cli-dns-adm` is `/usr/local/bin/dns-cli interactive`; visudo-pass ≠ identity | **have** dest Fence + **TP-SR-WKBIN-*** (1.14.0); **open** host dest file (**L-CMND-PATH-01**; INC-20260821-001) |

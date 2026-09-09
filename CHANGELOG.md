@@ -5,6 +5,29 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.25.0] - 2026-09-09
+
+### Added
+
+- **This-login shell-rc:** user-bin `install` creates `.bashrc` if missing, appends one exact `export PATH="<USER_BIN>:$PATH"` line, and creates `~/.profile` if absent (never overwrite). Sibling CLIs share that PATH line. Type 0 **`rc-test --root`** proves create / modify / no-op without writing this login’s real `~/.bashrc`. Law: `requirement-shell-path-and-shell-support`. **TP-LC-20..22** · **TP-LC-27..31**. Ship unit **`VERSION="1.25.0"`**.
+
+### Changed
+
+- Uninstall strips only `# Added by sudoer-cli installer` comments while other files remain in `USER_BIN` (keeps the shared PATH line). Already-installed `install` still heals a missing PATH line. Help lists `rc-test` under unit tests and `BASHRC` under Environment.
+
+## [1.24.0] - 2026-09-08
+
+### Changed
+
+- Type 1 **`interactive`** (and `setup`) **reviews** the `{{APP_NAME}}-adm` login rc. An old `sudo -n /usr/local/bin/{{APP_NAME}} interactive` hook is replaced with `/usr/local/bin/{{APP_NAME}}-hook`. Already-new rc is left alone. Login-hook REQ **1.1.0**. **TP-SR-HOOK-06**. Ship unit **`VERSION="1.24.0"`**.
+
+## [1.23.0] - 2026-09-08
+
+### Changed
+
+- Dest **`interactive`** (login hook included) indents each request body (`queued by` + YAML) by **two spaces** so one grant reads as a group under `[INFO] Request {id}`. Request id, superseded notes, and the approval question stay flush-left. Domain **2.40.0**. **TP-SR-INT-09**. Ship unit **`VERSION="1.23.0"`**.
+- Independent **`requirement-login-interactive-review-hook`**: rc snippet, `.profile`, and labeled `/usr/local/bin/{{APP_NAME}}-hook` (sibling CLIs reuse that pattern; do not overwrite). Domain / LPU / F6 **point**. **TP-SR-HOOK-01..05**.
+
 ## [1.22.0] - 2026-09-08
 
 ### Added

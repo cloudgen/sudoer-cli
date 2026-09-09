@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-three-layer-privilege-model.md  
-**Status**: Active (Version 1.15.1 – unused on Termux / Git Bash / Windows cmd)  
+**Status**: Active (Version 1.15.2 – login hook **points** at `requirement-login-interactive-review-hook`; unused on Termux / Git Bash / Windows cmd)  
 **Area**: architecture  
 **Key**: `requirement-three-layer-privilege-model`  
 **id**: RQ-THREE-LAYER-PRIVILEGE-MODEL  
@@ -57,7 +57,7 @@ The **closed catalog** of what the product blocks — and what it **must not** b
 4. **Mix model (EM-HYB).** The ship unit **MAY** invoke password `sudo` when it needs elev. **`sudo -n` is not suggested** (no NOPASSWD ticket as the default). Usual human path: `sudo {{APP}} setup` (password OK). Do **not** document bootstrap as `sudo -n`. Table C jobs are **`sudo useradd` / `sudo userdel` inside the script** — they are **not** sudoers Cmnds.  
 5. Type 2 execution context **MUST** remain **Not used** unless this requirement is revised.  
 6. **Elev model (this product):** **EM-HYB**. **Bootstrap** = password `sudo` (outer **or** in-tool; any host admin). **Day-to-day F6** = NOPASSWD on the **global** ship unit only. After euid is 0, host writes use **Table C** jobs. There is no package/OS-tool sudoers allowlist. User-grant files under `/etc/sudoers.d/{{service}}-{{username}}` are **not** Table A and are **not** F6.  
-7. A TTY login as `sudoer-adm` enters approve Type 1 **only** through F6. The login hook **MAY** use `sudo -n` **only after F6 exists** (so `.bashrc` does not hang). That is the only specified `-n`. `sudo -n` is **not** the bootstrap elev and **MUST NOT** be written as `sudo -n {{APP}} setup`. The LPU euid **MUST NOT** run `approve` / `reject` / `interactive`. Empty argv is not an elev path.  
+7. A TTY login as `sudoer-adm` enters approve Type 1 **only** through F6. The login hook **MAY** use `sudo -n` **only after F6 exists** (so `.bashrc` does not hang). That is the only specified `-n`. Snippet and labeled `/usr/local/bin/{{APP_NAME}}-hook` are **owned by** `requirement-login-interactive-review-hook`. `sudo -n` is **not** the bootstrap elev and **MUST NOT** be written as `sudo -n {{APP}} setup`. The LPU euid **MUST NOT** run `approve` / `reject` / `interactive`. Empty argv is not an elev path.  
 8. Install is **multi-user**: any login may local-install; any host admin may global-install and bootstrap. Do **not** treat `sudoer-adm` as the only installer.  
 9. **Elev is approval.** Password `sudo` or a root login **is** the operator’s approval for that Type 1 invocation — **setup and approve alike**. **MUST NOT** invent a second lock (including `SUDO_USER` must be `sudoer-adm` on approve). Sensitive undo-hard steps **MUST** use TTY confirm or `--force` only. **No invented live-command whitelist.** Table A is **only** the F6 sudoers line. Table B is **sudoers-forbidden**, **not** a live-command denylist. **No denylist ⇒ no extra restrict:** Type 1 `setup` **MAY** invoke the OS tools it needs (`sudo useradd`, `mkdir`, `visudo`, …). The closed block / must-remain-open rows are `requirement-privilege-prevention-set.md`.
 
@@ -66,7 +66,7 @@ The **closed catalog** of what the product blocks — and what it **must not** b
 | ID | Job | Binary (absolute) | Fixed args | Dest | Invoker | Run-as | NOPASSWD | Sudoers line shape |
 |----|-----|-------------------|------------|------|---------|--------|----------|--------------------|
 | ELEV-F6-CLI | Approver runs all product verbs of the **global** ship unit | `/usr/local/bin/{{APP_NAME}}` | none (whole binary) | — | `sudo {{APP_NAME}} …` | root | yes | `{{LPU_USER}} ALL=(root) NOPASSWD: /usr/local/bin/{{APP_NAME}}` |
-| ELEV-F6-HOOK | Login-hook-symlink (rc `sudo -n`) | `/usr/local/bin/{{APP_NAME}}-hook` | none (symlink to the global ship unit) | — | login hook `sudo -n {{APP_NAME}}-hook interactive` | root | yes | `{{LPU_USER}} ALL=(root) NOPASSWD: /usr/local/bin/{{APP_NAME}}-hook` |
+| ELEV-F6-HOOK | Login-hook-symlink (rc `sudo -n`) — owner `requirement-login-interactive-review-hook` | `/usr/local/bin/{{APP_NAME}}-hook` | none (symlink to the global ship unit) | — | login hook `sudo -n {{APP_NAME}}-hook interactive` | root | yes | `{{LPU_USER}} ALL=(root) NOPASSWD: /usr/local/bin/{{APP_NAME}}-hook` |
 
 Rules:
 
@@ -209,6 +209,6 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | **TP-ELEV-09** | `tests/test_domain_sr.sh` | have | Alias of TP-SR-PRIV-04 / TP-PREV-03 |
 | **TP-SR-INT-01** | `tests/test_domain_sr.sh` | have | `interactive` without euid 0 → `authz` |
 
-**Last Updated**: 2026-09-03 (1.15.0 login-hook-symlink on Table A)  
+**Last Updated**: 2026-09-08 (1.15.2 hook Cmnd **points** at `requirement-login-interactive-review-hook`)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

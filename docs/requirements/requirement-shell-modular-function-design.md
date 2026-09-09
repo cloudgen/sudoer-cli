@@ -57,7 +57,7 @@ Ship unit remains a **single executable** at `src/sudoer-cli`.
 | `inst_` | Installation lifecycle | Local install/uninstall detect and place/remove | `inst_local_install`, `inst_local_uninstall`, `inst_is_installed` |
 | `util_` | General utilities | Path resolve, storage, CIAO pre-change `.bak` helper, sudo-wrapping | `util_resolve_storage`, `util_backup`, `util_sudo`, `util_chmod` |
 | `app_` | Cross-cutting CLI surface | Entry, dispatch, about/help/version/where-is-me | `app_main`, `app_about`, `app_help`, `app_version`, `app_where_is_me` |
-| `path_` | Shell PATH & environment | Optional PATH ensure after user install | `path_add_shell` |
+| `path_` | Shell PATH & environment | This-login PATH / profile ensure after user-bin install; `rc-test` | `path_add_shell`, `path_add_bashrc`, `path_ensure_profile`, `path_rc_test` |
 | `prompt_` | Interactive prompts | Confirmations that **consume `TTY`** (no live `[ -t` policy gate) | `prompt_yes_no` |
 | `sr_` | Domain requests (target) | Convert, submit, list, show, approve/reject helpers | `sr_sudoers_to_json`, `sr_json_encode_request`, `sr_resolve_queues` |
 | `lpu_` | Domain LPU (target) | setup / F7 teardown | `lpu_setup`, `lpu_remove` |

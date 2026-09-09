@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-idempotency.md  
-**Status**: Active (Version 1.2.1)  
+**Status**: Active (Version 1.3.0)  
 **Area**: shell  
 **Key**: `requirement-shell-idempotency`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -64,8 +64,9 @@ Force policy (`--force` / `FORCE=1`) **MAY** re-apply ensure steps that would ot
 
 | Command / path | Desired state | Re-run when already good | Force / special |
 |----------------|---------------|--------------------------|-----------------|
-| `install` | Managed binary present at privilege-correct path | Success no-op (mode heal still runs) | `--force` replaces from running ship unit |
-| `uninstall` | Managed binary absent | Success no-op | `--force` skips confirm |
+| `install` | Managed binary present at privilege-correct path | Success no-op (mode heal still runs; **PATH companion still heals**) | `--force` replaces from running ship unit |
+| `self-uninstall` | Managed binary absent | Success no-op | `--force` skips confirm |
+| PATH add (`path_add_bashrc` / zsh / fish) | Exact PATH export already present | No second identical append; file bytes unchanged when VERSION comment + exact `export PATH=` already match | Create `BASHRC` (default `~/.bashrc`) when missing, then PATH. Bodies: `requirement-shell-path-and-shell-support` |
 | `where-is-me` / `version` / `about` / `help` | Read-only | Always safe | N/A |
 
 ### 2.5 Why This Requirement Exists (CIAO)
@@ -124,6 +125,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 |-----|--------------|
 | `requirement-shell-local-self-management` | Install/uninstall ensure |
 | `requirement-shell-cli-interface` | Force flag wiring |
+| `requirement-shell-path-and-shell-support` | PATH / profile bodies; re-run: no second exact `export PATH=` |
 | `docs/requirements/index.md` | Registry |
 
 ---
@@ -133,6 +135,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | TP family / ID | Suite | Status |
 |----------------|-------|--------|
 | **TP-LC-03,07** | `tests/test_local_lifecycle.sh` | have |
+| **TP-LC-20..22, 27..29** | `tests/test_local_lifecycle.sh` | have | PATH create / modify / no-op / sibling / heal |
 
 **Matrix:** `reviews/requirement-test-matrix.md`  
 **Map:** `reviews/test-plan.md`
@@ -144,9 +147,10 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | 2026-09-06 | Active 1.2.1 | Under command line for normal user only |
 | 2026-08-03 | Active 1.0.0 | folder-backup lifecycle + archive numbering |
 | 2026-08-13 | Active 1.1.0 | cli-template: lifecycle only |
+| 2026-09-09 | Active 1.3.0 | PATH re-run matrix **points** at `requirement-shell-path-and-shell-support` |
 
 ---
 
-**Last Updated**: 2026-08-13  
+**Last Updated**: 2026-09-09  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

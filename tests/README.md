@@ -16,10 +16,10 @@ Exit **0** when all assertions pass; **1** on failure; **2** if ship unit missin
 |------|--------|-------------|
 | `run.sh` | Entrypoint | — |
 | `helpers.sh` | Asserts + isolated HOME | — |
-| `test_cli.sh` | CLI surface, Type O, trimmed verbs, routed convert / **test-purpose** `test-json-format` / `test-well-known-binary` / `fence-test` (help listed apart from operational), TTY/temps static, sudo wrappers, claimed `menu` / `main`, default-cli-main-menu-style printers | **TP-CLI-01..21**, **TP-ELEV-07**, **TP-ELEV-08**, **TP-ELEV-10**, **TP-TMP-01**, **TP-SUDO-01..07** |
-| `test_local_lifecycle.sh` | channel install / version-check / self-update / self-uninstall / Type O empty argv / checksum pin / mode 0755 | **TP-LC-*** · **TP-CSUM-*** |
+| `test_cli.sh` | CLI surface, Type O, trimmed verbs, routed convert / **test-purpose** `test-json-format` / `test-well-known-binary` / `fence-test` / `rc-test` (help listed apart from operational), TTY/temps static, sudo wrappers, claimed `menu` / `main`, default-cli-main-menu-style printers | **TP-CLI-01..21**, **TP-ELEV-07**, **TP-ELEV-08**, **TP-ELEV-10**, **TP-TMP-01**, **TP-SUDO-01..07** |
+| `test_local_lifecycle.sh` | channel install / version-check / self-update / self-uninstall / Type O empty argv / checksum pin / mode 0755 / `BASHRC` fixture / sibling / scoped uninstall / heal / `rc-test` | **TP-LC-*** · **TP-CSUM-*** |
 | `test_online_curl_install.sh` | `curl \| sh` pipe on local HTTP channel (silent-class) | **TP-CURL-*** |
-| `test_domain_sr.sh` | Convert, JSON samples, queues, submit, Type 1 gate, dest Fence, Type 0 `test-json-format` / `test-well-known-binary` / `fence-test`, dest-written `submit_by`, dest-owned `submit_app` / `submit_version`, live setup body; dest one-off yes/no; dest warn-then-ask; grant sudoers file visudo-legal args (`requirement-sudoers-file`); login-hook-symlink; keep-latest duplicate inbound; YAML login-hook review | **TP-SR-01..21**, **TP-SR-PRIV-01..04**, **TP-SR-INT-01..08**, **TP-SR-HOOK-01..05**, **TP-SR-FENCE-01..17**, **TP-SR-WKBIN-01..11**, **TP-SR-FT-01..07**, **TP-SR-Q-***, **TP-PREV-01..03**, **TP-ELEV-09**, **TP-TMP-02** |
+| `test_domain_sr.sh` | Convert, JSON samples, queues, submit, Type 1 gate, dest Fence, Type 0 `test-json-format` / `test-well-known-binary` / `fence-test`, dest-written `submit_by`, dest-owned `submit_app` / `submit_version`, live setup body; dest one-off yes/no; dest warn-then-ask; grant sudoers file visudo-legal args (`requirement-sudoers-file`); independent login-hook REQ (`requirement-login-interactive-review-hook`); labeled `/usr/local/bin/{{APP_NAME}}-hook`; keep-latest duplicate inbound; YAML review; two-space request-body indent | **TP-SR-01..21**, **TP-SR-PRIV-01..04**, **TP-SR-INT-01..09**, **TP-SR-HOOK-01..05**, **TP-SR-FENCE-01..17**, **TP-SR-WKBIN-01..11**, **TP-SR-FT-01..07**, **TP-SR-Q-***, **TP-PREV-01..03**, **TP-ELEV-09**, **TP-TMP-02** |
 | `fixtures/fence-test/pass/` | Agent corpus: grants that **must pass** every dest Fence | **TP-SR-FT-04** |
 | `fixtures/fence-test/match/` | Agent corpus: grants that **must match** a dest Fence (`--expect-match`) | **TP-SR-FT-05** |
 | `fixtures/login-hook-elev-dns-adm.json` | Type 0 drop login-hook-elev grant JSON (`dns-adm` / `dns-cli` / `interactive`; `submit_app` / `submit_version`; no `submit_by`) | **TP-SR-FENCE-05** |
@@ -28,6 +28,7 @@ Exit **0** when all assertions pass; **1** on failure; **2** if ship unit missin
 ## Isolation
 
 - Temp `HOME` + `USER_BIN` + redirected `GLOBAL_BIN` for install tests  
+- **`BASHRC`** redirected to a random temp folder for **TP-LC-20..22** (create / modify-dongle / no-op)  
 - Local HTTP channel for `SCRIPT_URL` (no public network)  
 - **No** write to `/etc` or `/var/backup`
 

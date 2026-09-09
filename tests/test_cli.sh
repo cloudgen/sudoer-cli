@@ -52,7 +52,10 @@ run_test_cli() {
     assert_contains "TP-CLI-04 help test-json-format" "$_out" "test-json-format"
     assert_contains "TP-CLI-04 help test-well-known-binary" "$_out" "test-well-known-binary"
     assert_contains "TP-CLI-04 help fence-test" "$_out" "fence-test"
+    assert_contains "TP-CLI-04 help rc-test" "$_out" "rc-test"
+    assert_contains "TP-CLI-04 help lists BASHRC" "$_out" "BASHRC"
     assert_contains "TP-CLI-04 help unit test heading" "$_out" "Unit tests (local test folder; does not queue):"
+    assert_not_contains "TP-CLI-04 rc-test not under install-only" "$_out" "  rc-test              Place"
     assert_contains "TP-CLI-04 help operational heading" "$_out" "Convert, queue, and list requests:"
     assert_not_contains "TP-CLI-04 help headings not Type-N lead" "$_out" "Type 0 —"
     assert_not_contains "TP-CLI-04 help print-sudoers not F6 lead" "$_out" "Emit F6 Table A"
@@ -255,6 +258,7 @@ run_test_cli() {
     assert_not_contains "TP-CLI-20 no test-json-format" "${_fn}" "test-json-format"
     assert_not_contains "TP-CLI-20 no test-well-known-binary" "${_fn}" "test-well-known-binary"
     assert_not_contains "TP-CLI-20 no fence-test" "${_fn}" "fence-test"
+    assert_not_contains "TP-CLI-20 no rc-test" "${_fn}" "rc-test"
     assert_not_contains "TP-CLI-20 no menu as choice" "${_fn}" 'out_menu_choice '*' menu '
     assert_contains "TP-CLI-20 remove-lpu is a row" "${_fn}" "remove-lpu"
     assert_not_contains "TP-CLI-20 print-sudoers label not F6" "${_fn}" "F6 Table A"

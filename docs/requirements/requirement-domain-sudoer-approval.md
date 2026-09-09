@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-domain-sudoer-approval.md  
-**Status**: Active (Version 2.38.0) — YAML login-hook review display; keep-latest duplicate inbound; unused on Termux / Git Bash / Windows cmd  
+**Status**: Active (Version 2.40.0) — login hook **points** at `requirement-login-interactive-review-hook`; YAML review display indented two spaces; keep-latest duplicate inbound; unused on Termux / Git Bash / Windows cmd  
 **Area**: domain  
 **Key**: `requirement-domain-sudoer-approval`  
 **id**: RQ-DOMAIN-SUDOER-APPROVAL  
@@ -11,7 +11,7 @@ This requirement is the **single current domain SSOT** for sudoers-request appro
 
 Privilege types and F6 Cmnds are owned by `requirement-three-layer-privilege-model.md`. LPU identity is owned by `requirement-least-privilege-user.md`. What Type 0 / Type 1 **block** vs what must stay open after elev is owned by `requirement-privilege-prevention-set.md`. Live Type 0 dispatcher catalog is owned by `requirement-shell-cli-interface.md` (lifecycle) **plus** the Type 0 domain verbs in §2.1. Grant sudoers **file** (Cmnd arg escape, visudo -cf, visudo-fail copy) is owned by `requirement-sudoers-file.md`.
 
-**Routing honesty:** `help` / `about` **MUST NOT** list a command that is not wired. Convert, queue, list, show, and the local testers run as you. `setup` and review run only after you are already root (password `sudo`). Testers stay on a separate help heading. Live `setup` creates the dedicated account, the extra sudoers fragment, queues, and login hook. The review-loop body is **live**. About dedicated-account / trust-tier fields remain a **Gap**.
+**Routing honesty:** `help` / `about` **MUST NOT** list a command that is not wired. Convert, queue, list, show, and the local testers run as you. `setup` and review run only after you are already root (password `sudo`). Testers stay on a separate help heading. Live `setup` creates the dedicated account, the extra sudoers fragment, queues, and the login hook (**owned by** `requirement-login-interactive-review-hook`). The review-loop body is **live**. About dedicated-account / trust-tier fields remain a **Gap**.
 
 ### 1.1 Human-facing
 
@@ -25,7 +25,7 @@ Privilege types and F6 Cmnds are owned by `requirement-three-layer-privilege-mod
 
 | Includes | Excludes |
 |----------|----------|
-| Roles, submit-when, verify table, dest fence table, verbs, basename, hook, review loop, keep-latest duplicate inbound, YAML login-hook review display | Ticket DB; inventing a dest fence; `SUDO_USER` must be `sudoer-adm` |
+| Roles, submit-when, verify table, dest fence table, verbs, basename, review loop, keep-latest duplicate inbound, YAML review display (two-space indent per request) | Ticket DB; inventing a dest fence; `SUDO_USER` must be `sudoer-adm`; rc snippet / labeled `{{APP_NAME}}-hook` (owner `requirement-login-interactive-review-hook`) |
 
 | Surface | What you open | What for |
 |---------|---------------|----------|
@@ -217,7 +217,7 @@ Closed `schema_version` **1**. POSIX `/bin/sh` codec (`util_json_escape` + const
 **add / update — required:** `schema_version`, `purpose`, `username`, `service`, `action`, non-empty `commands[]`, `submit_app`, `submit_version`.  
 Each command: absolute `path`; `args` string array; `runas` default `root`; `tags` v1 `NOPASSWD` only.  
 **Optional `kind`:** `type-2-switch` or `login-hook-elev`. Unknown `kind` → `invalid_json`.  
-**`submit_app` / `submit_version`:** Type 0 submit **MUST** stamp live Config `APP_NAME` / `VERSION` (overwrite on queue). Dest-known non-empty strings. Dest **MUST NOT** dest-write them. Dest **MUST NOT** fence if `submit_app` ≠ `sudoer-cli` or `submit_version` ≠ dest `VERSION`. Missing / non-string on Type 0 testers / convert / new submit → `invalid_json`. Dest **review** missing stamp: **warn**, then ask. Display before yes/no: `queued by {submit_app} {submit_version}` when present.
+**`submit_app` / `submit_version`:** Type 0 submit **MUST** stamp live Config `APP_NAME` / `VERSION` (overwrite on queue). Dest-known non-empty strings. Dest **MUST NOT** dest-write them. Dest **MUST NOT** fence if `submit_app` ≠ `sudoer-cli` or `submit_version` ≠ dest `VERSION`. Missing / non-string on Type 0 testers / convert / new submit → `invalid_json`. Dest **review** missing stamp: **warn**, then ask. Display before yes/no: `queued by {submit_app} {submit_version}` when present, indented two spaces with the YAML body.
 
 **Dest-written `submit_by`:** original Unix owner of the waiting file **before** dest took ownership. Dest `interactive` **MUST** read that owner first, take ownership as `sudoer-adm`, format-check, and **if** the JSON is well-formed **MUST** write `submit_by` to that owner. Type 0 submit **MUST NOT** include `submit_by`. Dest **MUST NOT** fence if `submit_by` is present or missing. User SSOT stays JSON `username`.
 
@@ -383,65 +383,7 @@ Type 0 list/show **MUST** use a per-user sidecar `${XDG_STATE_HOME:-$HOME/.local
 
 #### Login hook
 
-`setup` **MUST** install an idempotent, marker-guarded snippet so a **TTY login** as `sudoer-adm` starts Type 1 `interactive` **once** per session. After `setup` copies the ship unit to `/usr/local/bin/sudoer-cli`, it **MUST** create a soft symlink `/usr/local/bin/sudoer-cli-hook` when that name is missing (it **MUST NOT** overwrite a retargeted name). The snippet **MUST** `sudo -n` that hook name, not the product binary. Heal **MUST** rewrite an old `/usr/local/bin/sudoer-cli interactive` line to the hook name, and **MUST** plant the hook block when markers are missing. The hook **MUST NOT** hang `scp`, CI, or non-TTY sessions. Empty argv stays help. Test-mode **MUST NOT** write live `/usr/local/bin`.
-
-**Why `${LPU_HOME}/.profile` must exist:** a bash **login** shell (SSH / console) sources `.profile` (or `.bash_profile` / `.bash_login`) and does **not** source `.bashrc` unless `.profile` does so. Create-first home plus `useradd -M` copies **no** `/etc/skel` `.profile`. Without that file, the hook in `.bashrc` **never runs**.
-
-| File | When to write |
-|------|----------------|
-| `${LPU_HOME}/.bashrc` | **Always** (create if missing). Create-default home is `/etc/sudoer-adm`. Plant the hook snippet here. After create or rewrite (`mktemp`+`mv`): **owner `sudoer-adm:sudoer-adm`**, mode **0644**. |
-| `${LPU_HOME}/.profile` | **Check.** **Absent:** **create** it with the complete source-bashrc sample below. **Present:** **MUST NOT** overwrite the body. If it already sources `.bashrc`, do not also plant the hook in `.profile`. If it exists and does **not** source `.bashrc`, plant the hook in `.profile` so login still reaches review. After create or rewrite, **and** on heal of an existing unreadable file: **owner `sudoer-adm:sudoer-adm`**, mode **0644**. |
-| Any other user’s rc | **Never** |
-
-| Guard | Rule |
-|-------|------|
-| **Identity** | Run only if `id -un` is `sudoer-adm` |
-| **Interactive** | Require `PS1` set, `$-` contains `i`, and `[ -t 0 ]` and `[ -t 1 ]` **in the rc snippet** (this is rc policy, not the CLI `TTY` SSOT) |
-| **scp / CI** | Skip when `SSH_ORIGINAL_COMMAND` is set |
-| **Session** | Set `SUDOER_CLI_HOOK_RAN=1` **before** `sudo -n`; a second source is a no-op |
-| **Binary** | `sudo -n /usr/local/bin/sudoer-cli-hook interactive` (login-hook-symlink; production F6 / Table A). **MUST NOT** hook `~/.local/bin/sudoer-cli`. **MUST NOT** leave an old `sudo -n /usr/local/bin/sudoer-cli interactive` line after heal |
-| **`sudo -n` fail** | Print a **warning** on stderr; **login continues** (do not `exit`) |
-| **Idempotent file** | Begin/end markers; do not append twice |
-| **`.profile` check** | `setup` **MUST** test whether `${LPU_HOME}/.profile` exists before deciding create vs leave |
-| **`.profile` create** | Missing → write the complete sample below (bash login sources `.bashrc`). Existing → leave the body unchanged |
-| **Owner** | After create or rewrite of `.bashrc` / `.profile`: `chown sudoer-adm:sudoer-adm` and `chmod 0644`. When the LPU account exists, **fail closed** if `chown` fails. **MUST NOT** swallow with `\|\| true`. Existence is not enough if the LPU cannot read the file |
-| **Heal** | If `.profile` sources `.bashrc` and still has the hook marker, strip the `.profile` copy, then re-apply owner/mode. Heal an existing unreadable `.profile` without replacing its body |
-| **F7** | Strip the hook marker block from **whichever** home rc files contain it |
-
-**Worked snippet** (markers required; product values filled):
-
-```sh
-# BEGIN sudoer-cli login hook
-if [ -z "${SUDOER_CLI_HOOK_RAN-}" ] \
-  && [ -n "${PS1-}" ] \
-  && [ -t 0 ] && [ -t 1 ] \
-  && case $- in *i*) true ;; *) false ;; esac \
-  && [ "$(id -un)" = "sudoer-adm" ] \
-  && [ -z "${SSH_ORIGINAL_COMMAND-}" ]; then
-  SUDOER_CLI_HOOK_RAN=1
-  export SUDOER_CLI_HOOK_RAN
-  sudo -n /usr/local/bin/sudoer-cli-hook interactive \
-    || printf '%s\n' "sudoer-cli: interactive hook skipped" >&2
-fi
-# END sudoer-cli login hook
-```
-
-`setup` **MUST** write this snippet (idempotent markers). F7 **MUST** strip it.
-
-**Complete `.profile` create sample** (only when the file is absent):
-
-```sh
-# BEGIN sudoer-cli profile source-bashrc
-# Created so a bash login shell sources interactive rc (hook lives in .bashrc).
-if [ -n "${BASH_VERSION:-}" ]; then
-    if [ -f "${HOME}/.bashrc" ]; then
-        . "${HOME}/.bashrc"
-    fi
-fi
-# END sudoer-cli profile source-bashrc
-```
-
-Session `SUDOER_CLI_HOOK_RAN` **MUST** prevent a second `interactive` if both login and interactive shells source `.bashrc`.
+`setup` **MUST** install the login-time review hook so a **TTY login** as `sudoer-adm` starts Type 1 `interactive` **once** per session. Snippet, `.profile` create-if-absent, rc owner, and the labeled soft link `/usr/local/bin/{{APP_NAME}}-hook` (this product: `/usr/local/bin/sudoer-cli-hook`) are **owned by** `requirement-login-interactive-review-hook`. This file **MUST NOT** re-own that snippet. The review **loop** below stays here. Empty argv stays help.
 
 #### Interactive review loop
 
@@ -453,12 +395,12 @@ Session `SUDOER_CLI_HOOK_RAN` **MUST** prevent a second `interactive` if both lo
 4. Resolve queues once. Type 1 **MAY** readdir inbound. Consider only regular, non-symlink files whose basename matches the request grammar.  
 5. Empty inbound → human note (or JSON success) and exit **0**. Do not hang.  
 5a. **Duplicate inbound:** **before** fencing and **before** yes/no, dest **MUST** group remaining inbound files by dest identity (JSON `username` + `service` — one live `/etc/sudoers.d/{{service}}-{{username}}`). For each group with more than one file: **keep the latest**; move every older file inbound → rejected (snapshot + LPU owner + mode `0640` + unlink inbound). Latest = newer inbound mtime; equal mtime → later allocated basename. Files with no dest identity stay ungrouped. Different dest identities stay. **MUST NOT** dest-write `/etc/sudoers.d`. **MUST NOT** stamp `submit_by` on older copies. **MUST NOT** ask the approval question on them. **MUST NOT** treat this as a dest Fence. **MUST** print `superseded {old} (kept {new})`. **MUST NOT** say “skipped”. Standalone `approve` / `reject` of a remaining id stay **non-interactive**.  
-6. For each pending id (basename sort): **fence first** (`requirement-incorrect-json-format` — garbage JSON / symlink / action mismatch). If a fence **matches**: display the match in people/folder words; **MUST NOT** ask the approval question; **then** move inbound → rejected (snapshot + LPU owner + mode `0640` + unlink inbound; **MUST NOT** dest-write `/etc/sudoers.d`; **MUST NOT** stamp `submit_by`; **MUST NOT** call standalone `reject` re-validate). Continue to the next file. If **no** fence: **warn** on missing `submit_app` / `submit_version` and on a Cmnd that is not a well-known system binary (`requirement-well-known-sudoer-binary-fence`); print purpose + body as **YAML** (login-hook / `interactive` human display; **MUST NOT** dump inbound JSON as the review body); print `queued by {submit_app} {submit_version}` when those strings are present (expand under `set -u` only with defaults — **INC-20260821-002**); ask the **approval question** (term `approval-question`): **one-off yes/no** via **one** `prompt_yes_no`. **Yes** = approve. **No** (including Enter) = reject. **MUST NOT** offer skip / quit / maybe. **MUST NOT** chain Approve then Reject then Quit as three `(y/N)` questions. **MUST NOT** dest-drain a waiting grant solely for missing stamp or untrusted Cmnd. The waiting file **MUST** stay JSON. Type 0 `show` still dumps that JSON file.  
+6. For each pending id (basename sort): **fence first** (`requirement-incorrect-json-format` — garbage JSON / symlink / action mismatch). If a fence **matches**: display the match in people/folder words; **MUST NOT** ask the approval question; **then** move inbound → rejected (snapshot + LPU owner + mode `0640` + unlink inbound; **MUST NOT** dest-write `/etc/sudoers.d`; **MUST NOT** stamp `submit_by`; **MUST NOT** call standalone `reject` re-validate). Continue to the next file. If **no** fence: **warn** on missing `submit_app` / `submit_version` and on a Cmnd that is not a well-known system binary (`requirement-well-known-sudoer-binary-fence`); print purpose + body as **YAML** (login-hook / `interactive` human display; **MUST NOT** dump inbound JSON as the review body); print `queued by {submit_app} {submit_version}` when those strings are present (expand under `set -u` only with defaults — **INC-20260821-002**); **MUST** indent the `queued by` line and every YAML review line by **two spaces** so one request reads as a group under the Request id line; **MUST NOT** indent the Request id line, the approval question, or superseded notes; ask the **approval question** (term `approval-question`): **one-off yes/no** via **one** `prompt_yes_no`. **Yes** = approve. **No** (including Enter) = reject. **MUST NOT** offer skip / quit / maybe. **MUST NOT** chain Approve then Reject then Quit as three `(y/N)` questions. **MUST NOT** dest-drain a waiting grant solely for missing stamp or untrusted Cmnd. The waiting file **MUST** stay JSON. Type 0 `show` still dumps that JSON file.  
 7. **yes** / **no** **MUST** run the same re-validate + dest/move as the standalone `approve` / `reject` verbs. Remaining inbound files stay in this loop (no quit). Direct `approve` / `reject` with a request id stay **non-interactive**.  
 8. A validate failure on one id **MUST NOT** abort the rest; emit the error and continue.  
 9. Empty argv **MUST NOT** reach this handler.
 
-The handler is **live**. Non-TTY / `--json` / `--quiet` fail closed `confirm_required`. `--force` does **not** auto-approve. Duplicate inbound files for the same dest are collapsed first (latest kept; older superseded → rejected). Each remaining unfenced id prints a YAML review body, then uses **one** `prompt_yes_no` (default no = reject), including after a **warn** on missing stamp or untrusted Cmnd. Each JSON-format fenced id is displayed, then archived to rejected, with no prompt.
+The handler is **live**. Non-TTY / `--json` / `--quiet` fail closed `confirm_required`. `--force` does **not** auto-approve. Duplicate inbound files for the same dest are collapsed first (latest kept; older superseded → rejected). Each remaining unfenced id prints a YAML review body indented two spaces under the Request id line, then uses **one** `prompt_yes_no` (default no = reject), including after a **warn** on missing stamp or untrusted Cmnd. Each JSON-format fenced id is displayed, then archived to rejected, with no prompt.
 
 #### Warnings (not hard reject)
 
@@ -491,11 +433,9 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | **Sidecar** | `~/.local/state/sudoer-cli/submitted.ids` |
 | **Worked basename** | `sudoer-20260814-webservice-alice-add-1.json` |
 | **Worked dest** | `/etc/sudoers.d/webservice-alice` |
-| **Hook marker** | `# BEGIN sudoer-cli login hook` … `# END sudoer-cli login hook` |
-| **Hook env** | `SUDOER_CLI_HOOK_RAN` |
-| **Hook command** | `sudo -n /usr/local/bin/sudoer-cli-hook interactive` (symlink to `/usr/local/bin/sudoer-cli`; create if missing; do not overwrite) |
-| **Approval question** | One-off yes/no (`prompt_yes_no "Approve this request"`). Yes = approve. No / Enter = reject. No skip / quit / maybe. Term `approval-question`. Duplicate inbound (same `username`+`service`): keep latest; older superseded → rejected (no question). JSON-format Fence match: no question; display then rejected. Missing stamp / untrusted Cmnd: warn, then ask. Unfenced review body is **YAML** (waiting file stays JSON). |
-| **`.profile` create** | Missing → write source-bashrc sample (`# BEGIN sudoer-cli profile source-bashrc`). Existing never overwritten. |
+| **Hook** | **Points** at `requirement-login-interactive-review-hook` (snippet, `.profile`, labeled `/usr/local/bin/sudoer-cli-hook`) |
+| **Approval question** | One-off yes/no (`prompt_yes_no "Approve this request"`). Yes = approve. No / Enter = reject. No skip / quit / maybe. Term `approval-question`. Duplicate inbound (same `username`+`service`): keep latest; older superseded → rejected (no question). JSON-format Fence match: no question; display then rejected. Missing stamp / untrusted Cmnd: warn, then ask. Unfenced review body is **YAML** indented two spaces under the Request id line (waiting file stays JSON). |
+| **`.profile` create** | **Points** at `requirement-login-interactive-review-hook` |
 | **Routed now** | Type 0 **operational** convert/submit/list/show/print-sudoers; Type 0 **test-purpose** `test-json-format`/`test-well-known-binary`/`fence-test`; Type 1 `setup`/`remove-lpu`/`approve`/`reject`/`interactive` live |
 | **`fence-test` sample JSON** | `tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json` — `--file` that path; test-purpose; sudo wrap only chmod/chown of the local test folder; does not queue |
 | **Gap** | about LPU/F6/trust-tier fields (queue paths are already in `about`) |
@@ -555,15 +495,15 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 14. Replace this file-based JSON approval machine with a ticket table, mail queue, or database without revising this requirement.  
 15. Collapse submitter and approver into one role.  
 16. Let a TTY login as `sudoer-adm` imply empty-argv `interactive`.  
-17. Hang login or `scp` from the hook (`sudo` without `-n`, or `exit` on hook failure).  
-18. Hook `~/.local/bin/sudoer-cli` or any non-Table-A binary as the review launcher. Plant `sudo -n /usr/local/bin/sudoer-cli interactive` instead of `/usr/local/bin/sudoer-cli-hook`, overwrite an existing hook name, or `ln` the live global hook from test-mode.  
+17. Re-own the login-hook snippet, `.profile` sample, or labeled `/usr/local/bin/{{APP_NAME}}-hook`. Those stay on `requirement-login-interactive-review-hook`.  
+18. Hang login or `scp` from the hook (`sudo` without `-n`, or `exit` on hook failure) — owner `requirement-login-interactive-review-hook`.  
 19. Ship `interactive` without consuming `TTY` (prompt or hang when `TTY` is not 1).  
 20. Invent a second lock after password `sudo` / root login — including `SUDO_USER` must be `sudoer-adm` on approve — a live-command whitelist the user did not publish, or a Gap stub on live `setup` (`requirement-privilege-prevention-set.md`).  
 21. Walk inbound ids with `while read … done <file` (or any stdin redirect) so `prompt_yes_no` hits EOF and auto-answers no (reject).  
 22. Silently drop `commands[]` objects on decode/re-encode (pretty JSON last-`args` wins). Compact-only fixtures do **not** prove fidelity.  
-23. Skip the `${LPU_HOME}/.profile` existence check, or skip auto-create when it is missing (a login shell then never sources `.bashrc`, so the hook never fires).  
-24. Overwrite an existing `.profile`.  
-25. Leave `${LPU_HOME}/.profile` or `.bashrc` as `root:root` / unreadable after create or rewrite (`mktemp`+`mv`). The corresponding user **must** own those files. Swallowing `chown` is forbidden.  
+23. Skip the `${LPU_HOME}/.profile` existence check, or skip auto-create when it is missing — owner `requirement-login-interactive-review-hook`.  
+24. Overwrite an existing `.profile` — owner `requirement-login-interactive-review-hook`.  
+25. Leave `${LPU_HOME}/.profile` or `.bashrc` as `root:root` / unreadable after create or rewrite — owner `requirement-login-interactive-review-hook`.  
 26. Offer skip / quit / maybe on dest review, or chain Approve then Reject then Quit as three `(y/N)` questions. The approval question is one-off yes/no.  
 27. Leave a dest **Fence** match in inbound after `interactive` displayed it, dest-write `/etc/sudoers.d` on that match, ask yes/no on it, or move it **before** the display.  
 28. Treat `fence-test` as needing `sudo`, a sudoers fragment, dest review, host install, or the waiting folder. Input is a JSON **file location**.  
@@ -571,7 +511,8 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 30. Dest-drain a waiting grant in `interactive` solely because `submit_app` / `submit_version` is missing or a Cmnd is not a well-known system binary. Warn, then ask (**INC-20260821-002**).  
 31. Expand unset `SR_D_SUBMIT_APP` / `SR_D_SUBMIT_VERSION` in the `interactive` parent after a subshell Fence check (`set -u` crash).  
 32. In `interactive` (login hook included), walk every inbound copy of the same dest (`username` + `service`). **MUST** keep the latest and move older duplicates to rejected without dest-write and without yes/no. **MUST NOT** add “duplicate” as a dest Fence.  
-33. In `interactive` (login hook included), print the unfenced grant as **YAML**. **MUST NOT** dump inbound JSON as the review body. The waiting file **MUST** stay JSON. Type 0 `show` still dumps that JSON file. **MUST NOT** add “yaml” as a dest Fence.
+33. In `interactive` (login hook included), print the unfenced grant as **YAML**. **MUST NOT** dump inbound JSON as the review body. The waiting file **MUST** stay JSON. Type 0 `show` still dumps that JSON file. **MUST NOT** add “yaml” as a dest Fence.  
+34. In `interactive` (login hook included), indent the `queued by` line and every YAML review line by **two spaces** so each request groups under the Request id line. **MUST NOT** leave that body flush-left. **MUST NOT** indent the Request id line, the approval question, or superseded notes.
 
 **Violating this rule is a critical domain-SSOT / privilege regression.**
 
@@ -596,6 +537,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | `docs/requirements/requirement-incorrect-json-format.md` | Dest Fence: JSON format |
 | `docs/requirements/requirement-well-known-sudoer-binary-fence.md` | Well-known binary: dest warn + testers/convert fail closed |
 | `docs/requirements/requirement-sudoers-file.md` | Grant sudoers file: Cmnd arg escape, visudo -cf, visudo-fail copy |
+| `docs/requirements/requirement-login-interactive-review-hook.md` | Rc snippet, `.profile`, labeled `/usr/local/bin/{{APP_NAME}}-hook` |
 | `src/sudoer-cli` | Ship unit |
 
 ## Design-time verification
@@ -621,12 +563,12 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | **TP-SR-PRIV-02** | `tests/test_domain_sr.sh` | have | Bootstrap setup any euid 0; not `sudo -n` |
 | **TP-SR-PRIV-04** | `tests/test_domain_sr.sh` | have | Approve gate: no exclusive-`sudoer-adm` actor lock |
 | **TP-SR-PRIV-03** | `tests/test_domain_sr.sh` | have | Live setup body: useradd, collision, F6, hook (static) |
-| **TP-SR-INT-03** | `tests/test_domain_sr.sh` | have | Hook snippet guards (static) |
-| **TP-SR-HOOK-01** | `tests/test_domain_sr.sh` | have | `setup` checks `.profile`; missing → create source-bashrc sample |
-| **TP-SR-HOOK-02** | `tests/test_domain_sr.sh` | have | Existing `.profile` is not overwritten |
-| **TP-SR-HOOK-03** | `tests/test_domain_sr.sh` | have | Created `.profile` sources `.bashrc` (markers) |
-| **TP-SR-HOOK-04** | `tests/test_domain_sr.sh` | have | After create/rewrite, hook apply/ensure **chown** the LPU (no swallowed `chown`) |
-| **TP-SR-HOOK-05** | `tests/test_domain_sr.sh` | have | Login-hook-symlink: setup creates `${GLOBAL_BIN}/sudoer-cli-hook` when missing; heal rewrites old product-binary `sudo -n` line; F6 grants the hook; test-mode skips live `/usr/local/bin` |
+| **TP-SR-INT-03** | `tests/test_domain_sr.sh` | have | Hook snippet guards (static) — owner `requirement-login-interactive-review-hook` |
+| **TP-SR-HOOK-01** | `tests/test_domain_sr.sh` | have | `setup` checks `.profile`; missing → create source-bashrc sample — owner `requirement-login-interactive-review-hook` |
+| **TP-SR-HOOK-02** | `tests/test_domain_sr.sh` | have | Existing `.profile` is not overwritten — owner `requirement-login-interactive-review-hook` |
+| **TP-SR-HOOK-03** | `tests/test_domain_sr.sh` | have | Created `.profile` sources `.bashrc` (markers) — owner `requirement-login-interactive-review-hook` |
+| **TP-SR-HOOK-04** | `tests/test_domain_sr.sh` | have | After create/rewrite, hook apply/ensure **chown** the LPU — owner `requirement-login-interactive-review-hook` |
+| **TP-SR-HOOK-05** | `tests/test_domain_sr.sh` | have | Login-hook-symlink `/usr/local/bin/{{APP_NAME}}-hook` — owner `requirement-login-interactive-review-hook` |
 | **TP-CLI-14** | `tests/test_cli.sh` | have | convert routed; junk unknown |
 | **TP-SR-INT-01** | `tests/test_domain_sr.sh` | have | `interactive` without euid 0 → `authz` |
 | **TP-SR-INT-02** | `tests/test_domain_sr.sh` | have | `--json` / `TTY=0` → `confirm_required`, no hang |
@@ -635,6 +577,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | **TP-SR-INT-06** | `tests/test_domain_sr.sh` | have | One-off approval question: one `prompt_yes_no`; yes=approve; no/Enter=reject; no skip/quit |
 | **TP-SR-INT-07** | `tests/test_domain_sr.sh` | have | Duplicate inbound same dest: keep latest; older superseded → rejected; no dest write; no extra yes/no |
 | **TP-SR-INT-08** | `tests/test_domain_sr.sh` | have | Login-hook / `interactive` prints YAML review body; waiting file stays JSON; Type 0 `show` still dumps JSON |
+| **TP-SR-INT-09** | `tests/test_domain_sr.sh` | have | Login-hook / `interactive` indents `queued by` + YAML review lines by two spaces; Request id / approval question / superseded notes stay flush-left |
 | **TP-SR-Q-01** | `tests/test_domain_sr.sh` | have | Public `/var/{{APP_NAME}}/` + `sudoer-request` + 3773/0700/0755 |
 | **TP-SR-Q-02** | `tests/test_domain_sr.sh` | have | Submit `0640`; approve archives snapshot; **no** owner_mismatch / self-scope wall |
 | **TP-SR-Q-03** | `tests/test_domain_sr.sh` | have | F7 `lpu_remove_public_queues` |
@@ -663,6 +606,8 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-09-08 | Active 2.40.0 | Login hook **points** at independent `requirement-login-interactive-review-hook` (labeled `/usr/local/bin/{{APP_NAME}}-hook`). Review loop stays here. |
+| 2026-09-08 | Active 2.39.0 | Login-hook / `interactive` YAML review body (`queued by` + YAML) indented **two spaces** under the Request id line. Protection rule 34; **TP-SR-INT-09**. |
 | 2026-09-06 | Active 2.38.0 | Login-hook / `interactive` human display is **YAML**; waiting file stays JSON; Type 0 `show` still dumps JSON. Protection rule 33; **TP-SR-INT-08**. |
 | 2026-09-06 | Active 2.37.1 | Under command line for normal user only |
 | 2026-08-13 | Active 1.0.0 | Initial domain SSOT; `DATE-user-type-n` text body |
@@ -708,6 +653,6 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 ---
 
-**Last Updated**: 2026-09-06  
+**Last Updated**: 2026-09-08  
 **Owner**: project maintainers  
-**Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).
+**Alignment**: Registry `docs/requirements/index.md`; peer `requirement-login-interactive-review-hook.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

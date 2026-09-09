@@ -7,7 +7,7 @@
 
 ## 1. Purpose
 
-This requirement is the **actor / role / subject / submitter / approver** catalog for sudoer-cli. Every software-development product **MUST** consider this catalog. Dest review procedure, dest fence table, and login-hook snippets stay on `requirement-domain-sudoer-approval.md`. Privilege types stay on `requirement-three-layer-privilege-model.md`. The dedicated approver account stays on `requirement-least-privilege-user.md`.
+This requirement is the **actor / role / subject / submitter / approver** catalog for sudoer-cli. Every software-development product **MUST** consider this catalog. Dest review procedure and dest fence table stay on `requirement-domain-sudoer-approval.md`. Login-hook snippets stay on `requirement-login-interactive-review-hook.md`. Privilege types stay on `requirement-three-layer-privilege-model.md`. The dedicated approver account stays on `requirement-least-privilege-user.md`.
 
 ### 1.1 Human-facing
 
@@ -17,7 +17,7 @@ This requirement is the **actor / role / subject / submitter / approver** catalo
 |-----|---------|---------|
 | You / this login | Convert, queue, list, and install without becoming root | `sudoer-cli add-sudoer-request --file request.json` |
 | The other role | A host admin who already used password `sudo`, or `sudoer-adm` after first-time setup | `sudo sudoer-cli interactive` |
-| Not this file | Dest fence list, login hook, or the Type map | `requirement-domain-sudoer-approval` · `requirement-three-layer-privilege-model` |
+| Not this file | Dest fence list, login hook, or the Type map | `requirement-domain-sudoer-approval` · `requirement-login-interactive-review-hook` · `requirement-three-layer-privilege-model` |
 
 | Includes | Excludes |
 |----------|----------|

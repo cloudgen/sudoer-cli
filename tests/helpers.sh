@@ -107,6 +107,34 @@ ci_isolated_env() {
     unset CHECKSUM 2>/dev/null || true
     unset FORCE_GLOBAL 2>/dev/null || true
     unset FORCE_USER 2>/dev/null || true
+    unset BASHRC 2>/dev/null || true
+    unset ZSHRC 2>/dev/null || true
+    unset FISH_CONFIG 2>/dev/null || true
+    unset PROFILE 2>/dev/null || true
+    CI_BASHRC=
+    CI_BASHRC_DIR=
+}
+
+# Redirect BASHRC to a file in a random temp folder (not ${HOME}/.bashrc).
+# Sets CI_BASHRC_DIR, CI_BASHRC and exports BASHRC.
+ci_isolated_bashrc() {
+    CI_BASHRC_DIR=$(mktemp -d "${TMPDIR:-/tmp}/hm-bashrc.XXXXXX")
+    CI_BASHRC="${CI_BASHRC_DIR}/.bashrc"
+    export BASHRC="${CI_BASHRC}"
+}
+
+ci_cleanup_bashrc() {
+    if [ -n "${CI_BASHRC_DIR:-}" ] && [ -d "${CI_BASHRC_DIR}" ]; then
+        rm -rf "${CI_BASHRC_DIR}"
+    fi
+    CI_BASHRC_DIR=
+    CI_BASHRC=
+    unset BASHRC 2>/dev/null || true
+}
+
+# Exact installer PATH export line written into bashrc.
+ci_bashrc_path_line() {
+    printf 'export PATH="%s:$PATH"' "${CI_USER_BIN}"
 }
 
 # Start a local HTTP channel serving src/sudoer-cli (+ .sha256).
@@ -163,6 +191,7 @@ ci_source_ship_unit() {
 
 ci_cleanup_env() {
     ci_stop_channel 2>/dev/null || true
+    ci_cleanup_bashrc 2>/dev/null || true
     if [ -n "${CI_HOME:-}" ] && [ -d "${CI_HOME}" ]; then
         rm -rf "${CI_HOME}"
         CI_HOME=

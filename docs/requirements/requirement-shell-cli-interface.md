@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-interface.md  
-**Status**: Active (Version 3.11.0)  
+**Status**: Active (Version 3.12.0) — `rc-test` dual-mention with path-and-shell-support REQ  
 **Area**: shell  
 **Key**: `requirement-shell-cli-interface`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -8,7 +8,7 @@
 
 This requirement is the **project Single Source of Truth** for the **POSIX shell CLI interface** of sudoer-cli: live command surface, privilege typing, global flags, dispatcher behavior, help/about contracts, and mode rules.
 
-Help lists only commands that actually run. As yourself you install, convert, queue, list, show, and run the local testers. After password `sudo` you run `setup` and review. Help **MUST** list testers apart from everyday commands. Being a normal login is **not** the same as “unit test.” Domain catalog and fail-closed review are owned by `requirement-domain-sudoer-approval.md` and `requirement-three-layer-privilege-model.md`. Help **MUST NOT** list a verb with no `case` arm. Full lifecycle rules live in `requirement-shell-self-management.md`. (Catalog: Type 0 operational convert/submit/list/show/print-sudoers; Type 0 test-purpose `test-json-format` / `test-well-known-binary` / `fence-test`; Type 1 `setup` / review.)
+Help lists only commands that actually run. As yourself you install, convert, queue, list, show, and run the local testers. After password `sudo` you run `setup` and review. Help **MUST** list testers apart from everyday commands. Being a normal login is **not** the same as “unit test.” Domain catalog and fail-closed review are owned by `requirement-domain-sudoer-approval.md` and `requirement-three-layer-privilege-model.md`. Help **MUST NOT** list a verb with no `case` arm. Full lifecycle rules live in `requirement-shell-self-management.md`. (Catalog: Type 0 operational convert/submit/list/show/print-sudoers; Type 0 test-purpose `test-json-format` / `test-well-known-binary` / `fence-test` / `rc-test`; Type 1 `setup` / review.)
 
 ### 1.1 Human-facing
 
@@ -90,7 +90,7 @@ Additional flags **MAY** be added only when documented here (or a superseding re
 
 In JSON mode, help **MUST NOT** dump long human text; return a short structured success/note object.
 
-`help` **MUST** list live domain Type 0 rows per the domain SSOT. `help` **MUST** list **test-purpose** verbs (`test-json-format`, `test-well-known-binary`, `fence-test`) under a **separate heading** from **operational** Type 0 (convert, submit, list, show, print-sudoers). Operator-facing help **headings and one-liners** **MUST** name the job in people/folder words first (install, convert, queue, unit tests, first-time setup, approve). **MUST NOT** lead those headings with Type 0 / Type 1 / F6 / LPU as the only words. Catalog codes **MAY** follow the plain sentence. `help` **MUST NOT** list a verb with no dispatcher arm.
+`help` **MUST** list live domain Type 0 rows per the domain SSOT. `help` **MUST** list **test-purpose** verbs (`test-json-format`, `test-well-known-binary`, `fence-test`, `rc-test`) under a **separate heading** from **operational** Type 0 (convert, submit, list, show, print-sudoers). Operator-facing help **headings and one-liners** **MUST** name the job in people/folder words first (install, convert, queue, unit tests, first-time setup, approve). **MUST NOT** lead those headings with Type 0 / Type 1 / F6 / LPU as the only words. Catalog codes **MAY** follow the plain sentence. `help` **MUST NOT** list a verb with no dispatcher arm.
 
 ### 2.5 Implementation Notes (this project)
 
@@ -100,7 +100,8 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | **Primary executable** | `src/sudoer-cli` (POSIX `/bin/sh`, single-file ship unit) |
 | **Dispatcher** | `app_main` |
 | **Output SSOT** | `out_text` + wrappers (`out_info`, `out_success`, `out_warn`, `out_error`, `out_die`, `out_plain`, `out_json`, …) |
-| **Version SSOT** | `VERSION="1.22.0"` hard-assign in ship unit |
+| **Version SSOT** | `VERSION="1.25.0"` hard-assign in ship unit |
+| **Interactive rc write path** | `BASHRC` default `${HOME}/.bashrc`. User-bin `install` PATH ensure creates/modifies this file. Tests/CI **MAY** set `BASHRC` to a file in a temp folder. Dual mention: `requirement-shell-path-and-shell-support`. |
 | **Install paths** | Global: `GLOBAL_BIN` default `/usr/local/bin`; User: `USER_BIN` default `${HOME}/.local/bin` |
 | **Primary install story** | `curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli \| sh` → user bin; `sudo curl … \| sudo sh` → global; login-hook-symlink `/usr/local/bin/sudoer-cli-hook` after global place |
 | **Default CLI main menu** | **Claimed.** Empty argv is Type O install-ensure. Verb `menu` / `main` opens the numbered list. Topic owner: `requirement-shell-cli-default-interaction`. Look printers: `util_app_ident` / `out_menu_choice` (**TP-CLI-17**) |
@@ -114,10 +115,10 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | Command | Type | Handler family | Required behavior |
 |---------|------|----------------|-------------------|
 | *(no args — empty argv)* | Type 0 | `app_main` → `inst_perform_install` / `inst_maybe_install` | **Type O install-ensure** — not help |
-| `install` | Type 0 | `inst_perform_install` | Place from `SCRIPT_URL`; idempotent unless `--force` |
+| `install` | Type 0 | `inst_perform_install` | Place from `SCRIPT_URL`; user-bin companion PATH/profile (`inst_ensure_companion`). Idempotent unless `--force`. Dual mention: `requirement-shell-self-management` · `requirement-shell-path-and-shell-support` |
 | `version-check` | Type 0 | `ver_check` | Local vs remote on channel; fail loud if channel missing |
 | `self-update` | Type 0 | `inst_self_update` | Fetch newer from channel; no silent downgrade |
-| `self-uninstall` | Type 0 | `inst_self_uninstall` | Remove managed binary; confirm unless `--force` |
+| `self-uninstall` | Type 0 | `inst_self_uninstall` | Remove managed binary; scoped PATH cleanup. Dual mention: `requirement-shell-self-management` · `requirement-shell-path-and-shell-support` |
 | `version` | Type 0 | `app_version` | Local `VERSION` only; no network |
 | `about` | Type 0 | `app_about` | Diagnostics: install presence, paths, user, shell, TTY, storage, **resolved queue paths**, install channel; **no** `CHECKSUM`; **no** backup/restore fields |
 | `help` | Type 0 | `app_help` | Full usage in human mode; short JSON note in JSON mode |
@@ -127,6 +128,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | `test-json-format` | Type 0 **test-purpose** | `sr_test_json_format` | Named here; Fence body on `requirement-incorrect-json-format`. Unit test; local test folder. |
 | `test-well-known-binary` | Type 0 **test-purpose** | `sr_test_well_known_binary` | Named here; Fence body on `requirement-well-known-sudoer-binary-fence`. Unit test; local test folder. |
 | `fence-test` | Type 0 **test-purpose** | `sr_fence_test` | Named here; JSON-file verification on `requirement-domain-sudoer-approval` (unit test; local test folder; sudo wrap only chmod/chown of that folder; no queue) |
+| `rc-test` | Type 0 **test-purpose** | `path_rc_test` | Fixture create / modify / no-op against `--root` tmp/cache. **MUST NOT** write this login’s real `{{HOME}}/.bashrc`. Help lists this **apart** from operational verbs. Dual mention: `requirement-shell-path-and-shell-support`. Sample: `sudoer-cli rc-test --root "$tmpdir" --file bashrc --case create` |
 | `print-sudoers` | Type 0 | `sr_print_sudoers` | Named here; Table A emit on domain / three-layer |
 | `print-sudoers-install-script` | Type 0 | `sr_print_sudoers_install_script` | Named here; behavior on domain SSOT |
 | `add-sudoer-request` | Type 0 | `sr_submit add` | Named here; behavior on domain SSOT |
@@ -135,9 +137,9 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | `list-approving` / `list-approved` / `list-rejected` | Type 0 | `sr_list` | Named here; behavior on domain SSOT |
 | `list-approving --orphans` | Type 1 | `sr_list_orphans` | Named here; fail-closed without euid 0 |
 | `show` | Type 0 | `sr_show` | Named here; behavior on domain SSOT |
-| `setup` / `remove-lpu` | Type 1 | `lpu_setup` / `lpu_remove` | Named here; Type map on three-layer; F1–F7 on LPU REQ. After global copy: create `/usr/local/bin/sudoer-cli-hook` when missing; heal LPU `.bashrc` to that name |
+| `setup` / `remove-lpu` | Type 1 | `lpu_setup` / `lpu_remove` | Named here; Type map on three-layer; F1–F7 on LPU REQ. After global copy: labeled `/usr/local/bin/sudoer-cli-hook` on `requirement-login-interactive-review-hook` |
 | `approve` / `reject` | Type 1 | `sr_approve` / `sr_reject` | Named here; dest Fence then dest write |
-| `interactive` | Type 1 | `sr_interactive` | Named here; one-off yes/no on domain SSOT |
+| `interactive` | Type 1 | `sr_interactive` | Named here; one-off yes/no on domain SSOT; hook start on `requirement-login-interactive-review-hook`. Invocation: `sudo sudoer-cli interactive` · hook: `sudo -n /usr/local/bin/sudoer-cli-hook interactive` |
 
 #### Global flags (normative wiring)
 
@@ -209,7 +211,8 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 4. Hide the install channel in help/about, or advertise `CHECKSUM` as everyday UX.  
 5. Collapse Type 1/2 into “just run as root.”  
 6. Mix **test-purpose** verbs into **operational** help grouping, or treat a tester as submit / dest review / `setup` / host install.  
-7. `sudo` on a test-purpose verb except wrapping **chmod** / **chown** of the **local test folder** (check before sudo).
+7. `sudo` on a test-purpose verb except wrapping **chmod** / **chown** of the **local test folder** (check before sudo).  
+8. Drop `rc-test` from the dual-mention table without updating `requirement-shell-path-and-shell-support`, mix it into operational help grouping, or treat it as install / `setup`.
 
 **Violating this rule is a critical CLI-surface regression.**
 
@@ -219,7 +222,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 | ID | Criterion |
 |----|-----------|
-| AC-1 | Help lists lifecycle Type 0 **and** every named domain/Type 1 verb in the Supported commands table (`sudoers-to-json` / `json-to-sudoers` / `test-json-format` / `test-well-known-binary` / `fence-test` / `print-sudoers` / `print-sudoers-install-script` / `add-sudoer-request` / `update-sudoer-request` / `remove-sudoer-request` / `list-*` / `show` / `setup` / `remove-lpu` / `approve` / `reject` / `interactive` / `menu` / `main`) |
+| AC-1 | Help lists lifecycle Type 0 **and** every named domain/Type 1 verb in the Supported commands table (`sudoers-to-json` / `json-to-sudoers` / `test-json-format` / `test-well-known-binary` / `fence-test` / `rc-test` / `print-sudoers` / `print-sudoers-install-script` / `add-sudoer-request` / `update-sudoer-request` / `remove-sudoer-request` / `list-*` / `show` / `setup` / `remove-lpu` / `approve` / `reject` / `interactive` / `menu` / `main`) |
 | AC-2 | Help and about omit `backup` / `restore` / `remove-project-sudoers` |
 | AC-3 | Unknown and trimmed verbs exit non-zero |
 | AC-4 | Empty argv is help |
@@ -244,6 +247,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | `requirement-domain-sudoer-approval` | Dual mention of Type 0 `fence-test` |
 | `requirement-three-layer-privilege-model` | Type 1 / Table A |
 | `requirement-privilege-prevention-set` | Closed catalog of what Type 0 / Type 1 block vs must stay open |
+| `requirement-shell-path-and-shell-support` | PATH / profile; `BASHRC`; dual mention `install` / `rc-test` / `self-uninstall` |
 | `docs/requirements/index.md` | Registry |
 
 ---
@@ -252,7 +256,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 | TP family / ID | Suite | Status | Note |
 |----------------|-------|--------|------|
-| **TP-CLI-01..16** | `tests/test_cli.sh` | have | includes stripped-verb fail-closed + convert / `test-json-format` / `test-well-known-binary` / `fence-test` routed |
+| **TP-CLI-01..16** | `tests/test_cli.sh` | have | includes stripped-verb fail-closed + convert / `test-json-format` / `test-well-known-binary` / `fence-test` / `rc-test` routed |
 | **TP-CLI-17** | `tests/test_cli.sh` | have | default-cli-main-menu-style printers (claimed menu uses them) |
 | **TP-CLI-18..21** | `tests/test_cli.sh` | have | `menu` / `main` routed; off-TTY help; membership; interactive `--json` still list |
 | **TP-LC-*** | `tests/test_local_lifecycle.sh` | have | online lifecycle |
@@ -291,9 +295,10 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | 2026-09-03 | Active 3.10.0 | Claimed case-3 `menu` / `main`; empty argv stays help; `VERSION` 1.19.0 |
 | 2026-09-03 | Active 3.10.1 | Stay-honest Implementation Notes `VERSION` 1.20.0 |
 | 2026-09-06 | Active 3.10.3 | Stay-honest Implementation Notes `VERSION` 1.21.0 |
+| 2026-09-09 | Active 3.12.0 | Dual mention Type 0 `rc-test`; `BASHRC` env; `VERSION` 1.25.0 |
 
 ---
 
-**Last Updated**: 2026-09-06 (3.10.3 — stay-honest `VERSION` 1.21.0)  
+**Last Updated**: 2026-09-09 (3.12.0 — `rc-test` dual mention)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

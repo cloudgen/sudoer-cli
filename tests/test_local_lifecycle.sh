@@ -2,8 +2,9 @@
 # tests/test_local_lifecycle.sh — channel install / self-uninstall / 0755
 # =============================================================================
 # Primary REQs: requirement-shell-self-management, requirement-shell-cli-zero-arguments,
-# requirement-shell-idempotency, requirement-shell-interactive-vs-noninteractive
-# TP family: TP-LC-*
+# requirement-shell-idempotency, requirement-shell-interactive-vs-noninteractive,
+# requirement-shell-path-and-shell-support
+# TP family: TP-LC-* (incl. 20–22 BASHRC env / 27–31 sibling, uninstall, heal, rc-test)
 # =============================================================================
 
 # shellcheck source=helpers.sh
@@ -287,5 +288,172 @@ run_test_local_lifecycle() {
     HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
         PATH="${CI_USER_BIN}:${PATH}" \
         sh "${_app_bin}" self-uninstall --force >/dev/null 2>&1 || true
+    ci_cleanup_env
+
+    # --- PATH / shell-rc (requirement-shell-path-and-shell-support) ---
+    ci_isolated_env
+    if ! ci_start_channel; then
+        ci_cleanup_env
+        return 1
+    fi
+    _path_line=$(ci_bashrc_path_line)
+    _run() {
+        HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+            SCRIPT_URL="${CI_SCRIPT_URL}" sh "${SCRIPT}" "$@"
+    }
+
+    # TP-LC-20 BASHRC env: create the file in a random temp folder when missing
+    ci_isolated_bashrc
+    assert_file_missing "TP-LC-20 BASHRC absent before install" "${CI_BASHRC}"
+    assert_file_missing "TP-LC-20 HOME/.bashrc absent before install" "${CI_HOME}/.bashrc"
+    _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        SCRIPT_URL="${CI_SCRIPT_URL}" BASHRC="${CI_BASHRC}" sh "${SCRIPT}" install 2>&1)
+    _ec=$?
+    assert_eq "TP-LC-20 install exit 0" 0 "$_ec"
+    assert_file_exists "TP-LC-20 created BASHRC in temp folder" "${CI_BASHRC}"
+    assert_file_missing "TP-LC-20 did not write HOME/.bashrc" "${CI_HOME}/.bashrc"
+    _bashrc=$(cat "${CI_BASHRC}" 2>/dev/null || true)
+    assert_contains "TP-LC-20 created header names VERSION" "$_bashrc" "Interactive rc created by ${APP_NAME} installer (${PRODUCT_VERSION})"
+    assert_contains "TP-LC-20 created Added-by VERSION" "$_bashrc" "Added by ${APP_NAME} installer (${PRODUCT_VERSION})"
+    assert_contains "TP-LC-20 created exact export PATH" "$_bashrc" "${_path_line}"
+    assert_contains "TP-LC-20 reports created BASHRC" "$_out" "Created ${CI_BASHRC}"
+    HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        BASHRC="${CI_BASHRC}" sh "${CI_USER_BIN}/${APP_NAME}" self-uninstall --force >/dev/null 2>&1 || true
+    ci_cleanup_bashrc
+
+    # TP-LC-21 BASHRC env: modify a dongle .bashrc in that random temp folder
+    ci_isolated_bashrc
+    printf '%s\n' "# dongle-bashrc-keep" "alias dongle_probe=true" > "${CI_BASHRC}"
+    _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        SCRIPT_URL="${CI_SCRIPT_URL}" BASHRC="${CI_BASHRC}" sh "${SCRIPT}" install 2>&1)
+    _ec=$?
+    assert_eq "TP-LC-21 install exit 0" 0 "$_ec"
+    assert_file_missing "TP-LC-21 did not write HOME/.bashrc" "${CI_HOME}/.bashrc"
+    _bashrc=$(cat "${CI_BASHRC}" 2>/dev/null || true)
+    assert_contains "TP-LC-21 dongle body kept" "$_bashrc" "dongle-bashrc-keep"
+    assert_contains "TP-LC-21 dongle alias kept" "$_bashrc" "alias dongle_probe=true"
+    assert_contains "TP-LC-21 dongle got Added-by VERSION" "$_bashrc" "Added by ${APP_NAME} installer (${PRODUCT_VERSION})"
+    assert_contains "TP-LC-21 dongle exact export PATH" "$_bashrc" "${_path_line}"
+    _path_hits=$(grep -cF "${_path_line}" "${CI_BASHRC}" 2>/dev/null || true)
+    assert_eq "TP-LC-21 PATH export once" "1" "${_path_hits}"
+    assert_contains "TP-LC-21 reports PATH added" "$_out" "Added ${CI_USER_BIN} to PATH for bash"
+    HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        BASHRC="${CI_BASHRC}" sh "${CI_USER_BIN}/${APP_NAME}" self-uninstall --force >/dev/null 2>&1 || true
+    ci_cleanup_bashrc
+
+    # TP-LC-22 BASHRC env: already has current VERSION and exact export PATH → do nothing
+    ci_isolated_bashrc
+    {
+        printf '%s\n' "# dongle-already-good"
+        printf '# Interactive rc created by %s installer (%s)\n' "${APP_NAME}" "${PRODUCT_VERSION}"
+        printf '# Added by %s installer (%s)\n' "${APP_NAME}" "${PRODUCT_VERSION}"
+        printf '%s\n' "${_path_line}"
+    } > "${CI_BASHRC}"
+    cp "${CI_BASHRC}" "${CI_BASHRC}.orig"
+    _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        SCRIPT_URL="${CI_SCRIPT_URL}" BASHRC="${CI_BASHRC}" sh "${SCRIPT}" install 2>&1)
+    _ec=$?
+    assert_eq "TP-LC-22 install exit 0" 0 "$_ec"
+    if cmp -s "${CI_BASHRC}" "${CI_BASHRC}.orig"; then
+        t_pass "TP-LC-22 bashrc bytes unchanged"
+    else
+        t_fail "TP-LC-22 bashrc bytes unchanged"
+    fi
+    _bashrc=$(cat "${CI_BASHRC}" 2>/dev/null || true)
+    assert_contains "TP-LC-22 dongle body still there" "$_bashrc" "dongle-already-good"
+    assert_contains "TP-LC-22 VERSION still present" "$_bashrc" "${PRODUCT_VERSION}"
+    assert_contains "TP-LC-22 exact export PATH still present" "$_bashrc" "${_path_line}"
+    _path_hits=$(grep -cF "${_path_line}" "${CI_BASHRC}" 2>/dev/null || true)
+    assert_eq "TP-LC-22 PATH export still once" "1" "${_path_hits}"
+    assert_not_contains "TP-LC-22 no Created BASHRC" "$_out" "Created ${CI_BASHRC}"
+    assert_not_contains "TP-LC-22 no Added PATH for bash" "$_out" "Added ${CI_USER_BIN} to PATH for bash"
+    assert_file_missing "TP-LC-22 did not write HOME/.bashrc" "${CI_HOME}/.bashrc"
+    HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        BASHRC="${CI_BASHRC}" sh "${CI_USER_BIN}/${APP_NAME}" self-uninstall --force >/dev/null 2>&1 || true
+    ci_cleanup_bashrc
+
+    # TP-LC-27 sibling unify: exact PATH already present from another app
+    ci_isolated_bashrc
+    printf '%s\n' "# Added by other-cli installer (0.1.0)" "${_path_line}" > "${CI_BASHRC}"
+    _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        SCRIPT_URL="${CI_SCRIPT_URL}" BASHRC="${CI_BASHRC}" sh "${SCRIPT}" install 2>&1)
+    _ec=$?
+    assert_eq "TP-LC-27 install exit 0" 0 "$_ec"
+    _bashrc=$(cat "${CI_BASHRC}" 2>/dev/null || true)
+    _path_hits=$(grep -cF "${_path_line}" "${CI_BASHRC}" 2>/dev/null || true)
+    assert_eq "TP-LC-27 still one exact PATH export" "1" "${_path_hits}"
+    assert_contains "TP-LC-27 kept sibling comment" "$_bashrc" "Added by other-cli installer (0.1.0)"
+    assert_contains "TP-LC-27 added this product comment" "$_bashrc" "Added by ${APP_NAME} installer (${PRODUCT_VERSION})"
+    assert_file_missing "TP-LC-27 did not write HOME/.bashrc" "${CI_HOME}/.bashrc"
+    HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        BASHRC="${CI_BASHRC}" sh "${CI_USER_BIN}/${APP_NAME}" self-uninstall --force >/dev/null 2>&1 || true
+    ci_cleanup_bashrc
+
+    # TP-LC-28 uninstall keeps shared PATH while USER_BIN still has files
+    HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        SCRIPT_URL="${CI_SCRIPT_URL}" sh "${SCRIPT}" install >/dev/null 2>&1
+    printf '%s\n' "other" > "${CI_USER_BIN}/other-tool"
+    _path_line=$(ci_bashrc_path_line)
+    HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        sh "${CI_USER_BIN}/${APP_NAME}" self-uninstall --force >/dev/null 2>&1
+    _bashrc=$(cat "${CI_HOME}/.bashrc" 2>/dev/null || true)
+    assert_contains "TP-LC-28 PATH line kept" "$_bashrc" "${_path_line}"
+    assert_not_contains "TP-LC-28 sudoer-cli comment stripped" "$_bashrc" "Added by ${APP_NAME} installer"
+    assert_file_exists "TP-LC-28 other-tool remains" "${CI_USER_BIN}/other-tool"
+    rm -f "${CI_USER_BIN}/other-tool"
+
+    # TP-LC-29 heal: already installed, exact PATH missing, install restores it
+    HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        SCRIPT_URL="${CI_SCRIPT_URL}" sh "${SCRIPT}" install >/dev/null 2>&1
+    _path_line=$(ci_bashrc_path_line)
+    printf '%s\n' "# leftover" > "${CI_HOME}/.bashrc"
+    _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        SCRIPT_URL="${CI_SCRIPT_URL}" sh "${SCRIPT}" install 2>&1)
+    _ec=$?
+    assert_eq "TP-LC-29 heal install exit 0" 0 "$_ec"
+    assert_contains "TP-LC-29 already installed" "$_out" "already installed"
+    _bashrc=$(cat "${CI_HOME}/.bashrc" 2>/dev/null || true)
+    assert_contains "TP-LC-29 leftover kept" "$_bashrc" "leftover"
+    assert_contains "TP-LC-29 PATH healed" "$_bashrc" "${_path_line}"
+    HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        sh "${CI_USER_BIN}/${APP_NAME}" self-uninstall --force >/dev/null 2>&1 || true
+
+    # TP-LC-30 uninstall does not delete .profile
+    HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        SCRIPT_URL="${CI_SCRIPT_URL}" sh "${SCRIPT}" install >/dev/null 2>&1
+    assert_file_exists "TP-LC-30 profile exists before uninstall" "${CI_HOME}/.profile"
+    HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        sh "${CI_USER_BIN}/${APP_NAME}" self-uninstall --force >/dev/null 2>&1
+    assert_file_exists "TP-LC-30 profile kept after uninstall" "${CI_HOME}/.profile"
+
+    # TP-LC-31 rc-test create/modify/noop against --root (not HOME/.bashrc)
+    rm -f "${CI_HOME}/.bashrc"
+    _rcroot=$(mktemp -d "${TMPDIR:-/tmp}/rc-test.XXXXXX")
+    _path_line=$(ci_bashrc_path_line)
+    _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" sh "${SCRIPT}" rc-test --root "${_rcroot}" --file bashrc --case create 2>&1)
+    _ec=$?
+    assert_eq "TP-LC-31 rc-test create exit 0" 0 "$_ec"
+    assert_file_exists "TP-LC-31 fixture bashrc created" "${_rcroot}/.bashrc"
+    assert_contains "TP-LC-31 fixture exact PATH" "$(cat "${_rcroot}/.bashrc")" "${_path_line}"
+    assert_file_missing "TP-LC-31 create did not write HOME/.bashrc" "${CI_HOME}/.bashrc"
+    HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" sh "${SCRIPT}" rc-test --root "${_rcroot}" --file bashrc --case noop >/dev/null 2>&1
+    assert_eq "TP-LC-31 rc-test noop first exit 0" 0 "$?"
+    cp "${_rcroot}/.bashrc" "${_rcroot}/.bashrc.orig"
+    HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" sh "${SCRIPT}" rc-test --root "${_rcroot}" --file bashrc --case noop >/dev/null 2>&1
+    if cmp -s "${_rcroot}/.bashrc" "${_rcroot}/.bashrc.orig"; then
+        t_pass "TP-LC-31 rc-test second noop bytes unchanged"
+    else
+        t_fail "TP-LC-31 rc-test second noop bytes unchanged"
+    fi
+    printf '%s\n' "# dongle-keep-rc-test" > "${_rcroot}/.bashrc"
+    HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" sh "${SCRIPT}" rc-test --root "${_rcroot}" --file bashrc --case modify >/dev/null 2>&1
+    assert_eq "TP-LC-31 rc-test modify exit 0" 0 "$?"
+    _bashrc=$(cat "${_rcroot}/.bashrc")
+    assert_contains "TP-LC-31 modify kept dongle" "$_bashrc" "dongle-keep-rc-test"
+    assert_contains "TP-LC-31 modify PATH" "$_bashrc" "${_path_line}"
+    HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" sh "${SCRIPT}" rc-test --root "${_rcroot}" --file profile --case create >/dev/null 2>&1
+    assert_file_exists "TP-LC-31 profile created under root" "${_rcroot}/.profile"
+    assert_contains "TP-LC-31 profile sources bashrc" "$(cat "${_rcroot}/.profile")" '. "${HOME}/.bashrc"'
+    rm -rf -- "${_rcroot}"
     ci_cleanup_env
 }

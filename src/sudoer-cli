@@ -29,6 +29,8 @@
 # - requirement-well-known-sudoer-binary-fence.md
 # - requirement-sudoers-file.md
 # - requirement-domain-sudoer-approval.md
+# - requirement-login-interactive-review-hook.md
+# - requirement-shell-path-and-shell-support.md
 # - requirement-shell-script-coding.md
 # - requirement-shell-sudo-command.md
 #
@@ -39,7 +41,10 @@
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
 # APP NAME: hard-assign APP_NAME="sudoer-cli"
-# VERSION: hard-assign VERSION="1.22.0"
+# VERSION: hard-assign VERSION="1.25.0"
+# BASHRC: interactive rc write path for PATH ensure (default ${HOME}/.bashrc).
+#   Override for tests/CI so install can target a temp file instead of this
+#   login's real ~/.bashrc. Law: requirement-shell-path-and-shell-support.md.
 #
 # =============================================================================
 
@@ -56,8 +61,8 @@ APP_NAME="sudoer-cli"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
 : "${DESCRIPTION:=POSIX /bin/sh CLI: convert a sudoers fragment to JSON, queue it, and let a host admin who already used password sudo accept or decline it. First-time setup creates sudoer-adm.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.22.0"
-: "${VERSION:=1.22.0}"
+VERSION="1.25.0"
+: "${VERSION:=1.25.0}"
 # Repository identity SSOT (git host owner/repo for project-repository alignment).
 # Channel: raw GitHub path includes src/ because the ship unit lives under src/.
 : "${REPO_USER:=cloudgen}"
@@ -100,6 +105,10 @@ if [ -z "${HOME-}" ]; then
 fi
 : "${HOME:=/tmp}"
 : "${USER_BIN:=${HOME}/.local/bin}"
+: "${BASHRC:=${HOME}/.bashrc}"
+: "${ZSHRC:=${HOME}/.zshrc}"
+: "${FISH_CONFIG:=${HOME}/.config/fish/config.fish}"
+: "${PROFILE:=${HOME}/.profile}"
 : "${INSTALL_PATH:=}"
 : "${FORCE_USER:=0}"
 : "${FORCE_GLOBAL:=0}"
@@ -641,22 +650,72 @@ inst_get_version() {
     fi
 }
 
+# =============================================================================
+# path_add_bashrc() - Add USER_BIN to BASHRC (default ~/.bashrc)
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Create BASHRC if missing, then append the exact export PATH line only if
+# absent. Sibling unify: if the exact PATH line already exists, MAY append
+# only this product's installer comment.
+#
+# BASHRC defaults to ${HOME}/.bashrc. Tests/CI override BASHRC to a file in a
+# random temp folder so this login's real interactive rc is not touched.
+#
+# ALIGNMENT: requirement-shell-path-and-shell-support.md
+# Last reviewed: 2026-09-09
+# =============================================================================
+
 path_add_bashrc() {
     : "${HOME:=/tmp}"
     : "${USER_BIN:=${HOME}/.local/bin}"
-    local bashrc="${HOME}/.bashrc"
+    : "${BASHRC:=${HOME}/.bashrc}"
+    : "${APP_NAME:=sudoer-cli}"
+    : "${VERSION:=0}"
+    : "${JSON:=0}"
+    local bashrc="${BASHRC}"
     local path_line
+    local created=0
     path_line=$(printf 'export PATH="%s:$PATH"' "${USER_BIN}")
+
     if [ ! -f "$bashrc" ]; then
-        return 1
+        if ! printf '# Interactive rc created by %s installer (%s)\n' "$APP_NAME" "$VERSION" > "$bashrc"; then
+            if [ "${JSON}" -eq 0 ]; then
+                out_warn "Could not create ${bashrc}. Next: create that file as this login, then re-run ${APP_NAME} install."
+            fi
+            return 1
+        fi
+        chmod 0644 "$bashrc" 2>/dev/null || true
+        created=1
+        if [ "${JSON}" -eq 0 ]; then
+            out_plain "→ Created ${bashrc}"
+        fi
     fi
 
-    if ! grep -qF "${USER_BIN}" "$bashrc" 2>/dev/null; then
+    if ! grep -qF "${path_line}" "$bashrc" 2>/dev/null; then
         printf "\n# Added by %s installer (%s)\n" "$APP_NAME" "$VERSION" >> "$bashrc"
         printf '%s\n' "${path_line}" >> "$bashrc"
         if [ "${JSON}" -eq 0 ]; then
             out_plain "→ Added ${USER_BIN} to PATH for bash"
         fi
+        return 0
+    fi
+    # Sibling unify: exact PATH already present (this product or another).
+    # MAY append only this product's comment; MUST NOT a second export.
+    _comment=$(printf '# Added by %s installer (%s)' "$APP_NAME" "$VERSION")
+    if ! grep -qF "${_comment}" "$bashrc" 2>/dev/null; then
+        printf '\n%s\n' "${_comment}" >> "$bashrc"
+        unset _comment
+        if [ "$created" -eq 1 ]; then
+            return 0
+        fi
+        if [ "${JSON}" -eq 0 ]; then
+            out_plain "→ Noted ${APP_NAME} on existing PATH line"
+        fi
+        return 0
+    fi
+    unset _comment
+    if [ "$created" -eq 1 ]; then
         return 0
     fi
     return 1  # already present
@@ -682,14 +741,15 @@ path_add_bashrc() {
 path_add_zshrc() {
     : "${HOME:=/tmp}"
     : "${USER_BIN:=${HOME}/.local/bin}"
-    local zshrc="${HOME}/.zshrc"
+    : "${ZSHRC:=${HOME}/.zshrc}"
+    local zshrc="${ZSHRC}"
     local path_line
     path_line=$(printf 'export PATH="%s:$PATH"' "${USER_BIN}")
     if [ ! -f "$zshrc" ]; then
         return 1
     fi
 
-    if ! grep -qF "${USER_BIN}" "$zshrc" 2>/dev/null; then
+    if ! grep -qF "${path_line}" "$zshrc" 2>/dev/null; then
         printf "\n# Added by %s installer (%s)\n" "$APP_NAME" "$VERSION" >> "$zshrc"
         printf '%s\n' "${path_line}" >> "$zshrc"
         if [ "${JSON}" -eq 0 ]; then
@@ -721,16 +781,19 @@ path_add_zshrc() {
 path_add_fish() {
     : "${HOME:=/tmp}"
     : "${USER_BIN:=${HOME}/.local/bin}"
-    local fish_config="${HOME}/.config/fish/config.fish"
+    : "${FISH_CONFIG:=${HOME}/.config/fish/config.fish}"
+    local fish_config="${FISH_CONFIG}"
     local path_line
     path_line=$(printf 'set -gx PATH %s $PATH' "${USER_BIN}")
 
-    # Ensure directory exists
-    if [ ! -d "${HOME}/.config/fish" ] && ! mkdir -p "${HOME}/.config/fish" 2>/dev/null; then
+    _fish_dir=$(dirname "${fish_config}")
+    if [ ! -d "${_fish_dir}" ] && ! mkdir -p "${_fish_dir}" 2>/dev/null; then
+        unset _fish_dir
         return 1
     fi
+    unset _fish_dir
 
-    if [ -f "$fish_config" ] && grep -qF "${USER_BIN}" "$fish_config" 2>/dev/null; then
+    if [ -f "$fish_config" ] && grep -qF "${path_line}" "$fish_config" 2>/dev/null; then
         return 1  # already present
     fi
 
@@ -749,46 +812,272 @@ path_add_fish() {
 #
 # GENERAL PURPOSE:
 # Adds ${USER_BIN} (default ${HOME}/.local/bin) to bash, zsh, and fish
-# configuration files if not already present. Thin orchestrator for path_add_*.
+# configuration files if not already present. Creates BASHRC (default
+# ~/.bashrc) when missing. Creates ~/.profile when missing so a login shell
+# sources ~/.bashrc. Thin orchestrator for path_add_* / path_ensure_profile.
 #
-# Respects --json mode (silent in JSON).
-#
-# Last reviewed: 29 April 2026
+# ALIGNMENT: requirement-shell-path-and-shell-support.md
+# Last reviewed: 2026-09-09
 # =============================================================================
 
 path_add_shell() {
     local added=0
     local shell_config="N/A"
+    : "${HOME:=/tmp}"
+    : "${BASHRC:=${HOME}/.bashrc}"
+    : "${ZSHRC:=${HOME}/.zshrc}"
+    : "${FISH_CONFIG:=${HOME}/.config/fish/config.fish}"
+    : "${PROFILE:=${HOME}/.profile}"
 
-    # Bash
     if path_add_bashrc; then
         added=1
-        shell_config="${HOME}/.bashrc"
+        shell_config="${BASHRC}"
     fi
 
-    # Zsh
     if path_add_zshrc; then
         added=1
         if [ "$shell_config" = "N/A" ]; then
-            shell_config="${HOME}/.zshrc"
+            shell_config="${ZSHRC}"
         else
-            shell_config="${shell_config} ${HOME}/.zshrc"
+            shell_config="${shell_config} ${ZSHRC}"
         fi
     fi
 
-    # Fish
     if path_add_fish; then
         added=1
         if [ "$shell_config" = "N/A" ]; then
-            shell_config="${HOME}/.config/fish/config.fish"
+            shell_config="${FISH_CONFIG}"
         else
-            shell_config="${shell_config} ${HOME}/.config/fish/config.fish"
+            shell_config="${shell_config} ${FISH_CONFIG}"
+        fi
+    fi
+
+    if path_ensure_profile; then
+        added=1
+        if [ "$shell_config" = "N/A" ]; then
+            shell_config="${PROFILE}"
         fi
     fi
 
     if [ "$added" -eq 1 ] && [ "${JSON}" -eq 0 ]; then
         out_plain "→ Restart your terminal or run: source ${shell_config}"
     fi
+}
+
+# =============================================================================
+# path_ensure_profile() - Create ~/.profile if absent (never overwrite)
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# A login shell (SSH) reads ~/.profile, not ~/.bashrc. If .profile is missing,
+# PATH and interactive rc never run after SSH. Create a short file that sources
+# ~/.bashrc. If the file already exists, leave the body unchanged.
+#
+# ALIGNMENT: requirement-shell-path-and-shell-support.md
+# Last reviewed: 2026-09-09
+# =============================================================================
+
+path_ensure_profile() {
+    : "${HOME:=/tmp}"
+    : "${APP_NAME:=sudoer-cli}"
+    : "${JSON:=0}"
+    : "${PROFILE:=${HOME}/.profile}"
+    local profile="${PROFILE}"
+
+    if [ -f "$profile" ]; then
+        return 1
+    fi
+
+    if ! {
+        printf '# BEGIN %s profile source-bashrc\n' "$APP_NAME"
+        printf '# Created so a bash login shell sources interactive rc.\n'
+        printf 'if [ -n "${BASH_VERSION:-}" ]; then\n'
+        printf '    if [ -f "${HOME}/.bashrc" ]; then\n'
+        printf '        . "${HOME}/.bashrc"\n'
+        printf '    fi\n'
+        printf 'fi\n'
+        printf '# END %s profile source-bashrc\n' "$APP_NAME"
+    } > "$profile"; then
+        if [ "${JSON}" -eq 0 ]; then
+            out_warn "Could not create ${profile}. Next: create that file as this login so SSH login reads ~/.bashrc, then re-run ${APP_NAME} install."
+        fi
+        return 1
+    fi
+    chmod 0644 "$profile" 2>/dev/null || true
+    if [ "${JSON}" -eq 0 ]; then
+        out_plain "→ Created ${profile} (login shell sources ~/.bashrc)"
+    fi
+    return 0
+}
+
+# =============================================================================
+# path_rc_test() - Type 0 test-purpose: PATH / profile ensure against --root
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Prove path-ensure / profile-ensure create|modify|noop on files under a
+# caller --root tmp folder. Does not write this login's real ~/.bashrc.
+# Law: requirement-shell-path-and-shell-support.md (rc-test).
+#
+# Last reviewed: 2026-09-09
+# =============================================================================
+
+path_rc_test() {
+    : "${HOME:=/tmp}"
+    : "${USER_BIN:=${HOME}/.local/bin}"
+    : "${APP_NAME:=sudoer-cli}"
+    : "${VERSION:=0}"
+    : "${JSON:=0}"
+    local root="" file="bashrc" cas="create" created_root=0
+    local real_bashrc="${HOME}/.bashrc"
+    local dest="" before="" after="" path_line
+    path_line=$(printf 'export PATH="%s:$PATH"' "${USER_BIN}")
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --root)
+                shift
+                root="${1-}"
+                ;;
+            --file)
+                shift
+                file="${1-}"
+                ;;
+            --case)
+                shift
+                cas="${1-}"
+                ;;
+            --feature)
+                shift
+                ;;
+            *)
+                out_die "Unknown rc-test operand: $1. Next: ${APP_NAME} rc-test --root <dir> --file bashrc|profile --case create|modify|noop"
+                ;;
+        esac
+        shift
+    done
+
+    case "${file}" in
+        bashrc|zshrc|profile) ;;
+        *)
+            out_die "Unknown rc-test --file ${file}. Next: use bashrc, zshrc, or profile."
+            ;;
+    esac
+    case "${cas}" in
+        create|modify|noop) ;;
+        *)
+            out_die "Unknown rc-test --case ${cas}. Next: use create, modify, or noop."
+            ;;
+    esac
+
+    if [ -z "${root}" ]; then
+        root=$(mktemp -d "${TMPDIR:-/tmp}/rc-test.XXXXXX") || out_die "Could not create rc-test root."
+        created_root=1
+    fi
+    if [ ! -d "${root}" ]; then
+        mkdir -p "${root}" || out_die "Could not create rc-test --root ${root}."
+    fi
+
+    case "${file}" in
+        bashrc) dest="${root}/.bashrc"; export BASHRC="${dest}" ;;
+        zshrc) dest="${root}/.zshrc"; export ZSHRC="${dest}" ;;
+        profile) dest="${root}/.profile"; export PROFILE="${dest}" ;;
+    esac
+
+    case "${cas}" in
+        create)
+            rm -f -- "${dest}"
+            ;;
+        modify)
+            printf '%s\n' "# dongle-keep-rc-test" > "${dest}"
+            ;;
+        noop)
+            if [ "${file}" = "profile" ]; then
+                {
+                    printf '# BEGIN %s profile source-bashrc\n' "$APP_NAME"
+                    printf 'if [ -n "${BASH_VERSION:-}" ]; then\n'
+                    printf '    if [ -f "${HOME}/.bashrc" ]; then\n'
+                    printf '        . "${HOME}/.bashrc"\n'
+                    printf '    fi\n'
+                    printf 'fi\n'
+                    printf '# END %s profile source-bashrc\n' "$APP_NAME"
+                } > "${dest}"
+            else
+                {
+                    printf '# Interactive rc created by %s installer (%s)\n' "$APP_NAME" "$VERSION"
+                    printf '# Added by %s installer (%s)\n' "$APP_NAME" "$VERSION"
+                    printf '%s\n' "${path_line}"
+                } > "${dest}"
+            fi
+            ;;
+    esac
+
+    before=$(cat "${dest}" 2>/dev/null || true)
+    case "${file}" in
+        bashrc) path_add_bashrc || true ;;
+        zshrc)
+            [ -f "${dest}" ] || : > "${dest}"
+            path_add_zshrc || true
+            ;;
+        profile) path_ensure_profile || true ;;
+    esac
+    after=$(cat "${dest}" 2>/dev/null || true)
+
+    if [ "${file}" = "zshrc" ] && [ "${cas}" = "create" ]; then
+        if [ -f "${dest}" ]; then
+            out_die "rc-test create must not invent .zshrc."
+        fi
+        if [ "${JSON}" -eq 1 ]; then
+            out_json "out_success" "rc-test create zshrc skipped (do not invent)" \
+                "command" "rc-test" "file" "zshrc" "case" "create" "root" "${root}"
+            return 0
+        fi
+        out_plain "→ rc-test create zshrc skipped (do not invent) under ${root}"
+        return 0
+    fi
+    if [ "${cas}" = "create" ] && [ ! -f "${dest}" ]; then
+        out_die "rc-test create did not create ${dest}. Next: check --root is writable."
+    fi
+    if [ "${cas}" = "modify" ]; then
+        case "${after}" in
+            *dongle-keep-rc-test*) ;;
+            *)
+                out_die "rc-test modify lost the dongle body in ${dest}."
+                ;;
+        esac
+    fi
+    if [ "${cas}" = "noop" ] && [ "${before}" != "${after}" ]; then
+        out_die "rc-test noop changed ${dest}."
+    fi
+    if [ "${file}" != "profile" ]; then
+        case "${after}" in
+            *"${path_line}"*) ;;
+            *)
+                out_die "rc-test ${cas} missing exact PATH line in ${dest}."
+                ;;
+        esac
+    else
+        case "${after}" in
+            *'. "${HOME}/.bashrc"'*) ;;
+            *)
+                out_die "rc-test ${cas} profile does not source bashrc."
+                ;;
+        esac
+    fi
+
+    if [ "${JSON}" -eq 1 ]; then
+        out_json "out_success" "rc-test ${cas} ${file}" \
+            "command" "rc-test" \
+            "file" "${file}" \
+            "case" "${cas}" \
+            "root" "${root}"
+        return 0
+    fi
+    out_plain "→ rc-test ${cas} ${file} under ${root}"
+    if [ "${created_root}" -eq 1 ]; then
+        out_plain "→ Created fixture root ${root} (caller may remove)"
+    fi
+    return 0
 }
 
 # =============================================================================
@@ -1650,6 +1939,7 @@ inst_perform_install() {
     if inst_is_installed && [ "${FORCE_REINSTALL}" -eq 0 ]; then
         : "${INST_MANAGED_MODE:=0755}"
         chmod "${INST_MANAGED_MODE}" "${INSTALL_PATH}" 2>/dev/null || true
+        inst_ensure_companion
         if [ "$IS_ROOT" -eq 1 ]; then
             lpu_ensure_login_hook_symlink
         fi
@@ -2017,10 +2307,7 @@ inst_perform_install_atomic_install() {
     fi
     chmod "${INST_MANAGED_MODE}" "${INSTALL_PATH}" 2>/dev/null || true
 
-    # Add ~/.local/bin to PATH for normal user installs
-    if [ "$IS_ROOT" -eq 0 ]; then
-        path_add_shell
-    fi
+    inst_ensure_companion
     # Global place creates login-hook-symlink (do not overwrite; test-mode skips).
     if [ "$IS_ROOT" -eq 1 ]; then
         lpu_ensure_login_hook_symlink
@@ -2033,6 +2320,30 @@ inst_perform_install_atomic_install() {
         if [ "${downloaded_checksum_ok}" -eq 1 ]; then
             out_success "✓ Download was cryptographically verified."
         fi
+    fi
+    return 0
+}
+
+# =============================================================================
+# inst_ensure_companion() - This-login PATH / profile (user-bin install)
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Always-on companion of user-bin `install` / already-installed no-op.
+# Creates or modifies BASHRC PATH and creates ~/.profile if missing.
+# Idempotent. Runs even when the CLI binary is already installed.
+# MUST NOT edit this-login rc for a root/global place into GLOBAL_BIN.
+#
+# ALIGNMENT: requirement-shell-path-and-shell-support.md
+#            requirement-shell-self-management.md (call site)
+# Last reviewed: 2026-09-09
+# =============================================================================
+
+inst_ensure_companion() {
+    : "${JSON:=0}"
+    : "${IS_ROOT:=0}"
+    if [ "${IS_ROOT}" -eq 0 ]; then
+        path_add_shell
     fi
     return 0
 }
@@ -2415,13 +2726,15 @@ inst_self_uninstall_cleanup_path() {
 
     : "${HOME:=/tmp}"
     : "${USER_BIN:=${HOME}/.local/bin}"
+    : "${BASHRC:=${HOME}/.bashrc}"
+    : "${ZSHRC:=${HOME}/.zshrc}"
+    : "${FISH_CONFIG:=${HOME}/.config/fish/config.fish}"
     local bin_dir="${USER_BIN}"
     local should_clean_path=1
 
-    # === SAFETY CHECK: Only clean PATH if USER_BIN is empty ===
+    # === SAFETY CHECK: Only strip the shared PATH line if USER_BIN is empty ===
     if [ -d "$bin_dir" ]; then
         if [ -n "$(ls -A "$bin_dir" 2>/dev/null)" ]; then
-            # Directory exists and is not empty → keep PATH for other tools
             should_clean_path=0
             if [ "${JSON}" -eq 0 ]; then
                 out_warn "Keeping ${bin_dir} in PATH because it still contains files."
@@ -2429,23 +2742,30 @@ inst_self_uninstall_cleanup_path() {
         fi
     fi
 
-    if [ "$should_clean_path" -eq 0 ]; then
-        return 0
-    fi
-
-    # Directory is empty or missing → safe to remove our PATH entries
+    # Always strip this product's installer comments. Strip the shared PATH
+    # line only when USER_BIN is empty (sibling unify).
+    # ALIGNMENT: requirement-shell-path-and-shell-support.md
     local cleaned=0
     local escaped_bin
-    # Escape sed | delimiter characters in USER_BIN for path-line removal
+    local escaped_name
     escaped_bin=$(printf '%s' "${bin_dir}" | sed 's/[\\/&|]/\\&/g')
+    escaped_name=$(printf '%s' "${APP_NAME}" | sed 's/[\\/&|]/\\&/g')
 
-    for config in "${HOME}/.bashrc" "${HOME}/.zshrc" "${HOME}/.config/fish/config.fish"; do
+    for config in "${BASHRC}" "${ZSHRC}" "${FISH_CONFIG}"; do
         if [ -f "$config" ]; then
-            if sed -i.bak \
-                -e '/# Added by .* installer/d' \
-                -e "\|${escaped_bin}|d" \
-                "$config" 2>/dev/null; then
-                cleaned=1
+            if [ "$should_clean_path" -eq 1 ]; then
+                if sed -i.bak \
+                    -e "/# Added by ${escaped_name} installer/d" \
+                    -e "\|${escaped_bin}|d" \
+                    "$config" 2>/dev/null; then
+                    cleaned=1
+                fi
+            else
+                if sed -i.bak \
+                    -e "/# Added by ${escaped_name} installer/d" \
+                    "$config" 2>/dev/null; then
+                    cleaned=1
+                fi
             fi
             rm -f "${config}.bak" 2>/dev/null || true
         fi
@@ -2458,12 +2778,11 @@ inst_self_uninstall_cleanup_path() {
 }
 
 # =============================================================================
-# =============================================================================
 # app_version() - Local VERSION only (no network)
 # =============================================================================
 app_version() {
     : "${APP_NAME:=sudoer-cli}"
-    : "${VERSION:=1.22.0}"
+    : "${VERSION:=1.25.0}"
     : "${JSON:=0}"
     if [ "${JSON}" -eq 1 ]; then
         out_json "version" "" "app" "${APP_NAME}" "version" "${VERSION}"
@@ -2486,7 +2805,7 @@ app_about() {
     : "${JSON:=0}"
     : "${QUIET:=0}"
     : "${APP_NAME:=sudoer-cli}"
-    : "${VERSION:=1.22.0}"
+    : "${VERSION:=1.25.0}"
     : "${REPO_USER:=cloudgen}"
     : "${REPO_NAME:=sudoer-cli}"
     : "${SCRIPT_URL:=https://raw.githubusercontent.com/${REPO_USER}/${REPO_NAME}/main/src/${APP_NAME}}"
@@ -4275,23 +4594,42 @@ sr_yaml_scalar() {
 }
 
 # =============================================================================
-# sr_yaml_kv() - One YAML key: value line on the review TTY
+# sr_yaml_line() - One two-space-indented YAML line on the review TTY
 # =============================================================================
 #
 # GENERAL PURPOSE:
-# Print one mapping line through out_plain for the login-hook review body.
+# Print one login-hook / interactive review line with two-space group indent
+# so each request body reads as a block under [INFO] Request {id}. Nested
+# YAML indent stays in the payload. Product messages still go through out_*.
 #
 # ALIGNMENT:
 # - requirement-domain-sudoer-approval.md
 # - requirement-shell-output-requirements.md
 #
-# Last updated: 2026-09-06
+# Last updated: 2026-09-08
+# =============================================================================
+sr_yaml_line() {
+    out_plain "  $*"
+}
+
+# =============================================================================
+# sr_yaml_kv() - One YAML key: value line on the review TTY
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Print one mapping line through sr_yaml_line for the login-hook review body.
+#
+# ALIGNMENT:
+# - requirement-domain-sudoer-approval.md
+# - requirement-shell-output-requirements.md
+#
+# Last updated: 2026-09-08
 # =============================================================================
 sr_yaml_kv() {
     _yk="$1"
     _yv="${2-}"
     _ysc=$(sr_yaml_scalar "${_yv}")
-    out_plain "${_yk}: ${_ysc}"
+    sr_yaml_line "${_yk}: ${_ysc}"
 }
 
 # =============================================================================
@@ -4299,13 +4637,14 @@ sr_yaml_kv() {
 # =============================================================================
 #
 # GENERAL PURPOSE:
-# Login-hook / interactive review shows YAML for readability. The waiting
-# file stays JSON. Type 0 show still dumps that JSON file. Not a dest Fence.
+# Login-hook / interactive review shows YAML for readability, indented two
+# spaces so each request groups under [INFO] Request {id}. The waiting file
+# stays JSON. Type 0 show still dumps that JSON file. Not a dest Fence.
 #
 # ALIGNMENT:
 # - requirement-domain-sudoer-approval.md
 #
-# Last updated: 2026-09-06
+# Last updated: 2026-09-08
 # =============================================================================
 sr_print_review_yaml() {
     : "${SR_D_VER:=}"
@@ -4320,7 +4659,7 @@ sr_print_review_yaml() {
     : "${SR_D_HAS_CMDS:=0}"
     : "${SR_D_CMDS:=}"
     if [ -n "${SR_D_VER}" ]; then
-        out_plain "schema_version: ${SR_D_VER}"
+        sr_yaml_line "schema_version: ${SR_D_VER}"
     fi
     if [ -n "${SR_D_KIND}" ]; then
         sr_yaml_kv "kind" "${SR_D_KIND}"
@@ -4343,32 +4682,32 @@ sr_print_review_yaml() {
     if [ "${SR_D_HAS_CMDS}" -ne 1 ]; then
         return 0
     fi
-    out_plain "commands:"
+    sr_yaml_line "commands:"
     if [ -z "${SR_D_CMDS}" ]; then
-        out_plain "  []"
+        sr_yaml_line "  []"
         return 0
     fi
     _ytf=$(util_mktemp)
     printf '%s' "${SR_D_CMDS}" >"${_ytf}"
     while IFS='|' read -r _yr _ytg _yp _ya || [ -n "${_yp-}" ]; do
         [ -n "${_yp}" ] || continue
-        out_plain "  - runas: $(sr_yaml_scalar "${_yr:-root}")"
+        sr_yaml_line "  - runas: $(sr_yaml_scalar "${_yr:-root}")"
         if [ -n "${_ytg}" ]; then
-            out_plain "    tags:"
-            out_plain "      - $(sr_yaml_scalar "${_ytg}")"
+            sr_yaml_line "    tags:"
+            sr_yaml_line "      - $(sr_yaml_scalar "${_ytg}")"
         else
-            out_plain "    tags: []"
+            sr_yaml_line "    tags: []"
         fi
-        out_plain "    path: $(sr_yaml_scalar "${_yp}")"
+        sr_yaml_line "    path: $(sr_yaml_scalar "${_yp}")"
         if [ -n "${_ya}" ]; then
-            out_plain "    args:"
+            sr_yaml_line "    args:"
             set -f
             for _yarg in ${_ya}; do
-                out_plain "      - $(sr_yaml_scalar "${_yarg}")"
+                sr_yaml_line "      - $(sr_yaml_scalar "${_yarg}")"
             done
             set +f
         else
-            out_plain "    args: []"
+            sr_yaml_line "    args: []"
         fi
     done <"${_ytf}"
     rm -f "${_ytf}"
@@ -4386,6 +4725,8 @@ sr_interactive() {
         sr_die "interactive needs a TTY without --quiet." "confirm_required"
     fi
     sr_require_type1
+    # Review {{APP_NAME}}-adm rc: old product-binary hook → {{APP_NAME}}-hook.
+    lpu_review_old_login_hook
     sr_require_queues
     sr_require_approver_views
     _in=$(sr_approver_dir request)
@@ -4434,9 +4775,10 @@ sr_interactive() {
             SR_D_SUBMIT_BY="${_orig_owner}"
         fi
         if [ -n "${SR_D_SUBMIT_APP-}" ] || [ -n "${SR_D_SUBMIT_VERSION-}" ]; then
-            out_plain "queued by ${SR_D_SUBMIT_APP-} ${SR_D_SUBMIT_VERSION-}"
+            sr_yaml_line "queued by ${SR_D_SUBMIT_APP-} ${SR_D_SUBMIT_VERSION-}"
         fi
-        # Waiting file stays JSON. Login-hook review body is YAML.
+        # Waiting file stays JSON. Login-hook review body is YAML, indented
+        # two spaces so each request groups under [INFO] Request {id}.
         sr_print_review_yaml
         # One-off approval question (requirement-domain-sudoer-approval): yes=approve, no/Enter=reject.
         if prompt_yes_no "Approve this request"; then
@@ -4536,7 +4878,7 @@ lpu_collision_check() {
 # Login-hook-symlink: stable ${GLOBAL_BIN}/${APP_NAME}-hook → product binary.
 # Create only when the name is absent. Do not overwrite a retargeted name.
 # Test-mode MUST NOT write live /usr/local/bin.
-# ALIGNMENT: requirement-domain-sudoer-approval.md · requirement-least-privilege-user.md
+# ALIGNMENT: requirement-login-interactive-review-hook.md · requirement-least-privilege-user.md
 lpu_ensure_login_hook_symlink() {
     : "${APP_NAME:=sudoer-cli}"
     _gb="${GLOBAL_BIN:-/usr/local/bin}"
@@ -4751,6 +5093,107 @@ lpu_hook_apply() {
     lpu_own_user_rc "${_hf}"
 }
 
+# =============================================================================
+# lpu_rc_has_old_product_hook() - Detect old product-binary login hook
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Return 0 when an rc file still sudo -n's {{GLOBAL_BIN}}/{{APP_NAME}}
+# interactive (not {{APP_NAME}}-hook). Class B: exit status only.
+#
+# ALIGNMENT:
+# - requirement-login-interactive-review-hook.md
+#
+# Last updated: 2026-09-08
+# =============================================================================
+lpu_rc_has_old_product_hook() {
+    _rf="${1-}"
+    : "${APP_NAME:=sudoer-cli}"
+    [ -f "${_rf}" ] || return 1
+    grep -q "/${APP_NAME} interactive" "${_rf}" 2>/dev/null
+}
+
+# =============================================================================
+# lpu_drop_old_product_hook_lines() - Remove leftover old sudo -n lines
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# After marker rewrite, drop any remaining product-binary
+# "/{{APP_NAME}} interactive" lines. Does not match {{APP_NAME}}-hook.
+#
+# ALIGNMENT:
+# - requirement-login-interactive-review-hook.md
+#
+# Last updated: 2026-09-08
+# =============================================================================
+lpu_drop_old_product_hook_lines() {
+    _df="${1-}"
+    : "${APP_NAME:=sudoer-cli}"
+    [ -f "${_df}" ] || return 0
+    if ! grep -q "/${APP_NAME} interactive" "${_df}" 2>/dev/null; then
+        return 0
+    fi
+    _dt=$(mktemp "${TMPDIR:-/tmp}/${APP_NAME}.oldhook.XXXXXX") || sr_die "mktemp failed" "authz"
+    if grep -v "/${APP_NAME} interactive" "${_df}" >"${_dt}"; then
+        :
+    else
+        _dgrc=$?
+        if [ "${_dgrc}" -ne 1 ]; then
+            rm -f "${_dt}"
+            sr_die "cannot drop old login hook lines in ${_df}" "authz"
+        fi
+    fi
+    mv -f "${_dt}" "${_df}"
+    lpu_own_user_rc "${_df}"
+}
+
+# =============================================================================
+# lpu_review_old_login_hook() - Replace old {{APP_NAME}} hook with {{APP_NAME}}-hook
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Type 1 interactive (and setup) reviews the dedicated approver rc. If it
+# still calls the product binary, rewrite to the labeled {{APP_NAME}}-hook.
+# Already-new rc is left alone. Missing LPU home is a no-op.
+#
+# ALIGNMENT:
+# - requirement-login-interactive-review-hook.md
+#
+# Last updated: 2026-09-08
+# =============================================================================
+lpu_review_old_login_hook() {
+    lpu_defaults
+    : "${APP_NAME:=sudoer-cli}"
+    if [ "$(id -u)" -ne 0 ]; then
+        return 0
+    fi
+    if [ ! -d "${LPU_HOME}" ]; then
+        return 0
+    fi
+    lpu_ensure_login_hook_symlink
+    _replaced=0
+    if lpu_rc_has_old_product_hook "${LPU_HOME}/.bashrc"; then
+        lpu_hook_apply "${LPU_HOME}/.bashrc"
+        lpu_drop_old_product_hook_lines "${LPU_HOME}/.bashrc"
+        _replaced=1
+    fi
+    if [ -f "${LPU_HOME}/.profile" ]; then
+        if lpu_rc_has_old_product_hook "${LPU_HOME}/.profile"; then
+            if lpu_profile_sources_bashrc "${LPU_HOME}/.profile"; then
+                lpu_hook_strip "${LPU_HOME}/.profile"
+                lpu_drop_old_product_hook_lines "${LPU_HOME}/.profile"
+            else
+                lpu_hook_apply "${LPU_HOME}/.profile"
+                lpu_drop_old_product_hook_lines "${LPU_HOME}/.profile"
+            fi
+            _replaced=1
+        fi
+    fi
+    if [ "${_replaced}" -eq 1 ]; then
+        out_info "replaced old ${APP_NAME} login hook with ${APP_NAME}-hook"
+    fi
+}
+
 lpu_profile_sources_bashrc() {
     [ -f "$1" ] || return 1
     grep -q '\.bashrc' "$1" 2>/dev/null
@@ -4788,6 +5231,7 @@ lpu_ensure_profile() {
     lpu_own_user_rc "${_pr}"
 }
 
+# ALIGNMENT: requirement-login-interactive-review-hook.md
 lpu_install_hook() {
     lpu_defaults
     lpu_hook_apply "${LPU_HOME}/.bashrc"
@@ -4879,6 +5323,7 @@ lpu_setup() {
     lpu_mkdir_f5
     lpu_install_f6
     lpu_install_hook
+    lpu_review_old_login_hook
     if [ "${JSON}" -eq 1 ]; then
         out_json "success" "lpu ready" \
             "user" "${LPU_USER}" \
@@ -5091,6 +5536,11 @@ app_run_command() {
         test-json-format) sr_test_json_format ;;
         test-well-known-binary) sr_test_well_known_binary ;;
         fence-test) sr_fence_test ;;
+        rc-test)
+            # shellcheck disable=SC2086
+            set -- ${RC_TEST_OPERANDS}
+            path_rc_test "$@"
+            ;;
         print-sudoers) sr_print_sudoers ;;
         print-sudoers-install-script) sr_print_sudoers_install_script ;;
         add-sudoer-request)    sr_submit add ;;
@@ -5119,7 +5569,7 @@ app_help() {
     if [ "${JSON}" -eq 1 ]; then
         out_json "success" "Help text available in human-readable mode. Run without --json." \
             "command" "help" \
-            "note" "Use --json with version, about, install, version-check, self-update, self-uninstall."
+            "note" "Use --json with version, about, install, version-check, self-update, self-uninstall, rc-test."
         return 0
     fi
     if [ "${QUIET}" -eq 1 ]; then
@@ -5158,6 +5608,7 @@ app_help() {
     out_plain "  test-json-format     Test a grant JSON file against the dest JSON-format fence (does not queue)"
     out_plain "  test-well-known-binary  Test grant command paths against the well-known system-binary fence (does not queue)"
     out_plain "  fence-test            Test dest fence functions against a local JSON file (no sudo; does not queue)"
+    out_plain "  rc-test              Prove PATH/profile ensure in --root tmp (--file bashrc|profile --case create|modify|noop). Does not write this login's real ~/.bashrc"
     out_empty_line
     out_info "First-time setup (host admin; password sudo OK):"
     out_plain "  setup / remove-lpu   Create or remove the dedicated approver account (sudoer-adm). Run: sudo ${APP_NAME} setup"
@@ -5183,8 +5634,11 @@ app_help() {
     out_plain "  --queue-root DIR     Test/override public trio (DIR/sudoer-request|approved|rejected)"
     out_plain "  Waiting folder       /var/${APP_NAME}/sudoer-request (unless --queue-root)"
     out_empty_line
+    : "${BASHRC:=${HOME}/.bashrc}"
     out_info "Environment:"
     out_plain "  USER_BIN / GLOBAL_BIN  install destinations"
+    out_plain "  BASHRC                 ${BASHRC}"
+    out_plain "                         Interactive rc write path for PATH ensure (tests may retarget)"
     out_plain "  REPO_USER / REPO_NAME  repository identity (compose SCRIPT_URL)"
     out_plain "  SCRIPT_URL             install channel (override for forks / tests)"
     out_empty_line
@@ -5207,6 +5661,7 @@ app_help() {
     out_plain "  ${APP_NAME} fence-test --file tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json"
     out_plain "  ${APP_NAME} fence-test --dir tests/fixtures/fence-test/pass"
     out_plain "  ${APP_NAME} fence-test --dir tests/fixtures/fence-test/match --expect-match"
+    out_plain "  ${APP_NAME} rc-test --root /tmp/rc-test --file bashrc --case create"
     out_empty_line
     out_info "Empty argv installs or confirms install (Type O — curl|sh install-ensure). Help is: ${APP_NAME} help"
 }
@@ -5253,6 +5708,7 @@ app_main() {
     : "${SR_UNINSTALL:=0}"
     : "${SR_PURGE_QUEUES:=0}"
     : "${COMMAND_SET:=0}"
+    : "${RC_TEST_OPERANDS:=}"
 
     USERNAME=$(id -un 2>/dev/null || echo "${USERNAME}")
     EFFECTIVE_STORAGE_DIR=$(util_resolve_storage)
@@ -5282,7 +5738,21 @@ app_main() {
             --global)   FORCE_GLOBAL=1; export FORCE_GLOBAL ;;
             --file)
                 [ -n "${2-}" ] || out_die "--file requires PATH"
-                SR_FILE="$2"; shift
+                if [ "${COMMAND}" = "rc-test" ]; then
+                    RC_TEST_OPERANDS="${RC_TEST_OPERANDS:+${RC_TEST_OPERANDS} }--file $2"
+                else
+                    SR_FILE="$2"
+                fi
+                shift
+                ;;
+            --root|--case|--feature)
+                if [ "${COMMAND}" = "rc-test" ]; then
+                    [ -n "${2-}" ] || out_die "rc-test $1 requires a value"
+                    RC_TEST_OPERANDS="${RC_TEST_OPERANDS:+${RC_TEST_OPERANDS} }$1 $2"
+                    shift
+                else
+                    out_die "Unknown command or flag: $1. See '${APP_NAME} help'."
+                fi
                 ;;
             --dir)
                 [ -n "${2-}" ] || out_die "--dir requires DIR"
@@ -5329,7 +5799,7 @@ app_main() {
             --uninstall)  SR_UNINSTALL=1 ;;
             --purge-queues) SR_PURGE_QUEUES=1 ;;
             version|about|help|install|version-check|self-update|self-uninstall|menu|main|\
-            sudoers-to-json|json-to-sudoers|test-json-format|test-well-known-binary|fence-test|print-sudoers|print-sudoers-install-script|\
+            sudoers-to-json|json-to-sudoers|test-json-format|test-well-known-binary|fence-test|rc-test|print-sudoers|print-sudoers-install-script|\
             add-sudoer-request|update-sudoer-request|remove-sudoer-request|\
             list-approving|list-approved|list-rejected|show|approve|reject|\
             interactive|setup|remove-lpu)
@@ -5341,10 +5811,16 @@ app_main() {
                 fi
                 ;;
             -*)
-                out_die "Unknown command or flag: $1. See '${APP_NAME} help'."
+                if [ "${COMMAND}" = "rc-test" ]; then
+                    RC_TEST_OPERANDS="${RC_TEST_OPERANDS:+${RC_TEST_OPERANDS} }$1"
+                else
+                    out_die "Unknown command or flag: $1. See '${APP_NAME} help'."
+                fi
                 ;;
             *)
-                if [ "${COMMAND_SET}" -eq 1 ]; then
+                if [ "${COMMAND}" = "rc-test" ]; then
+                    RC_TEST_OPERANDS="${RC_TEST_OPERANDS:+${RC_TEST_OPERANDS} }$1"
+                elif [ "${COMMAND_SET}" -eq 1 ]; then
                     SR_OPERAND="$1"
                 else
                     out_die "Unknown command or flag: $1. See '${APP_NAME} help'."

@@ -3,9 +3,9 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.22.0  
-**Last plan update:** 2026-09-08 (online-installable `curl \| sh`; Type O; **TP-CURL-*** · **TP-CSUM-*** · **TP-LC-12..18**)  
-**Last suite run:** PASS=589 FAIL=0 SKIP=9 (2026-09-08; 1.22.0 `curl \| sh` specialize from selfmanaged; live Type 1 skipped)  
+**Product VERSION:** 1.25.0  
+**Last plan update:** 2026-09-09 (this-login PATH / `rc-test`; **TP-LC-20..22, 27..31**)  
+**Last suite run:** PASS=655 FAIL=0 SKIP=10 (2026-09-09; 1.25.0 this-login PATH / `rc-test`; live Type 1 skipped)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)
@@ -95,6 +95,14 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-LC-16 | self-update downgrade refuse without --force | test_local_lifecycle | requirement-shell-self-management | **have** |
 | TP-LC-17 | self-update --force allows downgrade | test_local_lifecycle | requirement-shell-self-management | **have** |
 | TP-LC-18 | `inst_maybe_install` JSON/QUIET places or fail closed | test_local_lifecycle | requirement-shell-cli-zero-arguments | **have** |
+| TP-LC-20 | `BASHRC` env create-if-missing | test_local_lifecycle | requirement-shell-path-and-shell-support | **have** |
+| TP-LC-21 | `BASHRC` env modify dongle | test_local_lifecycle | requirement-shell-path-and-shell-support | **have** |
+| TP-LC-22 | `BASHRC` env VERSION+exact-PATH no-op | test_local_lifecycle | requirement-shell-path-and-shell-support | **have** |
+| TP-LC-27 | sibling exact PATH already present | test_local_lifecycle | requirement-shell-path-and-shell-support | **have** |
+| TP-LC-28 | uninstall keeps shared PATH while USER_BIN has files | test_local_lifecycle | requirement-shell-path-and-shell-support | **have** |
+| TP-LC-29 | already-installed heal missing PATH | test_local_lifecycle | requirement-shell-path-and-shell-support | **have** |
+| TP-LC-30 | uninstall does not delete `.profile` | test_local_lifecycle | requirement-shell-path-and-shell-support | **have** |
+| TP-LC-31 | `rc-test` create/modify/noop against `--root` | test_local_lifecycle | requirement-shell-path-and-shell-support | **have** |
 
 ### TP-CSUM (companion digest)
 
@@ -200,11 +208,13 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-INT-06 | Dest review is one-off `prompt_yes_no` (yes=approve, no/Enter=reject; no skip/quit; no three chained y/N) | `tests/test_domain_sr.sh` | domain · prompt · approval-question | **have** |
 | TP-SR-INT-07 | Duplicate inbound same dest: keep latest; older superseded → rejected; other dest stays | `tests/test_domain_sr.sh` | domain · duplicate-inbound-request | **have** |
 | TP-SR-INT-08 | Login-hook / `interactive` prints YAML review body; waiting file stays JSON; Type 0 `show` still dumps JSON | `tests/test_domain_sr.sh` | domain · login-interactive-review-hook | **have** |
-| TP-SR-HOOK-01 | `setup` checks LPU `.profile`; missing → create source-bashrc sample | `tests/test_domain_sr.sh` | domain · LPU | **have** |
-| TP-SR-HOOK-02 | Existing `.profile` is not overwritten | `tests/test_domain_sr.sh` | domain | **have** |
-| TP-SR-HOOK-03 | Created `.profile` sources `.bashrc` (markers) | `tests/test_domain_sr.sh` | domain | **have** |
-| TP-SR-HOOK-04 | After create/rewrite, `.profile` / `.bashrc` `chown` the LPU (fail-closed) | `tests/test_domain_sr.sh` | domain · LPU | **have** |
-| TP-SR-HOOK-05 | Login-hook-symlink: create when missing; do not overwrite; heal rewrites old product-binary `sudo -n` line; F6 grants hook; test-mode skips live `/usr/local/bin` | `tests/test_domain_sr.sh` | domain · LPU · three-layer | **have** |
+| TP-SR-INT-09 | Login-hook / `interactive` indents `queued by` + YAML review lines by two spaces; Request id / approval question / superseded notes stay flush-left | `tests/test_domain_sr.sh` | domain · login-interactive-review-hook | **have** |
+| TP-SR-HOOK-01 | `setup` checks LPU `.profile`; missing → create source-bashrc sample | `tests/test_domain_sr.sh` | login-interactive-review-hook · LPU | **have** |
+| TP-SR-HOOK-02 | Existing `.profile` is not overwritten | `tests/test_domain_sr.sh` | login-interactive-review-hook | **have** |
+| TP-SR-HOOK-03 | Created `.profile` sources `.bashrc` (markers) | `tests/test_domain_sr.sh` | login-interactive-review-hook | **have** |
+| TP-SR-HOOK-04 | After create/rewrite, `.profile` / `.bashrc` `chown` the LPU (fail-closed) | `tests/test_domain_sr.sh` | login-interactive-review-hook · LPU | **have** |
+| TP-SR-HOOK-05 | Login-hook-symlink `/usr/local/bin/{{APP_NAME}}-hook`: create when missing; do not overwrite; heal rewrites old product-binary `sudo -n` line; F6 grants hook; test-mode skips live `/usr/local/bin` | `tests/test_domain_sr.sh` | login-interactive-review-hook · LPU · three-layer | **have** |
+| TP-SR-HOOK-06 | Type 1 `interactive` reviews `{{APP_NAME}}-adm` rc: old `{{APP_NAME}} interactive` hook becomes `{{APP_NAME}}-hook`; already-new rc is not rewritten | `tests/test_domain_sr.sh` | login-interactive-review-hook | **have** |
 | TP-SR-Q-01 | Public `/var` queues + 3773/0700/0755 | `tests/test_domain_sr.sh` | domain · LPU | **have** |
 | TP-SR-Q-02 | Submit 0640; approve snapshot archive; owner check | `tests/test_domain_sr.sh` | domain | **have** |
 | TP-SR-Q-03 | F7 removes public `/var/{{APP_NAME}}/` children | `tests/test_domain_sr.sh` | domain · LPU | **have** |

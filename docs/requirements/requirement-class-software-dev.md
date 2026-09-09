@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-class-software-dev.md  
-**Status**: Active (Version 1.10.0 – online-installable; VERSION 1.22.0)  
+**Status**: Active (Version 1.11.0 – residual pointer: path-and-shell-support; VERSION 1.25.0)  
 **Area**: class  
 **Key**: `requirement-class-software-dev`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -129,7 +129,7 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | **Architectures supported** | any arch with POSIX sh and the external tools the script invokes |
 | **Git surface** | used when product is published |
 | **Ship unit / install** | yes — `src/sudoer-cli`; **online-installable** (`curl \| sh` via `SCRIPT_URL`) |
-| **Product version SSOT** | `VERSION="1.22.0"` hard-assign in `src/sudoer-cli` |
+| **Product version SSOT** | `VERSION="1.25.0"` hard-assign in `src/sudoer-cli` |
 | **Bootstrap origin** | Historical **cli-template**. This product is **sudoer-cli**. No live parent ship unit. |
 
 **Residual ownership table:**
@@ -142,8 +142,10 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | Bootstrap lineage / keep-trim | `requirement-bootstrap-chain` | sudoer-cli specialized from cli-template |
 | Privilege / LPU / Type map | `requirement-three-layer-privilege-model` · `requirement-least-privilege-user` | Do not duplicate |
 | What is blocked vs must stay open | `requirement-privilege-prevention-set` | Closed prevention catalog; do not invent walls |
-| Domain sudoers-approval | `requirement-domain-sudoer-approval` | File-based JSON approval; dest fence table |
+| Domain sudoers-approval | `requirement-domain-sudoer-approval` | File-based JSON approval; dest fence table; login hook **points** |
 | Grant sudoers file | `requirement-sudoers-file` | Text dual; Cmnd arg escape; visudo -cf; visudo-fail copy; **not** a dest Fence; domain points |
+| Login-time review hook | `requirement-login-interactive-review-hook` | Rc snippet; labeled `/usr/local/bin/{{APP_NAME}}-hook`; sibling CLIs reuse that pattern |
+| PATH / profile / shell-rc sibling unify | `requirement-shell-path-and-shell-support` | This-login PATH + profile; `rc-test`; do not duplicate; login-hook stays on the login-hook REQ |
 | Actor / role / subject / approver consider | `requirement-actor-role-subject-approver` | Dest has approver — not residual None |
 | Dest fence: incorrect JSON format | `requirement-incorrect-json-format` | Independent Fence REQ; dest table still prints; Type 0 `test-json-format`; list tester `fence-test` |
 | Dest fence: well-known sudoer binary | `requirement-well-known-sudoer-binary-fence` | Dest **warn then ask**; testers/convert fail closed; dest table still prints; Type 0 `test-well-known-binary`; list tester `fence-test` |
@@ -249,6 +251,8 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | `requirement-actor-role-subject-approver` | Five-column consider catalog |
 | `requirement-incorrect-json-format` | Dest Fence: JSON format |
 | `requirement-well-known-sudoer-binary-fence` | Well-known binary: dest warn + testers/convert fail closed |
+| `requirement-login-interactive-review-hook` | Approver rc + labeled hook |
+| `requirement-shell-path-and-shell-support` | This-login PATH / profile; sibling unify; `rc-test` |
 | `docs/requirements/index.md` | Registry SSOT |
 
 ---
@@ -279,9 +283,13 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | 2026-09-03 | Active 1.9.10 | Residual **points** at `requirement-shell-cli-default-interaction`; `VERSION` 1.19.0 |
 | 2026-09-03 | Active 1.9.11 | Stay-honest Implementation Notes `VERSION` 1.20.0 (keep-latest duplicate inbound) |
 | 2026-09-06 | Active 1.9.12 | Stay-honest Implementation Notes `VERSION` 1.21.0 (YAML login-hook review display) |
+| 2026-09-08 | Active 1.10.1 | Stay-honest Implementation Notes `VERSION` 1.23.0 (YAML review body two-space indent) |
+| 2026-09-08 | Active 1.10.2 | Residual **points** at `requirement-login-interactive-review-hook` |
+| 2026-09-08 | Active 1.10.3 | Stay-honest Implementation Notes `VERSION` 1.24.0 (old-hook review on `interactive`) |
+| 2026-09-09 | Active 1.11.0 | Residual **points** at `requirement-shell-path-and-shell-support`; `VERSION` 1.25.0 |
 
 ---
 
-**Last Updated**: 2026-09-06  
+**Last Updated**: 2026-09-09  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

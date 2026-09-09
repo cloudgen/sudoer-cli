@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-least-privilege-user.md  
-**Status**: Active (Version 1.14.1)  
+**Status**: Active (Version 1.14.2) — login hook **points** at `requirement-login-interactive-review-hook`  
 **Area**: architecture  
 **Key**: `requirement-least-privilege-user`  
 **id**: RQ-LEAST-PRIVILEGE-USER  
@@ -88,7 +88,7 @@ F7 v1 default **MUST** be: warn live grants stay → reverse hook → archive qu
 | Affected (F5) | `/var/{{APP_NAME}}` mode **0755** owner `sudoer-adm:sudoer-adm`; `/var/{{APP_NAME}}/sudoer-request` **3773** (sticky+setgid, other `-wx` no other-r); `/var/{{APP_NAME}}/sudoer-approved` **0700**; `/var/{{APP_NAME}}/sudoer-rejected` **0700** | F5 |
 | Sudoers file | `/etc/sudoers.d/sudoer-adm` mode 0440 `root:root` (Type 1 copy/overwrite/remove exception) | F6 |
 | Approval subject | sudoers grant text (sudoer-file; queued as JSON) — **at least one required** | LPA leaf |
-| Login hook | `${LPU_HOME}/.bashrc` (create if missing) **and** check `${LPU_HOME}/.profile` (create source-bashrc sample if missing; never overwrite). After create or rewrite: **owner `sudoer-adm:sudoer-adm`**, mode **0644**. Marker `# BEGIN sudoer-cli login hook`; env `SUDOER_CLI_HOOK_RAN`; command `sudo -n /usr/local/bin/sudoer-cli-hook interactive`. `setup` creates `/usr/local/bin/sudoer-cli-hook` → `/usr/local/bin/sudoer-cli` when missing; does not overwrite; test-mode skips live `ln`. F7 does **not** unlink the hook name | F5 rc / domain SSOT |
+| Login hook | **Points** at `requirement-login-interactive-review-hook`: `.bashrc` / `.profile`, labeled `/usr/local/bin/sudoer-cli-hook`, rc owner. F7 strips the snippet; **MUST NOT** unlink the global hook name | F5 rc |
 | Remove | `sudo sudoer-cli setup --uninstall` (or `remove-lpu`) — any host admin, password sudo OK | F7 |
 
 **Routing status:** `setup` / `remove-lpu` **are live** (useradd / F6 / hook / userdel) and **fail closed** without euid 0. Bootstrap is **any** host admin already root (`sudo sudoer-cli setup`); **not** `sudo -n`; **not** limited to `sudoer-adm` (that account is what setup creates). Type 0 / an LSU **MUST NOT** `useradd`. After success, setup **helps submit** (prints the `add-sudoer-request` next-step; the invoking sudoer **may** name B). Probe with `id sudoer-adm` before claiming the account exists. A TTY login as `sudoer-adm` enters approval via F6 + hook; a host admin who already used password `sudo` **may** approve without logging in as `sudoer-adm`. The hook’s `sudo -n` is **post-F6 only**.
@@ -161,10 +161,11 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | `docs/requirements/requirement-three-layer-privilege-model.md` | Elev Tables A/B/C + F6 Cmnd |
 | `docs/requirements/requirement-privilege-prevention-set.md` | Closed catalog of what create/teardown blocks vs must stay open |
 | `docs/requirements/requirement-domain-sudoer-approval.md` | File-based JSON approval (roles / submit / verify) |
+| `docs/requirements/requirement-login-interactive-review-hook.md` | Login rc snippet + labeled `{{APP_NAME}}-hook` |
 | `docs/requirements/requirement-shell-cli-interface.md` | Type map on the dispatcher |
 | `src/sudoer-cli` | Ship unit |
 
-**Last Updated**: 2026-09-03  
+**Last Updated**: 2026-09-08  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).
 

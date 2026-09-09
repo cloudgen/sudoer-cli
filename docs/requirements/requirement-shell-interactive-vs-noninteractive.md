@@ -158,7 +158,8 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | `requirement-shell-output-requirements` | Quiet/json emission; colors consume `TTY` |
 | `requirement-shell-modular-function-design` | `prompt_*` consume `TTY` |
 | `requirement-shell-prompt` | Helper bodies + samples |
-| `requirement-domain-sudoer-approval` | `interactive` loop + login hook |
+| `requirement-domain-sudoer-approval` | `interactive` loop |
+| `requirement-login-interactive-review-hook` | Login rc snippet + labeled `{{APP_NAME}}-hook` |
 | `requirement-shell-cli-zero-arguments` | Empty argv ≠ review |
 | `requirement-shell-cli-default-interaction` | `menu` / `main` no-hang; empty argv stays help |
 | `docs/requirements/index.md` | Registry |

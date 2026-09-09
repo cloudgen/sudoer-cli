@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-self-management.md  
-**Status**: Active (Version 1.1.0)  
+**Status**: Active (Version 1.2.0)  
 **Area**: shell  
 **Key**: `requirement-shell-self-management`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -138,9 +138,9 @@ Root may write global install path; non-root uses user path. Do not assume root 
 | **Companion digest** | Default `${SCRIPT_URL}.sha256` via `inst_perform_install_download_without_checksum` — law + transparency: `requirement-shell-automatic-checksum.md` |
 | **Force reinstall** | `FORCE_REINSTALL`; CLI `--force` required by CLI interface requirement |
 | **Uninstall steps** | `inst_self_uninstall_determine_bin` → `inst_self_uninstall_confirm_and_remove` → `inst_self_uninstall_cleanup_path` |
-| **PATH ensure** | `path_add_shell` / bash / zsh / fish helpers on user install |
+| **PATH / login rc** | **Call site only:** `inst_ensure_companion` → `path_add_shell` on user-bin install (including already-installed no-op). Bodies, exact PATH line, sibling unify, scoped uninstall, `BASHRC` env, and `rc-test`: `requirement-shell-path-and-shell-support` |
 | **Privilege** | Type 0 only for self-management surface; no dedicated system user |
-| **Version SSOT** | `VERSION` default `1.22.0` in script config block (`VERSION="1.22.0"`) |
+| **Version SSOT** | `VERSION` default `1.25.0` in script config block (`VERSION="1.25.0"`)
 
 #### Normative acceptance behaviors (this project)
 
@@ -218,6 +218,7 @@ Root may write global install path; non-root uses user path. Do not assume root 
 | **TP-LC-17** | `tests/test_local_lifecycle.sh` | have |
 | **TP-CLI-04** | `tests/test_cli.sh` | have |
 | **TP-CLI-10** | `tests/test_cli.sh` | have |
+| **TP-LC-20..22, 27..31** | `tests/test_local_lifecycle.sh` | have — **primary owner:** `requirement-shell-path-and-shell-support` |
 
 **Matrix:** `reviews/requirement-test-matrix.md`  
 **Map:** `reviews/test-plan.md`
@@ -257,11 +258,12 @@ This product may run on Termux, Git Bash, Windows cmd, or the same class (this l
 | `docs/requirements/requirement-shell-idempotency.md` | Re-run safety for ensure ops |
 | `docs/requirements/requirement-shell-output-requirements.md` | Lifecycle messaging / quiet / JSON |
 | `docs/requirements/requirement-shell-modular-function-design.md` | `inst_*` / `out_*` ownership |
+| `docs/requirements/requirement-shell-path-and-shell-support.md` | PATH / profile bodies; sibling unify; `rc-test` |
 | `docs/requirements/index.md` | Registry SSOT |
 | `src/sudoer-cli` | Implementation under test |
 
 ---
 
-**Last Updated**: 2026-09-08  
+**Last Updated**: 2026-09-09  
 **Owner**: sudoer-cli project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; CIAO Principles 1, 2, 3, 5, 10, 11, 14, 4, 20 (v2.10.2) (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

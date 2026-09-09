@@ -1,6 +1,6 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.22.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.25.0-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
@@ -48,12 +48,81 @@ approved   rejected
 | Test JSON | Check a grant JSON against the dest format fence without becoming root and without putting it in the waiting folder. | `sudoer-cli test-json-format --file request.json` |
 | Test command path | Check that each command is a well-known system binary (not a file under someone’s home). | `sudoer-cli test-well-known-binary --file request.json` |
 | Test dest fences | **Unit test** of a local test folder. Point at a JSON file. **No sudo** except wrap chmod/chown of that folder. Does not queue. | `sh src/sudoer-cli fence-test --file tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json` |
+| Test PATH ensure | Prove user-bin PATH / `.profile` writes against a throw-away folder. Does not rewrite this login’s real `~/.bashrc`. | `sudoer-cli rc-test --root "$tmpdir" --file bashrc --case create` |
 | Submit | Hand that JSON to this program. It **chooses the filename** and writes it into `/var/sudoer-cli/sudoer-request/`. You still do not need to be root. | `sudoer-cli add-sudoer-request --file request.json` |
 | Wait | The file sits in the waiting folder. Anyone can drop a file in; they cannot list or steal someone else’s file. | `sudoer-cli list-approving` |
-| Decide | A host admin who already used password `sudo` (or `sudoer-adm`, or a real root login) re-reads the waiting file and **shows it as YAML**. If the JSON is broken, dest says so, does **not** ask, and moves the file to rejected. If a command lives under someone’s home (or the queue stamp is missing), dest **warns** and still asks yes/no. Moving a valid file *is* the decision. First-time setup must already have been run. | `sudo sudoer-cli interactive` |
+| Decide | A host admin who already used password `sudo` (or `sudoer-adm`, or a real root login) re-reads the waiting file and **shows it as YAML**, indented two spaces under the Request id. If the JSON is broken, dest says so, does **not** ask, and moves the file to rejected. If a command lives under someone’s home (or the queue stamp is missing), dest **warns** and still asks yes/no. Moving a valid file *is* the decision. First-time setup must already have been run. | `sudo sudoer-cli interactive` |
 | Live grant | Only after accept: a fragment at `/etc/sudoers.d/<service>-<subject>` (for example `folder-backup-bob` when the JSON `username` is bob). This program never writes `/etc/passwd` or the main `/etc/sudoers` file. | (the approve path) |
 
 Pretty-printed and compact JSON are the same grant. If the request looks incomplete (it lists more commands than could be read), **do not approve it** — fix the file and convert or submit again.
+
+Login as `sudoer-adm` (TTY hook) or `sudo sudoer-cli interactive` prints each remaining grant as a group. Older copies of the same dest (`username` + `service`) are collapsed first. The Request id, superseded notes, and the yes/no prompt stay flush-left; `queued by` and the YAML body are indented two spaces.
+
+One waiting grant (older duplicate already superseded):
+
+```text
+$ sudo su - sudoer-adm
+[INFO] superseded sudoer-20260908-grok-cli-adm01-add-1.json (kept sudoer-20260908-grok-cli-adm01-add-2.json)
+[INFO] Request sudoer-20260908-grok-cli-adm01-add-2.json
+  queued by sudoer-cli 1.23.0
+  schema_version: 1
+  purpose: "Allow adm01 to run grok-cli backup as root."
+  username: adm01
+  service: grok-cli
+  action: add
+  submit_app: sudoer-cli
+  submit_version: 1.23.0
+  submit_by: adm01
+  commands:
+    - runas: root
+      tags:
+        - NOPASSWD
+      path: /usr/local/bin/grok-cli
+      args:
+        - backup
+Approve this request (y/N)?
+```
+
+Two remaining grants (different dests), so each body sits under its own Request line:
+
+```text
+[INFO] Request sudoer-20260908-grok-cli-adm01-add-2.json
+  queued by sudoer-cli 1.23.0
+  schema_version: 1
+  purpose: "Allow adm01 to run grok-cli backup as root."
+  username: adm01
+  service: grok-cli
+  action: add
+  submit_app: sudoer-cli
+  submit_version: 1.23.0
+  submit_by: adm01
+  commands:
+    - runas: root
+      tags:
+        - NOPASSWD
+      path: /usr/local/bin/grok-cli
+      args:
+        - backup
+Approve this request (y/N)?
+[INFO] Request sudoer-20260908-dns-cli-alice-add-1.json
+  queued by dns-cli 1.12.0
+  schema_version: 1
+  purpose: "Allow alice to reload dns."
+  username: alice
+  service: dns-cli
+  action: add
+  submit_app: dns-cli
+  submit_version: 1.12.0
+  submit_by: alice
+  commands:
+    - runas: root
+      tags:
+        - NOPASSWD
+      path: /usr/local/bin/dns-cli
+      args:
+        - reload
+Approve this request (y/N)?
+```
 
 ## Features
 
@@ -139,7 +208,7 @@ This product is **online-installable**. Global vs local here means install *loca
 
 ```text
 $ sudoer-cli menu
-[INFO] **sudoer-cli**(*1.22.0*) — numbered list of live commands
+[INFO] **sudoer-cli**(*1.25.0*) — numbered list of live commands
 1. sudoers-to-json: Convert sudoers fragment to request JSON
 2. json-to-sudoers: Convert request JSON to sudoers fragment
 3. print-sudoers: Print the sudoers fragment that lets sudoer-adm review without a password
@@ -243,6 +312,9 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
+2026-09-09 — version **1.25.0** (this-login PATH / `.profile` ensure after user-bin install; Type 0 `rc-test --root`; sibling unify).
+2026-09-08 — version **1.24.0** (Type 1 `interactive` reviews `sudoer-adm` rc and replaces an old product-binary hook with `sudoer-cli-hook`).
+2026-09-08 — version **1.23.0** (login-hook / `interactive` YAML review body indented two spaces per request; README shows the display samples).
 2026-09-08 — version **1.22.0** (online-installable: `curl | sh`, Type O empty argv, `version-check` / `self-update` / `self-uninstall`; specialized from selfmanaged).
 2026-09-03 — version **1.20.0** (dest `interactive` keeps the latest duplicate inbound grant per dest; help and numbered list use people/folder words).
 2026-09-03 — version **1.19.0** (numbered start list on `sudoer-cli menu` / `main`; empty argv still prints help).
