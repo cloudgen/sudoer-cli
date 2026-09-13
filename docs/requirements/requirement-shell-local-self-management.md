@@ -120,7 +120,7 @@ This product ships as a **POSIX shell script** (interpreted). Execution by any n
 |------|--------|
 | **Product / binary** | `sudoer-cli` |
 | **Ship unit** | `src/sudoer-cli` |
-| **Primary install path story** | Type 0 day-to-day: `${HOME}/.local/bin/sudoer-cli`; multi-user: `/usr/local/bin/sudoer-cli`. Global copy **MUST** create `/usr/local/bin/sudoer-cli-hook` when missing (do not overwrite; test-mode skips live `ln`) |
+| **Primary install path story** | Type 0 day-to-day: `${HOME}/.local/bin/sudoer-cli`; multi-user: `/usr/local/bin/sudoer-cli`. Global copy **MUST** create `/usr/local/bin/sudoer-review-hook` when missing (do not overwrite; test-mode skips live `ln`) |
 | **Handlers** | `inst_local_install`, `inst_local_uninstall`, `app_where_is_me`, `app_version` |
 | **Detect** | `inst_is_installed` / privilege-correct path helpers |
 | **Online package** | **Absent by design** (bootstrap trim) |

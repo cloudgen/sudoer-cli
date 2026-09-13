@@ -159,7 +159,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | `requirement-shell-modular-function-design` | `prompt_*` consume `TTY` |
 | `requirement-shell-prompt` | Helper bodies + samples |
 | `requirement-domain-sudoer-approval` | `interactive` loop |
-| `requirement-login-interactive-review-hook` | Login rc snippet + labeled `{{APP_NAME}}-hook` |
+| `requirement-login-interactive-review-hook` | Login rc snippet + labeled `sudoer-review-hook` |
 | `requirement-shell-cli-zero-arguments` | Empty argv ≠ review |
 | `requirement-shell-cli-default-interaction` | `menu` / `main` no-hang; empty argv stays help |
 | `docs/requirements/index.md` | Registry |

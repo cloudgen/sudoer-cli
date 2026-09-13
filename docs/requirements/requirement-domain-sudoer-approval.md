@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-domain-sudoer-approval.md  
-**Status**: Active (Version 2.41.0) — login hook **points** at `requirement-login-interactive-review-hook` (`login-review-hook`); YAML review display indented two spaces; keep-latest duplicate inbound; unused on Termux / Git Bash / Windows cmd  
+**Status**: Active (Version 2.41.0) — login hook **points** at `requirement-login-interactive-review-hook` (`sudoer-review-hook`); YAML review display indented two spaces; keep-latest duplicate inbound; unused on Termux / Git Bash / Windows cmd  
 **Area**: domain  
 **Key**: `requirement-domain-sudoer-approval`  
 **id**: RQ-DOMAIN-SUDOER-APPROVAL  
@@ -25,7 +25,7 @@ Privilege types and F6 Cmnds are owned by `requirement-three-layer-privilege-mod
 
 | Includes | Excludes |
 |----------|----------|
-| Roles, submit-when, verify table, dest fence table, verbs, basename, review loop, keep-latest duplicate inbound, YAML review display (two-space indent per request) | Ticket DB; inventing a dest fence; `SUDO_USER` must be `sudoer-adm`; rc snippet / shared `login-review-hook` (owner `requirement-login-interactive-review-hook`) |
+| Roles, submit-when, verify table, dest fence table, verbs, basename, review loop, keep-latest duplicate inbound, YAML review display (two-space indent per request) | Ticket DB; inventing a dest fence; `SUDO_USER` must be `sudoer-adm`; rc snippet / shared `sudoer-review-hook` (owner `requirement-login-interactive-review-hook`) |
 
 | Surface | What you open | What for |
 |---------|---------------|----------|
@@ -383,7 +383,7 @@ Type 0 list/show **MUST** use a per-user sidecar `${XDG_STATE_HOME:-$HOME/.local
 
 #### Login hook
 
-`setup` **MUST** install the login-time review hook so a **TTY login** as `sudoer-adm` starts Type 1 `interactive` **once** per session. Snippet, `.profile` create-if-absent, rc owner, and the shared doorbell `/usr/local/bin/login-review-hook` are **owned by** `requirement-login-interactive-review-hook`. This file **MUST NOT** re-own that snippet. Convert / dest-write of `login-hook-elev` sudoers path is `requirement-sudoers-file`. The review **loop** below stays here. Empty argv stays help.
+`setup` **MUST** install the login-time review hook so a **TTY login** as `sudoer-adm` starts Type 1 `interactive` **once** per session. Snippet, `.profile` create-if-absent, rc owner, and the shared doorbell `/usr/local/bin/sudoer-review-hook` are **owned by** `requirement-login-interactive-review-hook`. This file **MUST NOT** re-own that snippet. Convert / dest-write of `login-hook-elev` sudoers path is `requirement-sudoers-file`. The review **loop** below stays here. Empty argv stays help.
 
 #### Interactive review loop
 
@@ -433,7 +433,7 @@ Empty argv remains **Type N help** for every uid. `interactive` is never implied
 | **Sidecar** | `~/.local/state/sudoer-cli/submitted.ids` |
 | **Worked basename** | `sudoer-20260814-webservice-alice-add-1.json` |
 | **Worked dest** | `/etc/sudoers.d/webservice-alice` |
-| **Hook** | **Points** at `requirement-login-interactive-review-hook` (snippet, `.profile`, shared `/usr/local/bin/login-review-hook`) |
+| **Hook** | **Points** at `requirement-login-interactive-review-hook` (snippet, `.profile`, shared `/usr/local/bin/sudoer-review-hook`) |
 | **Approval question** | One-off yes/no (`prompt_yes_no "Approve this request"`). Yes = approve. No / Enter = reject. No skip / quit / maybe. Term `approval-question`. Duplicate inbound (same `username`+`service`): keep latest; older superseded → rejected (no question). JSON-format Fence match: no question; display then rejected. Missing stamp / untrusted Cmnd: warn, then ask. Unfenced review body is **YAML** indented two spaces under the Request id line (waiting file stays JSON). |
 | **`.profile` create** | **Points** at `requirement-login-interactive-review-hook` |
 | **Routed now** | Type 0 **operational** convert/submit/list/show/print-sudoers; Type 0 **test-purpose** `test-json-format`/`test-well-known-binary`/`fence-test`; Type 1 `setup`/`remove-lpu`/`approve`/`reject`/`interactive` live |
@@ -495,7 +495,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 14. Replace this file-based JSON approval machine with a ticket table, mail queue, or database without revising this requirement.  
 15. Collapse submitter and approver into one role.  
 16. Let a TTY login as `sudoer-adm` imply empty-argv `interactive`.  
-17. Re-own the login-hook snippet, `.profile` sample, or shared `/usr/local/bin/login-review-hook`. Those stay on `requirement-login-interactive-review-hook`.  
+17. Re-own the login-hook snippet, `.profile` sample, or shared `/usr/local/bin/sudoer-review-hook`. Those stay on `requirement-login-interactive-review-hook`.  
 18. Hang login or `scp` from the hook (`sudo` without `-n`, or `exit` on hook failure) — owner `requirement-login-interactive-review-hook`.  
 19. Ship `interactive` without consuming `TTY` (prompt or hang when `TTY` is not 1).  
 20. Invent a second lock after password `sudo` / root login — including `SUDO_USER` must be `sudoer-adm` on approve — a live-command whitelist the user did not publish, or a Gap stub on live `setup` (`requirement-privilege-prevention-set.md`).  
@@ -537,7 +537,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | `docs/requirements/requirement-incorrect-json-format.md` | Dest Fence: JSON format |
 | `docs/requirements/requirement-well-known-sudoer-binary-fence.md` | Well-known binary: dest warn + testers/convert fail closed |
 | `docs/requirements/requirement-sudoers-file.md` | Grant sudoers file: Cmnd arg escape, visudo -cf, visudo-fail copy |
-| `docs/requirements/requirement-login-interactive-review-hook.md` | Rc snippet, `.profile`, shared `/usr/local/bin/login-review-hook` |
+| `docs/requirements/requirement-login-interactive-review-hook.md` | Rc snippet, `.profile`, shared `/usr/local/bin/sudoer-review-hook` |
 | `src/sudoer-cli` | Ship unit |
 
 ## Design-time verification
@@ -568,7 +568,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | **TP-SR-HOOK-02** | `tests/test_domain_sr.sh` | have | Existing `.profile` is not overwritten — owner `requirement-login-interactive-review-hook` |
 | **TP-SR-HOOK-03** | `tests/test_domain_sr.sh` | have | Created `.profile` sources `.bashrc` (markers) — owner `requirement-login-interactive-review-hook` |
 | **TP-SR-HOOK-04** | `tests/test_domain_sr.sh` | have | After create/rewrite, hook apply/ensure **chown** the LPU — owner `requirement-login-interactive-review-hook` |
-| **TP-SR-HOOK-05** | `tests/test_domain_sr.sh` | have | Login-hook-symlink `/usr/local/bin/login-review-hook` — owner `requirement-login-interactive-review-hook` |
+| **TP-SR-HOOK-05** | `tests/test_domain_sr.sh` | have | Login-hook-symlink `/usr/local/bin/sudoer-review-hook` — owner `requirement-login-interactive-review-hook` |
 | **TP-CLI-14** | `tests/test_cli.sh` | have | convert routed; junk unknown |
 | **TP-SR-INT-01** | `tests/test_domain_sr.sh` | have | `interactive` without euid 0 → `authz` |
 | **TP-SR-INT-02** | `tests/test_domain_sr.sh` | have | `--json` / `TTY=0` → `confirm_required`, no hang |
@@ -606,7 +606,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 | Date | Status | Note |
 |------|--------|------|
-| 2026-09-13 | Active 2.41.0 | Login hook **points** at `requirement-login-interactive-review-hook` (`/usr/local/bin/login-review-hook`). `login-hook-elev` sudoers path **points** at `requirement-sudoers-file`. |
+| 2026-09-13 | Active 2.41.0 | Login hook **points** at `requirement-login-interactive-review-hook` (`/usr/local/bin/sudoer-review-hook`). `login-hook-elev` sudoers path **points** at `requirement-sudoers-file`. |
 | 2026-09-08 | Active 2.40.0 | Login hook **points** at independent `requirement-login-interactive-review-hook` (labeled `/usr/local/bin/{{APP_NAME}}-hook`). Review loop stays here. |
 | 2026-09-08 | Active 2.39.0 | Login-hook / `interactive` YAML review body (`queued by` + YAML) indented **two spaces** under the Request id line. Protection rule 34; **TP-SR-INT-09**. |
 | 2026-09-06 | Active 2.38.0 | Login-hook / `interactive` human display is **YAML**; waiting file stays JSON; Type 0 `show` still dumps JSON. Protection rule 33; **TP-SR-INT-08**. |

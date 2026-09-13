@@ -5,11 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.28.0] - 2026-09-13
+
+### Changed
+
+- Shared login doorbell is **`/usr/local/bin/sudoer-review-hook`** (not `login-review-hook`, not per-app `sudoer-cli-hook`). Type 1 `setup` / `interactive` rewrite `.bashrc` and F6 that still name `login-review-hook`, `sudoer-cli-hook`, or only the product binary. Convert / dest-write of `kind=login-hook-elev` emits the new name. Login-hook REQ **1.3.0**. Sudoers-file **1.3.0**. Three-layer **1.17.0**. **TP-SR-HOOK-05..09**. Ship unit **`VERSION="1.28.0"`**.
+
 ## [1.27.0] - 2026-09-13
 
 ### Changed
 
-- Shared login doorbell is **`/usr/local/bin/login-review-hook`** (not per-app `sudoer-cli-hook`). Setup creates that symlink when missing, heals old product-binary and `sudoer-cli-hook` rc lines, and rewrites F6 to grant the doorbell. Convert / dest-write of `kind=login-hook-elev` emits that path even when inbound JSON still names a sibling product binary. Login-hook REQ **1.2.0**. Sudoers-file **1.2.0**. Three-layer **1.16.0**. **TP-SR-HOOK-05..08**.
+- Shared login doorbell is **`/usr/local/bin/login-review-hook`** (not per-app `sudoer-cli-hook`). Setup creates that symlink when missing, heals old product-binary and `sudoer-cli-hook` rc lines, and rewrites F6 to grant the doorbell. Convert / dest-write of `kind=login-hook-elev` emits that path even when inbound JSON still names a sibling product binary. Checklist **CL-LOGIN-INTERACTIVE-REVIEW-HOOK** and **TP-SR-HOOK-09** lock the snippet `sudo -n` path to a F6 `NOPASSWD` Cmnd and prove stale product-binary-only F6 is rewritten. Login-hook REQ **1.2.1**. Sudoers-file **1.2.0**. Three-layer **1.16.0**. **TP-SR-HOOK-05..09**.
 - When `sudoer-adm` logs in and `sudo -n` cannot start review, the skip line says what happened, that the shell continues, and **Next:** `sudo sudoer-cli interactive` from a host admin. Output REQ **1.4.0**. **TP-SR-HOOK-07**. Ship unit **`VERSION="1.27.0"`**.
 
 ## [1.26.0] - 2026-09-13

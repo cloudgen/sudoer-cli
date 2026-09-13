@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-class-software-dev.md  
-**Status**: Active (Version 1.11.2 – stay-honest VERSION 1.27.0; shared doorbell `login-review-hook`)  
+**Status**: Active (Version 1.11.3 – stay-honest VERSION 1.28.0; shared doorbell `sudoer-review-hook`)  
 **Area**: class  
 **Key**: `requirement-class-software-dev`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -129,7 +129,7 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | **Architectures supported** | any arch with POSIX sh and the external tools the script invokes |
 | **Git surface** | used when product is published |
 | **Ship unit / install** | yes — `src/sudoer-cli`; **online-installable** (`curl \| sh` via `SCRIPT_URL`) |
-| **Product version SSOT** | `VERSION="1.27.0"` hard-assign in `src/sudoer-cli` |
+| **Product version SSOT** | `VERSION="1.28.0"` hard-assign in `src/sudoer-cli` |
 | **Bootstrap origin** | Historical **cli-template**. This product is **sudoer-cli**. No live parent ship unit. |
 
 **Residual ownership table:**
@@ -144,7 +144,7 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | What is blocked vs must stay open | `requirement-privilege-prevention-set` | Closed prevention catalog; do not invent walls |
 | Domain sudoers-approval | `requirement-domain-sudoer-approval` | File-based JSON approval; dest fence table; login hook **points** |
 | Grant sudoers file | `requirement-sudoers-file` | Text dual; Cmnd arg escape; visudo -cf; visudo-fail copy; **not** a dest Fence; domain points |
-| Login-time review hook | `requirement-login-interactive-review-hook` | Rc snippet; labeled `/usr/local/bin/{{APP_NAME}}-hook`; sibling CLIs reuse that pattern |
+| Login-time review hook | `requirement-login-interactive-review-hook` | Rc snippet; labeled `/usr/local/bin/sudoer-review-hook`; sibling CLIs reuse that doorbell |
 | PATH / profile / shell-rc sibling unify | `requirement-shell-path-and-shell-support` | This-login PATH + profile; `rc-test`; do not duplicate; login-hook stays on the login-hook REQ |
 | Actor / role / subject / approver consider | `requirement-actor-role-subject-approver` | Dest has approver — not residual None |
 | Dest fence: incorrect JSON format | `requirement-incorrect-json-format` | Independent Fence REQ; dest table still prints; Type 0 `test-json-format`; list tester `fence-test` |
@@ -286,6 +286,7 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | 2026-09-08 | Active 1.10.1 | Stay-honest Implementation Notes `VERSION` 1.23.0 (YAML review body two-space indent) |
 | 2026-09-08 | Active 1.10.2 | Residual **points** at `requirement-login-interactive-review-hook` |
 | 2026-09-08 | Active 1.10.3 | Stay-honest Implementation Notes `VERSION` 1.24.0 (old-hook review on `interactive`) |
+| 2026-09-13 | Active 1.11.3 | Stay-honest Implementation Notes `VERSION` 1.28.0; shared doorbell `sudoer-review-hook` |
 | 2026-09-13 | Active 1.11.2 | Stay-honest Implementation Notes `VERSION` 1.27.0; shared doorbell `login-review-hook` |
 | 2026-09-13 | Active 1.11.1 | Stay-honest Implementation Notes `VERSION` 1.26.0; default-interaction invalid-choice retry |
 | 2026-09-09 | Active 1.11.0 | Residual **points** at `requirement-shell-path-and-shell-support`; `VERSION` 1.25.0 |

@@ -3,9 +3,9 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.27.0  
-**Last plan update:** 2026-09-13 (shared doorbell `login-review-hook`; skip Next:; **TP-SR-HOOK-07..08**)  
-**Last suite run:** PASS=691 FAIL=0 SKIP=10 (2026-09-13; 1.27.0 shared doorbell `login-review-hook`; **TP-SR-HOOK-07..08**; live Type 1 skipped)  
+**Product VERSION:** 1.28.0  
+**Last plan update:** 2026-09-13 (doorbell `sudoer-review-hook`; heal old `login-review-hook`)  
+**Last suite run:** PASS=709 FAIL=0 SKIP=10 (2026-09-13; 1.28.0 doorbell `sudoer-review-hook`; live Type 1 skipped)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)
@@ -214,10 +214,11 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-HOOK-02 | Existing `.profile` is not overwritten | `tests/test_domain_sr.sh` | login-interactive-review-hook | **have** |
 | TP-SR-HOOK-03 | Created `.profile` sources `.bashrc` (markers) | `tests/test_domain_sr.sh` | login-interactive-review-hook | **have** |
 | TP-SR-HOOK-04 | After create/rewrite, `.profile` / `.bashrc` `chown` the LPU (fail-closed) | `tests/test_domain_sr.sh` | login-interactive-review-hook · LPU | **have** |
-| TP-SR-HOOK-05 | Shared doorbell `/usr/local/bin/login-review-hook`: create when missing; do not overwrite; heal rewrites old product-binary and `{{APP_NAME}}-hook`; F6 grants `login-review-hook`; test-mode skips live `/usr/local/bin` | `tests/test_domain_sr.sh` | login-interactive-review-hook · LPU · three-layer | **have** |
-| TP-SR-HOOK-06 | Type 1 `interactive` reviews `{{APP_NAME}}-adm` rc: old `{{APP_NAME}} interactive` / `{{APP_NAME}}-hook` becomes `login-review-hook`; already-common rc is not rewritten | `tests/test_domain_sr.sh` | login-interactive-review-hook | **have** |
+| TP-SR-HOOK-05 | Shared doorbell `/usr/local/bin/sudoer-review-hook`: create when missing; do not overwrite; heal rewrites old product-binary, `{{APP_NAME}}-hook`, and `login-review-hook`; F6 grants `sudoer-review-hook`; test-mode skips live `/usr/local/bin` | `tests/test_domain_sr.sh` | login-interactive-review-hook · LPU · three-layer | **have** |
+| TP-SR-HOOK-06 | Type 1 `interactive` reviews `{{APP_NAME}}-adm` rc: old `{{APP_NAME}} interactive` / `{{APP_NAME}}-hook` / `login-review-hook` becomes `sudoer-review-hook`; already-common rc is not rewritten | `tests/test_domain_sr.sh` | login-interactive-review-hook | **have** |
 | TP-SR-HOOK-07 | Login-hook `sudo -n` fail skip copy: happened + login continues + `Next: sudo {{APP_NAME}} interactive`; not only `interactive hook skipped` | `tests/test_domain_sr.sh` | login-interactive-review-hook · shell-output-requirements | **have** |
-| TP-SR-HOOK-08 | `json-to-sudoers` of `kind=login-hook-elev` emits `/usr/local/bin/login-review-hook` even when inbound JSON still names the sibling product binary | `tests/test_domain_sr.sh` | sudoers-file · login-interactive-review-hook | **have** |
+| TP-SR-HOOK-08 | `json-to-sudoers` of `kind=login-hook-elev` emits `/usr/local/bin/sudoer-review-hook` even when inbound JSON still names the sibling product binary | `tests/test_domain_sr.sh` | sudoers-file · login-interactive-review-hook | **have** |
+| TP-SR-HOOK-09 | Snippet `sudo -n` path is a F6 `NOPASSWD` Cmnd; `lpu_install_f6` rewrites stale F6 that grants only the product binary or still names `*-hook` | `tests/test_domain_sr.sh` | login-interactive-review-hook · three-layer | **have** |
 | TP-SR-Q-01 | Public `/var` queues + 3773/0700/0755 | `tests/test_domain_sr.sh` | domain · LPU | **have** |
 | TP-SR-Q-02 | Submit 0640; approve snapshot archive; owner check | `tests/test_domain_sr.sh` | domain | **have** |
 | TP-SR-Q-03 | F7 removes public `/var/{{APP_NAME}}/` children | `tests/test_domain_sr.sh` | domain · LPU | **have** |

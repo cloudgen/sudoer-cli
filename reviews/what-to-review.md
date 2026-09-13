@@ -6,7 +6,7 @@
 **Latest report:** `reviews/reports/2026-09-06-human-readability-and-coverage.md` (README/help people words; related-shell **Under command line**; TP vs matrix). Prior: 2026-08-21 shell CLI suite; dest-owned stamps. Actor lock: INC-20260818-001. Cmnd identity: **INC-20260821-001** / **L-CMND-PATH-01**. Dest auto-reject / `set -u`: **INC-20260821-002** / **L-FENCE-ASK-01** / **L-INT-SETU-01**.
 
 **Last plan update:** 2026-09-09  
-**Ship unit VERSION:** 1.27.0  
+**Ship unit VERSION:** 1.28.0  
 **Suite baseline:** see `reviews/test-plan.md`
 
 ---
@@ -16,9 +16,9 @@
 | # | Check | Notes |
 |---|--------|--------|
 | P1 | Read `docs/requirements/index.md` | Class + shell + three-layer + LPU + **prevention-set 1.6.5** + **domain 2.41.0** + **login-interactive-review-hook 1.2.0** + ARSA + dest Fence + coding-style + sudo-command + default-interaction |
-| P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.27.0**) |
+| P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.28.0**) |
 | P3 | Load `reviews/lessons.md` and re-check open L-* that still apply | Skip parent backup L-SUDOERS except **L-JSON-CMDS-01** |
-| P4 | Run `./tests/run.sh` | Record PASS/FAIL/SKIP; **must include TP-CURL-02/03**, **TP-LC-12..18**, **TP-CSUM-01..04**, **TP-SR-14/15/16**, **TP-SR-PRIV-04** / **TP-ELEV-09** / **TP-PREV-01..03**, **TP-SR-HOOK-01..08**, **TP-CLI-18..22** / **TP-ELEV-10**, **TP-SR-INT-07**, **TP-SR-INT-08**, and **TP-SR-INT-09** |
+| P4 | Run `./tests/run.sh` | Record PASS/FAIL/SKIP; **must include TP-CURL-02/03**, **TP-LC-12..18**, **TP-CSUM-01..04**, **TP-SR-14/15/16**, **TP-SR-PRIV-04** / **TP-ELEV-09** / **TP-PREV-01..03**, **TP-SR-HOOK-01..09**, **TP-CLI-18..22** / **TP-ELEV-10**, **TP-SR-INT-07**, **TP-SR-INT-08**, and **TP-SR-INT-09** |
 | P5 | Confirm install **channel** is B’s `SCRIPT_URL` | `curl \| sh` one-liner; not selfmanaged’s channel |
 | P6 | Confirm trimmed verbs stay unknown | backup / restore / `remove-project-sudoers` (`print-sudoers` is domain) |
 | P7 | **JSON re-encode fidelity** | Complete section below. **Revise/Block** if skipped. |
