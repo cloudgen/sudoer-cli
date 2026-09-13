@@ -3,9 +3,9 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.25.0  
-**Last plan update:** 2026-09-09 (this-login PATH / `rc-test`; **TP-LC-20..22, 27..31**)  
-**Last suite run:** PASS=655 FAIL=0 SKIP=10 (2026-09-09; 1.25.0 this-login PATH / `rc-test`; live Type 1 skipped)  
+**Product VERSION:** 1.26.0  
+**Last plan update:** 2026-09-13 (invalid-choice retry on numbered list; **TP-CLI-22**)  
+**Last suite run:** PASS=675 FAIL=0 SKIP=10 (2026-09-13; 1.26.0 invalid-choice retry **TP-CLI-22**; live Type 1 skipped)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)
@@ -19,7 +19,7 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | Syntax `sh -n` | have | TP-CLI-01 |
 | version / help / about human + JSON | have | TP-CLI-02..06 |
 | Type O empty argv = install-ensure | have | TP-CLI-07 · **TP-CLI-18** · **TP-LC-11/14/15** · **TP-CURL-02/03/08** |
-| Numbered start list (`menu` / `main`) | have | **TP-CLI-18..21** · **TP-ELEV-10** |
+| Numbered start list (`menu` / `main`) | have | **TP-CLI-18..22** · **TP-ELEV-10** |
 | Unknown + quiet + set -u HOME | have | TP-CLI-08..11 |
 | Storage isolation | have | TP-CLI-12 |
 | Online lifecycle verbs + SCRIPT_URL UX | have | TP-CLI-04, TP-CLI-10 |
@@ -195,6 +195,7 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-CLI-19 | Off-TTY `menu` is help; `--json` JSON help; `--quiet` does not swallow | `tests/test_cli.sh` | requirement-shell-cli-default-interaction · requirement-shell-interactive-vs-noninteractive | **have** |
 | TP-CLI-20 | Membership: no help/install/setup/testers/`menu`; Exit **99** | `tests/test_cli.sh` | requirement-shell-cli-default-interaction | **have** |
 | TP-CLI-21 | Interactive `menu --json` still draws the list | `tests/test_cli.sh` | requirement-shell-cli-default-interaction | **have** |
+| TP-CLI-22 | Invalid TTY menu choice retries this layer (`out_error` + reprint; unused `16`; unknown name; **MUST NOT** `out_die` / unknown-argv). Portable **TP-CLI-19** already names off-TTY `menu` help. | `tests/test_cli.sh` | requirement-shell-cli-default-interaction | **have** |
 | TP-ELEV-10 | No `$()` of `prompt_ask`; `PROMPT_ASK_VALUE` on the menu path (portable TP-CLI-16 hosted here) | `tests/test_cli.sh` | requirement-shell-cli-default-interaction · requirement-shell-prompt | **have** |
 | TP-SR-PRIV-01 | Type 1 verbs: non-root fail-closed, no `/etc` write | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval · three-layer | **have** |
 | TP-SR-PRIV-02 | Bootstrap `setup` is any euid 0 (not `sudo -n`, not `sudoer-adm`); approve still requires euid 0 | `tests/test_domain_sr.sh` | requirement-three-layer-privilege-model · domain | **have** |

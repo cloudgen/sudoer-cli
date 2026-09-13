@@ -275,6 +275,7 @@ run_test_cli() {
         printf '%s\n' 'out_plain() { out_text plain "$*"; }'
         printf '%s\n' 'out_menu_choice() { out_text menu_choice "" "${1-}" "${2-}" "${3-}"; }'
         printf '%s\n' 'out_die() { printf "DIE:%s\n" "$*"; exit 1; }'
+        printf '%s\n' 'out_error() { printf "ERROR:%s\n" "$*"; }'
         sed -n '/^util_app_ident()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_main_menu_print()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_main_menu()/,/^}/p' "${SCRIPT}"
@@ -293,6 +294,118 @@ run_test_cli() {
     assert_not_contains "TP-CLI-21 interactive menu --json not help path" "${_out}" "HELPPATH"
     assert_contains "TP-CLI-21 interactive menu --json Exit 99" "${_out}" "99. Exit"
     rm -rf "${_th}"
+
+    # TP-CLI-22: invalid choice retries this layer (portable TP-CLI-19 already names off-TTY menu help)
+    _th=$(mktemp -d "${TMPDIR:-/tmp}/sudoer-cli.menu22.XXXXXX")
+    _runner="${_th}/run-retry.sh"
+    {
+        printf '%s\n' 'set -u'
+        sed -n '/^out_text()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' 'out_info() { out_text out_info "$*"; }'
+        printf '%s\n' 'out_plain() { out_text plain "$*"; }'
+        printf '%s\n' 'out_menu_choice() { out_text menu_choice "" "${1-}" "${2-}" "${3-}"; }'
+        printf '%s\n' 'out_die() { printf "DIE:%s\n" "$*"; exit 1; }'
+        printf '%s\n' 'out_error() { printf "ERROR:%s\n" "$*"; }'
+        sed -n '/^util_app_ident()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_main_menu_print()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_main_menu()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' 'APP_NAME=sudoer-cli'
+        printf '%s\n' "VERSION='${PRODUCT_VERSION}'"
+        printf '%s\n' '_asks=0'
+        printf '%s\n' 'prompt_ask() {'
+        printf '%s\n' '  _asks=$((_asks + 1))'
+        printf '%s\n' '  if [ "${_asks}" -eq 1 ]; then PROMPT_ASK_VALUE=16; else PROMPT_ASK_VALUE=99; fi'
+        printf '%s\n' '}'
+        printf '%s\n' 'app_help() { printf "%s\n" HELPPATH; }'
+        printf '%s\n' 'app_run_command() { printf "%s\n" RAN; }'
+        printf '%s\n' 'TTY=1; JSON=0; QUIET=0; PROMPT_ASK_VALUE='
+        printf '%s\n' 'app_main_menu'
+    } >"${_runner}"
+    _out=$(sh "${_runner}")
+    _ec=$?
+    assert_eq "TP-CLI-22 unused 16 exit 0" 0 "${_ec}"
+    assert_contains "TP-CLI-22 unused 16 is ERROR" "${_out}" "ERROR:Unknown menu choice '16'"
+    assert_contains "TP-CLI-22 unused 16 says not on this list" "${_out}" "not on this list"
+    assert_not_contains "TP-CLI-22 unused 16 is not DIE" "${_out}" "DIE:"
+    assert_not_contains "TP-CLI-22 unused 16 is not unknown argv" "${_out}" "Unknown command"
+    assert_not_contains "TP-CLI-22 unused 16 did not run a handler" "${_out}" "RAN"
+    _exit_n=$(printf '%s' "${_out}" | grep -c "99. Exit" || true)
+    if [ "${_exit_n}" -ge 2 ]; then
+        t_pass "TP-CLI-22 unused 16 reprints this layer (${_exit_n} Exit rows)"
+    else
+        t_fail "TP-CLI-22 unused 16 reprints this layer (Exit rows=${_exit_n}, want >=2)"
+    fi
+    {
+        printf '%s\n' 'set -u'
+        sed -n '/^out_text()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' 'out_info() { out_text out_info "$*"; }'
+        printf '%s\n' 'out_plain() { out_text plain "$*"; }'
+        printf '%s\n' 'out_menu_choice() { out_text menu_choice "" "${1-}" "${2-}" "${3-}"; }'
+        printf '%s\n' 'out_die() { printf "DIE:%s\n" "$*"; exit 1; }'
+        printf '%s\n' 'out_error() { printf "ERROR:%s\n" "$*"; }'
+        sed -n '/^util_app_ident()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_main_menu_print()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_main_menu()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' 'APP_NAME=sudoer-cli'
+        printf '%s\n' "VERSION='${PRODUCT_VERSION}'"
+        printf '%s\n' '_asks=0'
+        printf '%s\n' 'prompt_ask() {'
+        printf '%s\n' '  _asks=$((_asks + 1))'
+        printf '%s\n' '  if [ "${_asks}" -eq 1 ]; then PROMPT_ASK_VALUE=not-a-command; else PROMPT_ASK_VALUE=99; fi'
+        printf '%s\n' '}'
+        printf '%s\n' 'app_help() { printf "%s\n" HELPPATH; }'
+        printf '%s\n' 'app_run_command() { printf "%s\n" RAN; }'
+        printf '%s\n' 'TTY=1; JSON=0; QUIET=0; PROMPT_ASK_VALUE='
+        printf '%s\n' 'app_main_menu'
+    } >"${_runner}"
+    _out=$(sh "${_runner}")
+    _ec=$?
+    assert_eq "TP-CLI-22 unknown name exit 0" 0 "${_ec}"
+    assert_contains "TP-CLI-22 unknown name is ERROR" "${_out}" "ERROR:Unknown menu choice 'not-a-command'"
+    assert_not_contains "TP-CLI-22 unknown name is not DIE" "${_out}" "DIE:"
+    assert_not_contains "TP-CLI-22 unknown name did not run a handler" "${_out}" "RAN"
+    _exit_n2=$(printf '%s' "${_out}" | grep -c "99. Exit" || true)
+    if [ "${_exit_n2}" -ge 2 ]; then
+        t_pass "TP-CLI-22 unknown name reprints this layer (${_exit_n2} Exit rows)"
+    else
+        t_fail "TP-CLI-22 unknown name reprints this layer (Exit rows=${_exit_n2}, want >=2)"
+    fi
+    {
+        printf '%s\n' 'set -u'
+        sed -n '/^out_text()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' 'out_info() { out_text out_info "$*"; }'
+        printf '%s\n' 'out_plain() { out_text plain "$*"; }'
+        printf '%s\n' 'out_menu_choice() { out_text menu_choice "" "${1-}" "${2-}" "${3-}"; }'
+        printf '%s\n' 'out_die() { printf "DIE:%s\n" "$*"; exit 1; }'
+        printf '%s\n' 'out_error() { printf "ERROR:%s\n" "$*"; }'
+        sed -n '/^util_app_ident()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_main_menu_print()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_main_menu()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' 'APP_NAME=sudoer-cli'
+        printf '%s\n' "VERSION='${PRODUCT_VERSION}'"
+        printf '%s\n' '_asks=0'
+        printf '%s\n' 'prompt_ask() {'
+        printf '%s\n' '  _asks=$((_asks + 1))'
+        printf '%s\n' '  if [ "${_asks}" -eq 1 ]; then PROMPT_ASK_VALUE=16; else PROMPT_ASK_VALUE=1; fi'
+        printf '%s\n' '}'
+        printf '%s\n' 'app_help() { printf "%s\n" HELPPATH; }'
+        printf '%s\n' 'app_run_command() { printf "%s\n" RAN:"${COMMAND}"; }'
+        printf '%s\n' 'TTY=1; JSON=0; QUIET=0; PROMPT_ASK_VALUE=; COMMAND='
+        printf '%s\n' 'app_main_menu'
+    } >"${_runner}"
+    _out=$(sh "${_runner}")
+    _ec=$?
+    assert_eq "TP-CLI-22 retry then listed 1 exit 0" 0 "${_ec}"
+    assert_contains "TP-CLI-22 retry then listed 1 still ERROR first" "${_out}" "ERROR:Unknown menu choice '16'"
+    assert_contains "TP-CLI-22 retry then listed 1 runs handler" "${_out}" "RAN:sudoers-to-json"
+    assert_not_contains "TP-CLI-22 retry then listed 1 is not DIE" "${_out}" "DIE:"
+    rm -rf "${_th}"
+
+    _menu=$(sed -n '/^app_main_menu()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-CLI-22 menu invalid uses out_error" "${_menu}" 'out_error "Unknown menu choice'
+    assert_not_contains "TP-CLI-22 menu invalid does not out_die" "${_menu}" 'out_die "Unknown choice'
+    assert_contains "TP-CLI-22 menu layer retry loop" "${_menu}" "Invalid choice retries this layer"
+    assert_contains "TP-CLI-22 nested layer comment present" "${_menu}" "Nested numbered submenu"
 
     # TP-ELEV-10: do-not-capture-read (portable TP-CLI-16 hosted here; product TP-CLI-16 is fence-test)
     _menu=$(sed -n '/^app_main_menu()/,/^}/p' "${SCRIPT}")

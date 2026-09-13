@@ -1,6 +1,6 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.25.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.26.0-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
@@ -208,7 +208,7 @@ This product is **online-installable**. Global vs local here means install *loca
 
 ```text
 $ sudoer-cli menu
-[INFO] **sudoer-cli**(*1.25.0*) — numbered list of live commands
+[INFO] **sudoer-cli**(*1.26.0*) — numbered list of live commands
 1. sudoers-to-json: Convert sudoers fragment to request JSON
 2. json-to-sudoers: Convert request JSON to sudoers fragment
 3. print-sudoers: Print the sudoers fragment that lets sudoer-adm review without a password
@@ -226,6 +226,8 @@ $ sudoer-cli menu
 15. interactive: Review waiting requests one file at a time (not empty argv)
 99. Exit
 ```
+
+A number or name that is not on this list prints an error, reprints **this** list, and waits. Type `99` (or `exit` / `quit`) to leave.
 
 **Source repository:** [cloudgen/sudoer-cli](https://github.com/cloudgen/sudoer-cli)  
 Config identity: `REPO_USER=cloudgen`, `REPO_NAME=sudoer-cli`. Default channel: `https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli`.
@@ -312,6 +314,7 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
+2026-09-13 — version **1.26.0** (numbered list: a wrong pick reprints this list and waits; does not quit).
 2026-09-09 — version **1.25.0** (this-login PATH / `.profile` ensure after user-bin install; Type 0 `rc-test --root`; sibling unify).
 2026-09-08 — version **1.24.0** (Type 1 `interactive` reviews `sudoer-adm` rc and replaces an old product-binary hook with `sudoer-cli-hook`).
 2026-09-08 — version **1.23.0** (login-hook / `interactive` YAML review body indented two spaces per request; README shows the display samples).

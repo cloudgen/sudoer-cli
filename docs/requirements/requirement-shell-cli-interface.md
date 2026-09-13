@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-interface.md  
-**Status**: Active (Version 3.12.0) — `rc-test` dual-mention with path-and-shell-support REQ  
+**Status**: Active (Version 3.12.1) — stay-honest `VERSION` 1.26.0; `menu` invalid-choice retry dual mention  
 **Area**: shell  
 **Key**: `requirement-shell-cli-interface`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -100,7 +100,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | **Primary executable** | `src/sudoer-cli` (POSIX `/bin/sh`, single-file ship unit) |
 | **Dispatcher** | `app_main` |
 | **Output SSOT** | `out_text` + wrappers (`out_info`, `out_success`, `out_warn`, `out_error`, `out_die`, `out_plain`, `out_json`, …) |
-| **Version SSOT** | `VERSION="1.25.0"` hard-assign in ship unit |
+| **Version SSOT** | `VERSION="1.26.0"` hard-assign in ship unit |
 | **Interactive rc write path** | `BASHRC` default `${HOME}/.bashrc`. User-bin `install` PATH ensure creates/modifies this file. Tests/CI **MAY** set `BASHRC` to a file in a temp folder. Dual mention: `requirement-shell-path-and-shell-support`. |
 | **Install paths** | Global: `GLOBAL_BIN` default `/usr/local/bin`; User: `USER_BIN` default `${HOME}/.local/bin` |
 | **Primary install story** | `curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli \| sh` → user bin; `sudo curl … \| sudo sh` → global; login-hook-symlink `/usr/local/bin/sudoer-cli-hook` after global place |
@@ -122,7 +122,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | `version` | Type 0 | `app_version` | Local `VERSION` only; no network |
 | `about` | Type 0 | `app_about` | Diagnostics: install presence, paths, user, shell, TTY, storage, **resolved queue paths**, install channel; **no** `CHECKSUM`; **no** backup/restore fields |
 | `help` | Type 0 | `app_help` | Full usage in human mode; short JSON note in JSON mode |
-| `menu` / `main` | Type 0 | `app_main_menu` | Numbered TTY start list. Empty argv is Type O. Dual mention on `requirement-shell-cli-default-interaction`. |
+| `menu` / `main` | Type 0 | `app_main_menu` | Numbered TTY start list. Invalid choice reprints this layer (`out_error`; **MUST NOT** `out_die`). Empty argv is Type O. Dual mention on `requirement-shell-cli-default-interaction`. |
 | `sudoers-to-json` | Type 0 | `sr_sudoers_to_json` | Named here; text dual / visudo on `requirement-sudoers-file`; convert catalog on domain SSOT |
 | `json-to-sudoers` | Type 0 | `sr_json_to_sudoers` | Named here; text dual / visudo on `requirement-sudoers-file`; convert catalog on domain SSOT |
 | `test-json-format` | Type 0 **test-purpose** | `sr_test_json_format` | Named here; Fence body on `requirement-incorrect-json-format`. Unit test; local test folder. |
@@ -295,10 +295,11 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | 2026-09-03 | Active 3.10.0 | Claimed case-3 `menu` / `main`; empty argv stays help; `VERSION` 1.19.0 |
 | 2026-09-03 | Active 3.10.1 | Stay-honest Implementation Notes `VERSION` 1.20.0 |
 | 2026-09-06 | Active 3.10.3 | Stay-honest Implementation Notes `VERSION` 1.21.0 |
+| 2026-09-13 | Active 3.12.1 | Stay-honest `VERSION` 1.26.0; `menu` invalid-choice retry dual mention |
 | 2026-09-09 | Active 3.12.0 | Dual mention Type 0 `rc-test`; `BASHRC` env; `VERSION` 1.25.0 |
 
 ---
 
-**Last Updated**: 2026-09-09 (3.12.0 — `rc-test` dual mention)  
+**Last Updated**: 2026-09-13 (3.12.1 — `menu` invalid-choice retry dual mention)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

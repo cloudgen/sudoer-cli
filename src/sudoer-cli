@@ -41,7 +41,7 @@
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
 # APP NAME: hard-assign APP_NAME="sudoer-cli"
-# VERSION: hard-assign VERSION="1.25.0"
+# VERSION: hard-assign VERSION="1.26.0"
 # BASHRC: interactive rc write path for PATH ensure (default ${HOME}/.bashrc).
 #   Override for tests/CI so install can target a temp file instead of this
 #   login's real ~/.bashrc. Law: requirement-shell-path-and-shell-support.md.
@@ -61,8 +61,8 @@ APP_NAME="sudoer-cli"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
 : "${DESCRIPTION:=POSIX /bin/sh CLI: convert a sudoers fragment to JSON, queue it, and let a host admin who already used password sudo accept or decline it. First-time setup creates sudoer-adm.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.25.0"
-: "${VERSION:=1.25.0}"
+VERSION="1.26.0"
+: "${VERSION:=1.26.0}"
 # Repository identity SSOT (git host owner/repo for project-repository alignment).
 # Channel: raw GitHub path includes src/ because the ship unit lives under src/.
 : "${REPO_USER:=cloudgen}"
@@ -5445,15 +5445,18 @@ app_main_menu_print() {
 # GENERAL PURPOSE:
 # Interactive (TTY=1): ignore --json, draw the numbered list, read a choice
 # in the current shell (PROMPT_ASK_VALUE; MUST NOT $() prompt_ask), run that
-# handler. Non-interactive: help (human or JSON). MUST NOT hang. MUST NOT
-# swallow help under --quiet.
+# handler. Invalid choice: out_error, reprint this layer, re-prompt
+# (MUST NOT out_die). Nested numbered submenu (none today) uses the same
+# retry on that layer. Empty line / EOF leaves this layer without spinning.
+# Non-interactive: help (human or JSON). MUST NOT hang. MUST NOT swallow
+# help under --quiet.
 #
 # ALIGNMENT:
 # - requirement-shell-cli-default-interaction.md
 # - requirement-shell-cli-zero-arguments.md (empty argv is not this path)
 # - requirement-shell-prompt.md (PROMPT_ASK_VALUE)
 #
-# Last updated: 2026-09-03
+# Last updated: 2026-09-13
 # =============================================================================
 app_main_menu() {
     : "${TTY:=0}"
@@ -5469,41 +5472,54 @@ app_main_menu() {
         return 0
     fi
 
-    # Interactive menu ignores --json (case 3). Restore after the choice read.
+    # Interactive menu ignores --json (case 3). Restore after a valid pick or Exit.
     local _menu_json="${JSON}"
     local _menu_quiet="${QUIET}"
     local _choice=""
     JSON=0
     QUIET=0
-    app_main_menu_print
-    # WARNING — do-not-capture-read (PP-A-22)
-    # MUST NOT _choice=$(prompt_ask …) / $() / backticks. Body of prompt_ask contains read.
-    prompt_ask "Choice" ""
-    _choice="${PROMPT_ASK_VALUE}"
+
+    # Invalid choice retries this layer (out_error + reprint; MUST NOT out_die).
+    # Nested numbered submenu (none today) uses the same retry on that layer.
+    while true; do
+        app_main_menu_print
+        # WARNING — do-not-capture-read (PP-A-22)
+        # MUST NOT _choice=$(prompt_ask …) / $() / backticks. Body of prompt_ask contains read.
+        prompt_ask "Choice" ""
+        _choice="${PROMPT_ASK_VALUE}"
+        _choice=$(printf '%s' "${_choice}" | tr -d '\r')
+        _choice=$(printf '%s' "${_choice}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+        case "${_choice}" in
+            1|sudoers-to-json) COMMAND=sudoers-to-json; break ;;
+            2|json-to-sudoers) COMMAND=json-to-sudoers; break ;;
+            3|print-sudoers) COMMAND=print-sudoers; break ;;
+            4|print-sudoers-install-script) COMMAND=print-sudoers-install-script; break ;;
+            5|add-sudoer-request) COMMAND=add-sudoer-request; break ;;
+            6|update-sudoer-request) COMMAND=update-sudoer-request; break ;;
+            7|remove-sudoer-request) COMMAND=remove-sudoer-request; break ;;
+            8|list-approving) COMMAND=list-approving; break ;;
+            9|list-approved) COMMAND=list-approved; break ;;
+            10|list-rejected) COMMAND=list-rejected; break ;;
+            11|show) COMMAND=show; break ;;
+            12|remove-lpu) COMMAND=remove-lpu; break ;;
+            13|approve) COMMAND=approve; break ;;
+            14|reject) COMMAND=reject; break ;;
+            15|interactive) COMMAND=interactive; break ;;
+            99|exit|quit|Exit|"")
+                JSON="${_menu_json}"
+                QUIET="${_menu_quiet}"
+                return 0
+                ;;
+            *)
+                out_error "Unknown menu choice '${_choice}'. That number or name is not on this list. Choose a listed number or command name, or 99 to leave."
+                continue
+                ;;
+        esac
+    done
+
     JSON="${_menu_json}"
     QUIET="${_menu_quiet}"
-
-    case "${_choice}" in
-        1|sudoers-to-json) COMMAND=sudoers-to-json ;;
-        2|json-to-sudoers) COMMAND=json-to-sudoers ;;
-        3|print-sudoers) COMMAND=print-sudoers ;;
-        4|print-sudoers-install-script) COMMAND=print-sudoers-install-script ;;
-        5|add-sudoer-request) COMMAND=add-sudoer-request ;;
-        6|update-sudoer-request) COMMAND=update-sudoer-request ;;
-        7|remove-sudoer-request) COMMAND=remove-sudoer-request ;;
-        8|list-approving) COMMAND=list-approving ;;
-        9|list-approved) COMMAND=list-approved ;;
-        10|list-rejected) COMMAND=list-rejected ;;
-        11|show) COMMAND=show ;;
-        12|remove-lpu) COMMAND=remove-lpu ;;
-        13|approve) COMMAND=approve ;;
-        14|reject) COMMAND=reject ;;
-        15|interactive) COMMAND=interactive ;;
-        99|exit|quit|Exit) return 0 ;;
-        *)
-            out_die "Unknown choice '${_choice}'. Next: ${APP_NAME} menu"
-            ;;
-    esac
     app_run_command
 }
 

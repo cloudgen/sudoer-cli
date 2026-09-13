@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.26.0] - 2026-09-13
+
+### Changed
+
+- Numbered start list (`sudoer-cli menu` / `main`): a wrong number or name prints `[ERROR]`, reprints **this** list, and waits for another pick. It does not quit the program. Unused numbers between 15 and Exit **99** (example `16`) count. Nested numbered submenu: none today; the same retry applies if one is added. Default-interaction REQ **1.2.0**. **TP-CLI-22**. Ship unit **`VERSION="1.26.0"`**.
+
 ## [1.25.0] - 2026-09-09
 
 ### Added
