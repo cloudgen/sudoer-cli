@@ -41,7 +41,7 @@
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
 # APP NAME: hard-assign APP_NAME="sudoer-cli"
-# VERSION: hard-assign VERSION="1.26.0"
+# VERSION: hard-assign VERSION="1.27.0"
 # BASHRC: interactive rc write path for PATH ensure (default ${HOME}/.bashrc).
 #   Override for tests/CI so install can target a temp file instead of this
 #   login's real ~/.bashrc. Law: requirement-shell-path-and-shell-support.md.
@@ -61,8 +61,10 @@ APP_NAME="sudoer-cli"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
 : "${DESCRIPTION:=POSIX /bin/sh CLI: convert a sudoers fragment to JSON, queue it, and let a host admin who already used password sudo accept or decline it. First-time setup creates sudoer-adm.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.26.0"
-: "${VERSION:=1.26.0}"
+VERSION="1.27.0"
+: "${VERSION:=1.27.0}"
+# Shared login doorbell (requirement-login-interactive-review-hook.md).
+: "${COMMON_LOGIN_HOOK_NAME:=login-review-hook}"
 # Repository identity SSOT (git host owner/repo for project-repository alignment).
 # Channel: raw GitHub path includes src/ because the ship unit lives under src/.
 : "${REPO_USER:=cloudgen}"
@@ -3380,6 +3382,40 @@ sr_json_decode_to_fields() {
     fi
 }
 
+# =============================================================================
+# sr_rewrite_login_hook_elev_cmds() - login-hook-elev Cmnd path → doorbell
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Convert / dest-write of kind=login-hook-elev MUST emit the shared
+# doorbell even when inbound JSON still names the sibling product
+# binary or an old {{APP_NAME}}-hook.
+#
+# ALIGNMENT:
+# - requirement-sudoers-file.md
+# - requirement-login-interactive-review-hook.md
+#
+# Last updated: 2026-09-13
+# =============================================================================
+sr_rewrite_login_hook_elev_cmds() {
+    : "${SR_D_KIND:=}"
+    [ "${SR_D_KIND}" = "login-hook-elev" ] || return 0
+    : "${COMMON_LOGIN_HOOK_NAME:=login-review-hook}"
+    # Production doorbell — MUST NOT copy test-isolation $GLOBAL_BIN into dest sudoers.
+    _np="/usr/local/bin/${COMMON_LOGIN_HOOK_NAME}"
+    [ -n "${SR_D_CMDS}" ] || return 0
+    _tf=$(util_mktemp)
+    printf '%s' "${SR_D_CMDS}" >"${_tf}"
+    _out=""
+    while IFS='|' read -r _runas _tags _path _args || [ -n "${_path-}" ]; do
+        [ -n "${_path}" ] || continue
+        _out="${_out}${_runas}|${_tags}|${_np}|${_args}
+"
+    done <"${_tf}"
+    rm -f "${_tf}"
+    SR_D_CMDS="${_out}"
+}
+
 sr_sudoers_to_json() {
     _raw=$(sr_read_input)
     case "${_raw}" in
@@ -3434,6 +3470,7 @@ sr_json_to_sudoers() {
         "$(sr_operator_cmd) test-well-known-binary --file request.json"
     sr_service_infer "${SR_D_CMDS}" "${SR_D_SVC}"
     _svc="${SR_INFERRED}"
+    sr_rewrite_login_hook_elev_cmds
     _txt=$(sr_render_sudoers "${SR_D_PURPOSE}" "${SR_D_USER}" "${SR_D_ACT}" "${SR_D_CMDS}")
     sr_visudo_text "${_txt}"
     sr_write_payload "${_txt}"
@@ -3841,6 +3878,7 @@ sr_submit() {
         _svc="${SR_INFERRED}"
         _user="${SR_D_USER:-${_me}}"
         _js=$(sr_json_encode_request "${SR_D_PURPOSE}" "${_user}" "${_svc}" "${_act}" "${SR_D_CMDS}")
+        sr_rewrite_login_hook_elev_cmds
     fi
     _txt=$(sr_render_sudoers "${_purpose:-${SR_D_PURPOSE}}" "${_user}" "${_act}" "${SR_P_CMDS:-${SR_D_CMDS}}")
     sr_visudo_text "${_txt}"
@@ -4383,6 +4421,7 @@ sr_approve() {
     fi
     [ -n "${_user}" ] || sr_die "username required" "invalid_json"
     [ -n "${_svc}" ] || sr_die "service required" "unknown_service"
+    sr_rewrite_login_hook_elev_cmds
     _dest=$(sr_grant_dest "${_user}" "${_svc}")
     sr_forbid_passwd_or_main_sudoers "${_dest}"
     sr_require_product_sudoers_d "${_dest}"
@@ -4803,6 +4842,7 @@ lpu_defaults() {
     : "${LPU_HOME:=/etc/sudoer-adm}"
     : "${LPU_HOOK_BEGIN:=# BEGIN sudoer-cli login hook}"
     : "${LPU_HOOK_END:=# END sudoer-cli login hook}"
+    : "${COMMON_LOGIN_HOOK_NAME:=login-review-hook}"
 }
 
 lpu_find_bin() {
@@ -4875,15 +4915,16 @@ lpu_collision_check() {
     fi
 }
 
-# Login-hook-symlink: stable ${GLOBAL_BIN}/${APP_NAME}-hook → product binary.
+# Login-hook-symlink: stable ${GLOBAL_BIN}/${COMMON_LOGIN_HOOK_NAME} → product binary.
 # Create only when the name is absent. Do not overwrite a retargeted name.
 # Test-mode MUST NOT write live /usr/local/bin.
 # ALIGNMENT: requirement-login-interactive-review-hook.md · requirement-least-privilege-user.md
 lpu_ensure_login_hook_symlink() {
     : "${APP_NAME:=sudoer-cli}"
+    : "${COMMON_LOGIN_HOOK_NAME:=login-review-hook}"
     _gb="${GLOBAL_BIN:-/usr/local/bin}"
     _bin="${_gb}/${APP_NAME}"
-    _hook="${_gb}/${APP_NAME}-hook"
+    _hook="${_gb}/${COMMON_LOGIN_HOOK_NAME}"
     if [ "${SUDOER_CLI_ALLOW_TEST_ROOTS:-0}" = "1" ]; then
         case "${_gb}" in
             /usr/local/bin|/usr/local/bin/)
@@ -4948,9 +4989,10 @@ lpu_ensure_global_bin() {
 lpu_f6_text() {
     lpu_defaults
     _gb="${GLOBAL_BIN:-/usr/local/bin}"
+    : "${COMMON_LOGIN_HOOK_NAME:=login-review-hook}"
     printf '# %s F6 Table A — production global binary + login-hook-symlink\n' "${APP_NAME}"
     printf '%s ALL=(root) NOPASSWD: %s/%s\n' "${LPU_USER}" "${_gb}" "${APP_NAME}"
-    printf '%s ALL=(root) NOPASSWD: %s/%s-hook\n' "${LPU_USER}" "${_gb}" "${APP_NAME}"
+    printf '%s ALL=(root) NOPASSWD: %s/%s\n' "${LPU_USER}" "${_gb}" "${COMMON_LOGIN_HOOK_NAME}"
 }
 
 lpu_f6_path() {
@@ -5051,7 +5093,8 @@ lpu_own_user_rc() {
 
 lpu_hook_text() {
     lpu_defaults
-    _bin="${GLOBAL_BIN:-/usr/local/bin}/${APP_NAME}-hook"
+    : "${COMMON_LOGIN_HOOK_NAME:=login-review-hook}"
+    _bin="${GLOBAL_BIN:-/usr/local/bin}/${COMMON_LOGIN_HOOK_NAME}"
     printf '%s\n' "${LPU_HOOK_BEGIN}"
     printf '%s\n' "if [ -z \"\${SUDOER_CLI_HOOK_RAN-}\" ] \\"
     printf '%s\n' "  && [ -n \"\${PS1-}\" ] \\"
@@ -5061,8 +5104,10 @@ lpu_hook_text() {
     printf '%s\n' "  && [ -z \"\${SSH_ORIGINAL_COMMAND-}\" ]; then"
     printf '%s\n' "  SUDOER_CLI_HOOK_RAN=1"
     printf '%s\n' "  export SUDOER_CLI_HOOK_RAN"
-    printf '%s\n' "  sudo -n ${_bin} interactive \\"   # lpu-hook-rc (login-hook-symlink; specified F6 -n)
-    printf '%s\n' "    || printf '%s\\n' \"${APP_NAME}: interactive hook skipped\" >&2"
+    printf '%s\n' "  if ! sudo -n ${_bin} interactive; then"   # lpu-hook-rc (login-hook-symlink; specified F6 -n)
+    printf '%s\n' "    printf '%s\\n' \"${APP_NAME}: login review did not start. ${LPU_USER} cannot run the review command without a password (the passwordless grant is not installed yet).\" >&2"
+    printf '%s\n' "    printf '%s\\n' \"You still have a shell. Next: from a host admin, run: sudo ${APP_NAME} interactive\" >&2"
+    printf '%s\n' "  fi"
     printf '%s\n' "fi"
     printf '%s\n' "${LPU_HOOK_END}"
 }
@@ -5099,18 +5144,30 @@ lpu_hook_apply() {
 #
 # GENERAL PURPOSE:
 # Return 0 when an rc file still sudo -n's {{GLOBAL_BIN}}/{{APP_NAME}}
-# interactive (not {{APP_NAME}}-hook). Class B: exit status only.
+# interactive or an old {{APP_NAME}}-hook (not login-review-hook).
+# Class B: exit status only.
 #
 # ALIGNMENT:
 # - requirement-login-interactive-review-hook.md
 #
-# Last updated: 2026-09-08
+# Last updated: 2026-09-13
 # =============================================================================
 lpu_rc_has_old_product_hook() {
     _rf="${1-}"
     : "${APP_NAME:=sudoer-cli}"
+    : "${COMMON_LOGIN_HOOK_NAME:=login-review-hook}"
     [ -f "${_rf}" ] || return 1
-    grep -q "/${APP_NAME} interactive" "${_rf}" 2>/dev/null
+    if grep -q "/${APP_NAME}-hook" "${_rf}" 2>/dev/null; then
+        return 0
+    fi
+    if grep -q "/${APP_NAME} interactive" "${_rf}" 2>/dev/null; then
+        return 0
+    fi
+    if grep -q "BEGIN sudoer-cli login hook" "${_rf}" 2>/dev/null \
+        && ! grep -q "/${COMMON_LOGIN_HOOK_NAME} interactive" "${_rf}" 2>/dev/null; then
+        return 0
+    fi
+    return 1
 }
 
 # =============================================================================
@@ -5118,23 +5175,24 @@ lpu_rc_has_old_product_hook() {
 # =============================================================================
 #
 # GENERAL PURPOSE:
-# After marker rewrite, drop any remaining product-binary
-# "/{{APP_NAME}} interactive" lines. Does not match {{APP_NAME}}-hook.
+# After marker rewrite, drop leftover product-binary
+# "/{{APP_NAME}} interactive" and old "/{{APP_NAME}}-hook" lines.
+# Does not match login-review-hook.
 #
 # ALIGNMENT:
 # - requirement-login-interactive-review-hook.md
 #
-# Last updated: 2026-09-08
+# Last updated: 2026-09-13
 # =============================================================================
 lpu_drop_old_product_hook_lines() {
     _df="${1-}"
     : "${APP_NAME:=sudoer-cli}"
     [ -f "${_df}" ] || return 0
-    if ! grep -q "/${APP_NAME} interactive" "${_df}" 2>/dev/null; then
+    if ! grep -qE "/${APP_NAME}(-hook)?( |$)" "${_df}" 2>/dev/null; then
         return 0
     fi
     _dt=$(mktemp "${TMPDIR:-/tmp}/${APP_NAME}.oldhook.XXXXXX") || sr_die "mktemp failed" "authz"
-    if grep -v "/${APP_NAME} interactive" "${_df}" >"${_dt}"; then
+    if grep -v "/${APP_NAME}-hook" "${_df}" | grep -v "/${APP_NAME} interactive" >"${_dt}"; then
         :
     else
         _dgrc=$?
@@ -5153,17 +5211,18 @@ lpu_drop_old_product_hook_lines() {
 #
 # GENERAL PURPOSE:
 # Type 1 interactive (and setup) reviews the dedicated approver rc. If it
-# still calls the product binary, rewrite to the labeled {{APP_NAME}}-hook.
-# Already-new rc is left alone. Missing LPU home is a no-op.
+# still calls the product binary or an old {{APP_NAME}}-hook, rewrite to
+# login-review-hook. Already-common rc is left alone. Missing LPU home is a no-op.
 #
 # ALIGNMENT:
 # - requirement-login-interactive-review-hook.md
 #
-# Last updated: 2026-09-08
+# Last updated: 2026-09-13
 # =============================================================================
 lpu_review_old_login_hook() {
     lpu_defaults
     : "${APP_NAME:=sudoer-cli}"
+    : "${COMMON_LOGIN_HOOK_NAME:=login-review-hook}"
     if [ "$(id -u)" -ne 0 ]; then
         return 0
     fi
@@ -5190,7 +5249,7 @@ lpu_review_old_login_hook() {
         fi
     fi
     if [ "${_replaced}" -eq 1 ]; then
-        out_info "replaced old ${APP_NAME} login hook with ${APP_NAME}-hook"
+        out_info "replaced old ${APP_NAME} login hook with ${COMMON_LOGIN_HOOK_NAME}"
     fi
 }
 
@@ -5335,7 +5394,7 @@ lpu_setup() {
         out_success "LPU ${LPU_USER} ready (uid ${LPU_UID}, home ${LPU_HOME})"
         out_info "F6 $(lpu_f6_path)"
         out_info "Global binary ${LPU_GLOBAL_BIN}"
-        out_info "Login-hook symlink ${GLOBAL_BIN:-/usr/local/bin}/${APP_NAME}-hook"
+        out_info "Login-hook symlink ${GLOBAL_BIN:-/usr/local/bin}/${COMMON_LOGIN_HOOK_NAME:-login-review-hook}"
         _cmd=$(sr_operator_cmd)
         out_info "Next: as yourself (not ${LPU_USER}), ${_cmd} add-sudoer-request --file request.json"
         out_info "Then this sudo is the approval: sudo ${_cmd} interactive"

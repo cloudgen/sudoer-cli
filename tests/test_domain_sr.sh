@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..06, TP-SR-FENCE-01..17, TP-SR-INT-01..09, TP-SR-19..21, TP-PREV-01..03, TP-TMP-02)
+# tests/test_domain_sr.sh — sudoers-request domain (TP-SR-*, TP-SR-PRIV-01..04, TP-SR-HOOK-01..08, TP-SR-FENCE-01..17, TP-SR-INT-01..09, TP-SR-19..21, TP-PREV-01..03, TP-TMP-02)
 # Primary REQ: requirement-domain-sudoer-approval.md · requirement-sudoers-file.md (TP-SR-19..21) · requirement-login-interactive-review-hook.md (TP-SR-HOOK-*)
 # =============================================================================
 
@@ -183,6 +183,18 @@ EOF
     assert_contains "TP-SR-21 Next json-to-sudoers" "${_err}" "json-to-sudoers"
     assert_not_contains "TP-SR-21 no host validation jargon" "${_err}" "host validation"
     assert_not_contains "TP-SR-21 no host-checker jargon" "${_err}" "host sudoers checker"
+
+    # TP-SR-HOOK-08 login-hook-elev sudoers emit uses the shared doorbell
+    _fx="${TESTS_ROOT}/fixtures/login-hook-elev-dns-adm.json"
+    HOME="${CI_HOME}" sh "${SCRIPT}" json-to-sudoers --file "${_fx}" --out "${CI_HOME}/hook-elev.sudoers" >/dev/null 2>&1
+    assert_eq "TP-SR-HOOK-08 login-hook-elev json-to-sudoers exit 0" 0 "$?"
+    _he=$(cat "${CI_HOME}/hook-elev.sudoers")
+    assert_contains "TP-SR-HOOK-08 sudoers uses login-review-hook" "${_he}" "/usr/local/bin/login-review-hook"
+    assert_contains "TP-SR-HOOK-08 sudoers keeps interactive" "${_he}" "interactive"
+    assert_not_contains "TP-SR-HOOK-08 sudoers not sibling product binary" "${_he}" "/usr/local/bin/dns-cli"
+    _rew=$(sed -n '/^sr_rewrite_login_hook_elev_cmds()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-SR-HOOK-08 rewrite helper exists" "${_rew}" 'login-hook-elev'
+    assert_contains "TP-SR-HOOK-08 rewrite uses COMMON_LOGIN_HOOK_NAME" "${_rew}" 'COMMON_LOGIN_HOOK_NAME'
 
     # TP-SR-08 remove purpose-only
     printf '%s\n' '{"purpose":"Revoke my webservice sudoers grant; I no longer operate nginx."}' >"${CI_HOME}/rm.json"
@@ -442,8 +454,12 @@ EOF
     _hook=$(sed -n '/^lpu_hook_text()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-PRIV-03 hook sudo -n global interactive" "${_hook}" "sudo -n"
     assert_contains "TP-SR-PRIV-03 hook interactive verb" "${_hook}" "interactive"
-    assert_contains "TP-SR-HOOK-05 hook text uses login-hook-symlink" "${_hook}" '-hook'
-    assert_not_contains "TP-SR-HOOK-05 hook text not old product-binary sudo" "${_hook}" "sudoer-cli interactive"
+    assert_contains "TP-SR-HOOK-05 hook text uses login-hook-symlink" "${_hook}" 'login-review-hook'
+    assert_not_contains "TP-SR-HOOK-05 hook text not old product-binary sudo" "${_hook}" "/usr/local/bin/sudoer-cli interactive"
+    assert_not_contains "TP-SR-HOOK-05 hook text not per-app doorbell" "${_hook}" "sudoer-cli-hook"
+    assert_contains "TP-SR-HOOK-07 skip copy names happened" "${_hook}" "login review did not start"
+    assert_contains "TP-SR-HOOK-07 skip copy names Next" "${_hook}" "Next: from a host admin, run: sudo"
+    assert_not_contains "TP-SR-HOOK-07 skip copy not only skipped" "${_hook}" "interactive hook skipped"
     _sym=$(sed -n '/^lpu_ensure_login_hook_symlink()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-HOOK-05 ensure-symlink helper exists" "${_sym}" 'ln -s'
     assert_contains "TP-SR-HOOK-05 test-mode skips live /usr/local/bin" "${_sym}" '/usr/local/bin'
@@ -509,16 +525,19 @@ EOF
     assert_contains "TP-SR-HOOK-02 existing .profile body kept" "${_prf2}" "# keep-me"
     assert_not_contains "TP-SR-HOOK-02 existing not replaced by create sample" "${_prf2}" "BEGIN sudoer-cli profile source-bashrc"
     _brc=$(cat "${_th}/home/.bashrc")
-    assert_contains "TP-SR-HOOK-05 planted bashrc uses login-hook-symlink" "${_brc}" "sudoer-cli-hook interactive"
-    assert_not_contains "TP-SR-HOOK-05 planted bashrc not old product binary" "${_brc}" "sudoer-cli interactive"
+    assert_contains "TP-SR-HOOK-05 planted bashrc uses login-hook-symlink" "${_brc}" "login-review-hook interactive"
+    assert_not_contains "TP-SR-HOOK-05 planted bashrc not old product binary" "${_brc}" "/usr/local/bin/sudoer-cli interactive"
+    assert_not_contains "TP-SR-HOOK-05 planted bashrc not per-app doorbell" "${_brc}" "sudoer-cli-hook"
+    assert_contains "TP-SR-HOOK-07 planted skip happened" "${_brc}" "login review did not start"
+    assert_contains "TP-SR-HOOK-07 planted skip Next" "${_brc}" "Next: from a host admin, run: sudo sudoer-cli interactive"
     printf '%s\n' \
         "# BEGIN sudoer-cli login hook" \
         "sudo -n /usr/local/bin/sudoer-cli interactive" \
         "# END sudoer-cli login hook" >"${_th}/home/.bashrc"
     sh "${_runner}"
     _brc2=$(cat "${_th}/home/.bashrc")
-    assert_contains "TP-SR-HOOK-05 heal rewrites old binary to hook" "${_brc2}" "sudoer-cli-hook interactive"
-    assert_not_contains "TP-SR-HOOK-05 heal removes old product-binary sudo" "${_brc2}" "sudoer-cli interactive"
+    assert_contains "TP-SR-HOOK-05 heal rewrites old binary to hook" "${_brc2}" "login-review-hook interactive"
+    assert_not_contains "TP-SR-HOOK-05 heal removes old product-binary sudo" "${_brc2}" "/usr/local/bin/sudoer-cli interactive"
     _revfn=$(sed -n '/^lpu_review_old_login_hook()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-HOOK-06 review helper exists" "${_revfn}" "lpu_rc_has_old_product_hook"
     assert_contains "TP-SR-HOOK-06 review skips missing home" "${_revfn}" 'LPU_HOME'
@@ -560,8 +579,16 @@ EOF
         "# END sudoer-cli login hook" >"${_th}/home/.bashrc"
     sh "${_runner6}"
     _brc3=$(cat "${_th}/home/.bashrc")
-    assert_contains "TP-SR-HOOK-06 review replaces old product-binary hook" "${_brc3}" "sudoer-cli-hook interactive"
-    assert_not_contains "TP-SR-HOOK-06 review removes old product-binary sudo" "${_brc3}" "sudoer-cli interactive"
+    assert_contains "TP-SR-HOOK-06 review replaces old product-binary hook" "${_brc3}" "login-review-hook interactive"
+    assert_not_contains "TP-SR-HOOK-06 review removes old product-binary sudo" "${_brc3}" "/usr/local/bin/sudoer-cli interactive"
+    printf '%s\n' \
+        "# BEGIN sudoer-cli login hook" \
+        "sudo -n /usr/local/bin/sudoer-cli-hook interactive" \
+        "# END sudoer-cli login hook" >"${_th}/home/.bashrc"
+    sh "${_runner6}"
+    _brc4=$(cat "${_th}/home/.bashrc")
+    assert_contains "TP-SR-HOOK-06 review replaces old per-app doorbell" "${_brc4}" "login-review-hook interactive"
+    assert_not_contains "TP-SR-HOOK-06 review removes old per-app doorbell" "${_brc4}" "sudoer-cli-hook"
     _sum1=$(cksum "${_th}/home/.bashrc")
     sh "${_runner6}"
     _sum2=$(cksum "${_th}/home/.bashrc")
@@ -585,19 +612,20 @@ EOF
         printf '%s\n' 'lpu_ensure_login_hook_symlink'
     } >"${_runner}"
     sh "${_runner}"
-    assert_file_exists "TP-SR-HOOK-05 hook symlink created" "${_th}/gbin/sudoer-cli-hook"
-    _tgt=$(readlink "${_th}/gbin/sudoer-cli-hook")
+    assert_file_exists "TP-SR-HOOK-05 hook symlink created" "${_th}/gbin/login-review-hook"
+    _tgt=$(readlink "${_th}/gbin/login-review-hook")
     assert_eq "TP-SR-HOOK-05 hook symlink target is product binary" "${_th}/gbin/sudoer-cli" "${_tgt}"
-    rm -f "${_th}/gbin/sudoer-cli-hook"
-    ln -s /bin/true "${_th}/gbin/sudoer-cli-hook"
+    rm -f "${_th}/gbin/login-review-hook"
+    ln -s /bin/true "${_th}/gbin/login-review-hook"
     sh "${_runner}"
-    _tgt2=$(readlink "${_th}/gbin/sudoer-cli-hook")
+    _tgt2=$(readlink "${_th}/gbin/login-review-hook")
     assert_eq "TP-SR-HOOK-05 existing hook name not overwritten" "/bin/true" "${_tgt2}"
     rm -rf "${_th}"
     _f6fn=$(sed -n '/^lpu_f6_text()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-PRIV-03 F6 Table A NOPASSWD" "${_f6fn}" "NOPASSWD:"
     assert_contains "TP-SR-PRIV-03 F6 global bin" "${_f6fn}" 'GLOBAL_BIN'
-    assert_contains "TP-SR-HOOK-05 F6 grants login-hook-symlink" "${_f6fn}" '-hook'
+    assert_contains "TP-SR-HOOK-05 F6 grants login-hook-symlink" "${_f6fn}" 'login-review-hook'
+    assert_not_contains "TP-SR-HOOK-05 F6 not per-app doorbell" "${_f6fn}" 'sudoer-cli-hook'
     _f6p=$(sed -n '/^lpu_f6_path()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-SR-PRIV-03 F6 path uses sudoers.d dir" "${_f6p}" 'sr_sudoers_d_dir'
     assert_contains "TP-SR-PRIV-03 F6 basename is LPU_USER" "${_f6p}" 'LPU_USER'

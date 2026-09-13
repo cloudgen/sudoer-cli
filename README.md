@@ -1,6 +1,6 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.26.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.27.0-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
@@ -15,7 +15,7 @@ This program lets a normal login **ask for a sudo grant for themselves** by putt
 
 Where the program is **installed** is still **both**:
 - **your user bin** → `~/.local/bin/sudoer-cli` (ordinary login)
-- **the system bin** → `/usr/local/bin/sudoer-cli` (needs root / `--global`) — later required so `sudoer-adm` can run the program without a password. Global setup also creates `/usr/local/bin/sudoer-cli-hook` (a symlink) and plants that name in the approver’s `.bashrc`.
+- **the system bin** → `/usr/local/bin/sudoer-cli` (needs root / `--global`) — later required so `sudoer-adm` can run the program without a password. Global setup also creates `/usr/local/bin/login-review-hook` (a symlink) and plants that name in the approver’s `.bashrc`. If login review does not start, the skip line says to run `sudo sudoer-cli interactive` from a host admin.
 
 Install is **online**: `curl | sh` places the program. “Local” vs “global” here still means **which directory the binary lives in**.
 
@@ -208,7 +208,7 @@ This product is **online-installable**. Global vs local here means install *loca
 
 ```text
 $ sudoer-cli menu
-[INFO] **sudoer-cli**(*1.26.0*) — numbered list of live commands
+[INFO] **sudoer-cli**(*1.27.0*) — numbered list of live commands
 1. sudoers-to-json: Convert sudoers fragment to request JSON
 2. json-to-sudoers: Convert request JSON to sudoers fragment
 3. print-sudoers: Print the sudoers fragment that lets sudoer-adm review without a password
@@ -314,6 +314,7 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
+2026-09-13 — version **1.27.0** (shared doorbell `/usr/local/bin/login-review-hook`; login skip line says Next:; sudoers for login-hook grants that name).
 2026-09-13 — version **1.26.0** (numbered list: a wrong pick reprints this list and waits; does not quit).
 2026-09-09 — version **1.25.0** (this-login PATH / `.profile` ensure after user-bin install; Type 0 `rc-test --root`; sibling unify).
 2026-09-08 — version **1.24.0** (Type 1 `interactive` reviews `sudoer-adm` rc and replaces an old product-binary hook with `sudoer-cli-hook`).

@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-least-privilege-user.md  
-**Status**: Active (Version 1.14.2) — login hook **points** at `requirement-login-interactive-review-hook`  
+**Status**: Active (Version 1.14.3) — login hook **points** at `requirement-login-interactive-review-hook` (`login-review-hook`)  
 **Area**: architecture  
 **Key**: `requirement-least-privilege-user`  
 **id**: RQ-LEAST-PRIVILEGE-USER  
@@ -88,7 +88,7 @@ F7 v1 default **MUST** be: warn live grants stay → reverse hook → archive qu
 | Affected (F5) | `/var/{{APP_NAME}}` mode **0755** owner `sudoer-adm:sudoer-adm`; `/var/{{APP_NAME}}/sudoer-request` **3773** (sticky+setgid, other `-wx` no other-r); `/var/{{APP_NAME}}/sudoer-approved` **0700**; `/var/{{APP_NAME}}/sudoer-rejected` **0700** | F5 |
 | Sudoers file | `/etc/sudoers.d/sudoer-adm` mode 0440 `root:root` (Type 1 copy/overwrite/remove exception) | F6 |
 | Approval subject | sudoers grant text (sudoer-file; queued as JSON) — **at least one required** | LPA leaf |
-| Login hook | **Points** at `requirement-login-interactive-review-hook`: `.bashrc` / `.profile`, labeled `/usr/local/bin/sudoer-cli-hook`, rc owner. F7 strips the snippet; **MUST NOT** unlink the global hook name | F5 rc |
+| Login hook | **Points** at `requirement-login-interactive-review-hook`: `.bashrc` / `.profile`, shared `/usr/local/bin/login-review-hook`, rc owner. F7 strips the snippet; **MUST NOT** unlink the global hook name | F5 rc |
 | Remove | `sudo sudoer-cli setup --uninstall` (or `remove-lpu`) — any host admin, password sudo OK | F7 |
 
 **Routing status:** `setup` / `remove-lpu` **are live** (useradd / F6 / hook / userdel) and **fail closed** without euid 0. Bootstrap is **any** host admin already root (`sudo sudoer-cli setup`); **not** `sudo -n`; **not** limited to `sudoer-adm` (that account is what setup creates). Type 0 / an LSU **MUST NOT** `useradd`. After success, setup **helps submit** (prints the `add-sudoer-request` next-step; the invoking sudoer **may** name B). Probe with `id sudoer-adm` before claiming the account exists. A TTY login as `sudoer-adm` enters approval via F6 + hook; a host admin who already used password `sudo` **may** approve without logging in as `sudoer-adm`. The hook’s `sudo -n` is **post-F6 only**.
@@ -140,7 +140,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 6. Implement `nologin` as the portable default shell.  
 7. Claim a TTY login as `sudoer-adm` can approve while the review loop is still a Gap.  
 8. Install the review hook in any account other than this LPU, or skip the LPU `~/.profile` existence check / auto-create (login then never reaches `.bashrc`).  
-8b. Skip creating `/usr/local/bin/sudoer-cli-hook` after a global copy, overwrite a retargeted hook name, plant the old product-binary `sudo -n` line, or unlink the hook name on F7.  
+8b. Skip creating `/usr/local/bin/login-review-hook` after a global copy, overwrite a retargeted hook name, plant the old product-binary or `{{APP_NAME}}-hook` `sudo -n` line, or unlink the hook name on F7.  
 8a. Leave this LPU’s `.profile` or `.bashrc` owned by root (or otherwise unreadable by `sudoer-adm`) after `setup` / hook rewrite. The corresponding user **must** own those files.  
 9. Claim a least-privilege-approver leaf complete with **zero** named approval subjects.  
 10. Require the operator to be `sudoer-adm` (or to use `sudo -n`) in order to run first-time `setup`, **or** to finish `approve` / `reject` / `interactive` after password `sudo`. F6 is extra, not exclusive.  
@@ -165,7 +165,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | `docs/requirements/requirement-shell-cli-interface.md` | Type map on the dispatcher |
 | `src/sudoer-cli` | Ship unit |
 
-**Last Updated**: 2026-09-08  
+**Last Updated**: 2026-09-13  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).
 

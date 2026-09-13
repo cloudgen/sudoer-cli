@@ -55,7 +55,7 @@ Two desks stay separate. This file owns **this login**. The approver desk stays 
 |---------|--------------|-------|
 | **path-ensure** | **Claimed** (this login) | `.bashrc` (`BASHRC`): create if missing. `.zshrc` (`ZSHRC`): only if the file exists (do **not** invent it). Fish `config.fish` (`FISH_CONFIG`): create the config dir if needed. **Not** `.profile`. **Not** `/etc/sudoer-adm/*` |
 | **profile-ensure** | **Claimed** (this login) | `.profile` (`PROFILE`): create if absent with a sample that sources `.bashrc`; **never overwrite** an existing body |
-| **login-hook** | **Not this file** | Already Active on `requirement-login-interactive-review-hook` (approver `/etc/sudoer-adm` rc + labeled `/usr/local/bin/sudoer-cli-hook`). **MUST NOT** plant a review scrap in this login’s rc. **MUST NOT** mark login-hook Unused as if the product has no hook |
+| **login-hook** | **Not this file** | Already Active on `requirement-login-interactive-review-hook` (approver `/etc/sudoer-adm` rc + shared `/usr/local/bin/login-review-hook`). **MUST NOT** plant a review scrap in this login’s rc. **MUST NOT** mark login-hook Unused as if the product has no hook |
 | **rc-owner** | **This-login writer** for PATH/profile | After create/modify, mode readable (`0644`). No Type 1 `setup` `chown` of another login’s home from these helpers. Writer **is** this login. Approver-rc owner after `setup` stays on the login-hook REQ |
 
 | File | path-ensure | profile-ensure | login-hook | rc-owner |

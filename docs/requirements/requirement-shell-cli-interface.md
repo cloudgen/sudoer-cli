@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-interface.md  
-**Status**: Active (Version 3.12.1) — stay-honest `VERSION` 1.26.0; `menu` invalid-choice retry dual mention  
+**Status**: Active (Version 3.12.2) — stay-honest `VERSION` 1.27.0; login-hook doorbell `login-review-hook`  
 **Area**: shell  
 **Key**: `requirement-shell-cli-interface`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -100,10 +100,10 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | **Primary executable** | `src/sudoer-cli` (POSIX `/bin/sh`, single-file ship unit) |
 | **Dispatcher** | `app_main` |
 | **Output SSOT** | `out_text` + wrappers (`out_info`, `out_success`, `out_warn`, `out_error`, `out_die`, `out_plain`, `out_json`, …) |
-| **Version SSOT** | `VERSION="1.26.0"` hard-assign in ship unit |
+| **Version SSOT** | `VERSION="1.27.0"` hard-assign in ship unit |
 | **Interactive rc write path** | `BASHRC` default `${HOME}/.bashrc`. User-bin `install` PATH ensure creates/modifies this file. Tests/CI **MAY** set `BASHRC` to a file in a temp folder. Dual mention: `requirement-shell-path-and-shell-support`. |
 | **Install paths** | Global: `GLOBAL_BIN` default `/usr/local/bin`; User: `USER_BIN` default `${HOME}/.local/bin` |
-| **Primary install story** | `curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli \| sh` → user bin; `sudo curl … \| sudo sh` → global; login-hook-symlink `/usr/local/bin/sudoer-cli-hook` after global place |
+| **Primary install story** | `curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli \| sh` → user bin; `sudo curl … \| sudo sh` → global; login-hook-symlink `/usr/local/bin/login-review-hook` after global place |
 | **Default CLI main menu** | **Claimed.** Empty argv is Type O install-ensure. Verb `menu` / `main` opens the numbered list. Topic owner: `requirement-shell-cli-default-interaction`. Look printers: `util_app_ident` / `out_menu_choice` (**TP-CLI-17**) |
 | **Online channel env** | `SCRIPT_URL` composed `https://raw.githubusercontent.com/${REPO_USER}/${REPO_NAME}/main/src/${APP_NAME}` |
 | **Type 1 / Type 2 commands** | Type 1 **routed, fail closed** without euid 0; setup = any admin sudo (live useradd/F6/hook); approve = same elev (F6 extra); Type 2 **not used** |
@@ -137,9 +137,9 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | `list-approving` / `list-approved` / `list-rejected` | Type 0 | `sr_list` | Named here; behavior on domain SSOT |
 | `list-approving --orphans` | Type 1 | `sr_list_orphans` | Named here; fail-closed without euid 0 |
 | `show` | Type 0 | `sr_show` | Named here; behavior on domain SSOT |
-| `setup` / `remove-lpu` | Type 1 | `lpu_setup` / `lpu_remove` | Named here; Type map on three-layer; F1–F7 on LPU REQ. After global copy: labeled `/usr/local/bin/sudoer-cli-hook` on `requirement-login-interactive-review-hook` |
+| `setup` / `remove-lpu` | Type 1 | `lpu_setup` / `lpu_remove` | Named here; Type map on three-layer; F1–F7 on LPU REQ. After global copy: shared `/usr/local/bin/login-review-hook` on `requirement-login-interactive-review-hook` |
 | `approve` / `reject` | Type 1 | `sr_approve` / `sr_reject` | Named here; dest Fence then dest write |
-| `interactive` | Type 1 | `sr_interactive` | Named here; one-off yes/no on domain SSOT; hook start on `requirement-login-interactive-review-hook`. Invocation: `sudo sudoer-cli interactive` · hook: `sudo -n /usr/local/bin/sudoer-cli-hook interactive` |
+| `interactive` | Type 1 | `sr_interactive` | Named here; one-off yes/no on domain SSOT; hook start on `requirement-login-interactive-review-hook`. Invocation: `sudo sudoer-cli interactive` · hook: `sudo -n /usr/local/bin/login-review-hook interactive` |
 
 #### Global flags (normative wiring)
 
@@ -295,11 +295,12 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | 2026-09-03 | Active 3.10.0 | Claimed case-3 `menu` / `main`; empty argv stays help; `VERSION` 1.19.0 |
 | 2026-09-03 | Active 3.10.1 | Stay-honest Implementation Notes `VERSION` 1.20.0 |
 | 2026-09-06 | Active 3.10.3 | Stay-honest Implementation Notes `VERSION` 1.21.0 |
+| 2026-09-13 | Active 3.12.2 | Stay-honest `VERSION` 1.27.0; hook doorbell `login-review-hook` |
 | 2026-09-13 | Active 3.12.1 | Stay-honest `VERSION` 1.26.0; `menu` invalid-choice retry dual mention |
 | 2026-09-09 | Active 3.12.0 | Dual mention Type 0 `rc-test`; `BASHRC` env; `VERSION` 1.25.0 |
 
 ---
 
-**Last Updated**: 2026-09-13 (3.12.1 — `menu` invalid-choice retry dual mention)  
+**Last Updated**: 2026-09-13 (3.12.2 — `login-review-hook`)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

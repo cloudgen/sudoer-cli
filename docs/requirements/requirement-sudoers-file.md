@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-sudoers-file.md  
-**Status**: Active (Version 1.1.0) — visudo-legal text dual specialized; dest sibling grants stay-honest  
+**Status**: Active (Version 1.2.0) — `login-hook-elev` sudoers emit/dest-write **MUST** use `/usr/local/bin/login-review-hook`  
 **Area**: domain  
 **Key**: `requirement-sudoers-file`  
 **id**: RQ-SUDOERS-FILE  
@@ -47,7 +47,8 @@ The dest fence table on `requirement-domain-sudoer-approval.md` **MUST** still p
 
 1. **MUST** name **exactly this** topic: the **grant sudoers file** (text dual of request JSON).  
 2. Dest inbound `commands[].path` **MAY** be a service-catalog binary (`/usr/sbin/nginx`, `/usr/local/bin/take-ownership`, …). **MUST NOT** claim every dest grant path is `/usr/local/bin/sudoer-cli`.  
-3. Dest **MUST NOT** treat visudo reject as a dest **Fence**. Convert / submit / dest-write **MUST** fail closed.
+3. Dest **MUST NOT** treat visudo reject as a dest **Fence**. Convert / submit / dest-write **MUST** fail closed.  
+4. When `kind` is `login-hook-elev`, convert (`json-to-sudoers`), Type 0 submit visudo, and Type 1 dest-write **MUST** emit `commands[].path` as `/usr/local/bin/login-review-hook` (live doorbell on `requirement-login-interactive-review-hook`). Inbound JSON that still names the sibling product binary or `{{service}}-hook` **MUST** be rewritten in the sudoers **text**. JSON-format Fence / `test-json-format` **MUST NOT** rewrite inbound JSON. Type 2 switch grants stay the submitted path. F6 Table A emit stays on `requirement-three-layer-privilege-model` and **MUST** grant the same doorbell.
 
 ### 2.1 Text dual
 
@@ -113,6 +114,7 @@ JSON `message` **MUST** be the same sentence. **MUST NOT** dest-write. **MUST NO
 | Worked star | `--ownership *` stays `*` (not a glob) |
 | visudo skip | `command -v visudo` missing → skip `-cf` |
 | Command identity | Sibling service-catalog Cmnds (not `/usr/local/bin/sudoer-cli` only). F6 Table A stays three-layer |
+| **login-hook-elev path** | Convert / dest-write **MUST** emit `/usr/local/bin/login-review-hook`. Helper: `sr_rewrite_login_hook_elev_cmds` |
 | Operator-readable slots | visudo-fail: happened / means / Next json-to-sudoers; JSON `message` same sentence |
 
 ### 2.x Why This Requirement Exists (Direct CIAO Alignment)
@@ -143,7 +145,8 @@ JSON `message` **MUST** be the same sentence. **MUST NOT** dest-write. **MUST NO
 8. Delete the domain SSOT pointer, or move F6 Table A visudo into this file.  
 9. Write `/etc/passwd` or the main `/etc/sudoers` file.  
 10. Claim dest inbound grants must be `/usr/local/bin/sudoer-cli` only.  
-11. Give JSON a different visudo-fail story than the human `[ERROR]` line.
+11. Give JSON a different visudo-fail story than the human `[ERROR]` line.  
+12. Dest-write or convert a `login-hook-elev` grant that still names `{{APP_NAME}}-hook` or the sibling product binary instead of `/usr/local/bin/login-review-hook`.
 
 ## Design-time verification
 
@@ -156,6 +159,7 @@ JSON `message` **MUST** be the same sentence. **MUST NOT** dest-write. **MUST NO
 | **TP-SR-19** | `tests/test_domain_sr.sh` | have | json-to-sudoers `--ownership user:group` → `user\:group`; visudo -cf Pass; unescaped control fails visudo; round-trip JSON has `alice:ops` (portable visudo-legal colon) |
 | **TP-SR-20** | `tests/test_domain_sr.sh` | have | json-to-sudoers `--ownership *` keeps star operand; visudo -cf Pass (portable visudo-legal star) |
 | **TP-SR-21** | `tests/test_domain_sr.sh` | have | visudo reject says “visudo rejected”; quotes syntax; Next json-to-sudoers; no “host validation” (operator-readable visudo-fail) |
+| **TP-SR-HOOK-08** | `tests/test_domain_sr.sh` | have | `json-to-sudoers` of `kind=login-hook-elev` emits `/usr/local/bin/login-review-hook` even when inbound JSON still names the sibling product binary |
 
 **Matrix:** `reviews/requirement-test-matrix.md`  
 **Map:** `reviews/test-plan.md`.
@@ -166,7 +170,8 @@ JSON `message` **MUST** be the same sentence. **MUST NOT** dest-write. **MUST NO
 |----------|------|
 | `docs/requirements/index.md` | Registry SSOT |
 | `requirement-domain-sudoer-approval.md` | Convert/submit/dest catalog; canonical line + samples; **points here** |
-| `requirement-three-layer-privilege-model.md` | F6 Table A visudo (JOB-VISUDO); Type 1 dest path |
+| `requirement-three-layer-privilege-model.md` | F6 Table A visudo (JOB-VISUDO); Type 1 dest path; F6 grants `login-review-hook` |
+| `requirement-login-interactive-review-hook.md` | Live doorbell name `login-review-hook` |
 | `requirement-incorrect-json-format.md` | JSON-format Fence (not this file) |
 | `requirement-well-known-sudoer-binary-fence.md` | Cmnd **path** trust (not arg escape) |
 | `requirement-privilege-prevention-set.md` | **PREV-JSON-VISUDO** |
@@ -181,7 +186,8 @@ JSON `message` **MUST** be the same sentence. **MUST NOT** dest-write. **MUST NO
 |------|--------|------|
 | 2026-08-26 | Active 1.0.0 | Independent REQ: grant sudoers text dual, Cmnd arg escape (`\:`), visudo -cf, visudo-fail copy. Extracted from domain **2.32.0** body. **TP-SR-19..21**. |
 | 2026-08-26 | Active 1.1.0 | Aligned to portable sudoer-file text dual: stay-honest sibling grants (not own-binary-only); re-encode fidelity; visudo-legal; operator-readable visudo-fail slots. |
+| 2026-09-13 | Active 1.2.0 | `login-hook-elev` convert / dest-write **MUST** emit `/usr/local/bin/login-review-hook`. **TP-SR-HOOK-08**. |
 
-**Last Updated**: 2026-08-26  
+**Last Updated**: 2026-09-13  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

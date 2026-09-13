@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-privilege-prevention-set.md  
-**Status**: Active (Version 1.6.4)  
+**Status**: Active (Version 1.6.5)  
 **Area**: architecture  
 **Key**: `requirement-privilege-prevention-set`  
 **id**: RQ-PRIVILEGE-PREVENTION-SET  
@@ -148,7 +148,7 @@ These steps are **hard to undo**. They stay **allowed** after elev. The extra ga
 | **Product** | `sudoer-cli` |
 | **Ship unit** | `src/sudoer-cli` |
 | **LPU** | `sudoer-adm` (UID/GID `1776`, create home `/etc/sudoer-adm`; public queues `/var/{{APP_NAME}}/`) |
-| **F6 file** | `/etc/sudoers.d/sudoer-adm` = `sudoer-adm ALL=(root) NOPASSWD: /usr/local/bin/sudoer-cli` **and** `sudoer-adm ALL=(root) NOPASSWD: /usr/local/bin/sudoer-cli-hook` (Type 1 copy/overwrite/remove exception) |
+| **F6 file** | `/etc/sudoers.d/sudoer-adm` = `sudoer-adm ALL=(root) NOPASSWD: /usr/local/bin/sudoer-cli` **and** `sudoer-adm ALL=(root) NOPASSWD: /usr/local/bin/login-review-hook` (Type 1 copy/overwrite/remove exception) |
 | **Grant dest** | `/etc/sudoers.d/{{service}}-{{username}}` (worked: `/etc/sudoers.d/webservice-alice`) |
 | **Usual bootstrap** | `sudo src/sudoer-cli setup` or `sudo sudoer-cli setup` (password `sudo` OK) |
 | **Test-roots flag** | `SUDOER_CLI_ALLOW_TEST_ROOTS=1` |
@@ -256,9 +256,10 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | 2026-08-26 | Active 1.6.1 | Worked grant dest `webservice-alice` (no session login) |
 | 2026-08-26 | Active 1.6.2 | **PREV-JSON-VISUDO** owner is `requirement-sudoers-file` |
 | 2026-09-03 | Active 1.6.3 | F6 Table A also grants `/usr/local/bin/sudoer-cli-hook` |
+| 2026-09-13 | Active 1.6.5 | F6 Table A grants `/usr/local/bin/login-review-hook` (shared doorbell) |
 
 ---
 
-**Last Updated**: 2026-09-03  
+**Last Updated**: 2026-09-13  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).
