@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-modular-function-design.md  
-**Status**: Active (Version 3.2.1 – unused on Termux / Git Bash / Windows cmd)  
+**Status**: Active (Version 3.2.2 – unused on Termux / Git Bash / Windows cmd)  
 **Area**: shell  
 **Key**: `requirement-shell-modular-function-design`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -55,8 +55,8 @@ Ship unit remains a **single executable** at `src/sudoer-cli`.
 |--------|----------|---------|-------------------|
 | `out_` | Output system | All user-facing and machine-readable output | `out_text`, `out_info`, `out_json`, `out_die` |
 | `inst_` | Installation lifecycle | Local install/uninstall detect and place/remove | `inst_local_install`, `inst_local_uninstall`, `inst_is_installed` |
-| `util_` | General utilities | Path resolve, storage, CIAO pre-change `.bak` helper, sudo-wrapping | `util_resolve_storage`, `util_backup`, `util_sudo`, `util_chmod` |
-| `app_` | Cross-cutting CLI surface | Entry, dispatch, about/help/version/where-is-me | `app_main`, `app_about`, `app_help`, `app_version`, `app_where_is_me` |
+| `util_` | General utilities | Path resolve, storage, CIAO pre-change `.bak` helper, sudo-wrapping | `util_resolve_storage`, `util_persistent_storage_dir`, `util_backup`, `util_sudo`, `util_chmod` |
+| `app_` | Cross-cutting CLI surface | Entry, dispatch, about/help/version/where-is-me, menu language | `app_main`, `app_about`, `app_help`, `app_version`, `app_where_is_me`, `app_lang_load`, `app_lang_save`, `app_menu_text`, `app_cmd_menu_language` |
 | `path_` | Shell PATH & environment | This-login PATH / profile ensure after user-bin install; `rc-test` | `path_add_shell`, `path_add_bashrc`, `path_ensure_profile`, `path_rc_test` |
 | `prompt_` | Interactive prompts | Confirmations that **consume `TTY`** (no live `[ -t` policy gate) | `prompt_yes_no` |
 | `sr_` | Domain requests (target) | Convert, submit, list, show, approve/reject helpers | `sr_sudoers_to_json`, `sr_json_encode_request`, `sr_resolve_queues` |
@@ -167,6 +167,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-10-02 | Active 3.2.2 | Prefix examples: `app_lang_*`, `app_menu_text`, `app_cmd_menu_language`, `util_persistent_storage_dir` |
 | 2026-09-06 | Active 3.2.1 | Under command line for normal user only |
 | 2026-08-03 | Active 1.0.0 | folder-backup prefixes including `fb_*` |
 | 2026-08-13 | Active 2.0.0 | cli-template: no domain prefix |
@@ -176,6 +177,6 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 ---
 
-**Last Updated**: 2026-08-20  
+**Last Updated**: 2026-10-02  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

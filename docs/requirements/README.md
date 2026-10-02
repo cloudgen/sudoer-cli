@@ -2,14 +2,14 @@
 
 Authoritative specialized product law for **sudoer-cli** lives here.
 
-**Current state (2026-09-13):** This folder is the live product law for sudoer-cli: a POSIX `/bin/sh` program you install with `curl | sh`. A normal login converts and queues JSON; a host admin who already used password `sudo` runs first-time setup and review. Live origin **selfmanaged** (A→B). One domain file owns the waiting-folder machine. Login hook is independent `requirement-login-interactive-review-hook` (shared doorbell `sudoer-review-hook`). This-login PATH is `requirement-shell-path-and-shell-support`. Registry: `index.md`. (Catalog versions: domain **2.41.0**; login hook **1.3.0**; path-and-shell-support **1.0.0**; dest Fence **1.5.0**; well-known **1.2.0**; class **1.11.3**; CLI **3.12.3**; default interaction **1.2.0**; Type O **1.3.0**; self-management **1.2.0**; automatic-checksum **1.1.0**; output **1.4.0**; coding style **1.4.1**; prompt **1.2.1**; interactive **1.5.1**; ARSA **1.0.0**; prevention **1.6.6**; sudoers-file **1.3.0**; three-layer **1.17.0**.)
+**Current state (2026-10-02):** This folder is the live product law for sudoer-cli: a POSIX `/bin/sh` program you install with `curl | sh`. A normal login converts and queues JSON; a host admin who has used password `sudo` runs first-time setup and review. Menu **5** chooses the display language (`requirement-shell-cli-language` **1.0.0**). Live origin **selfmanaged** (A→B). One domain file owns the waiting-folder machine. Login hook is independent `requirement-login-interactive-review-hook` (shared doorbell `sudoer-review-hook`). This-login PATH is `requirement-shell-path-and-shell-support`. Registry: `index.md`. (Catalog versions: domain **2.41.0**; login hook **1.3.0**; path-and-shell-support **1.0.0**; dest Fence **1.5.0**; well-known **1.2.0**; class **1.11.3**; CLI **3.12.3**; default interaction **1.3.0**; language **1.0.0**; Type O **1.3.0**; self-management **1.2.0**; automatic-checksum **1.1.0**; output **1.4.0**; coding style **1.4.1**; prompt **1.2.1**; interactive **1.5.1**; modular **3.2.2**; storage **1.2.0**; ARSA **1.0.0**; prevention **1.6.6**; sudoers-file **1.3.0**; three-layer **1.17.0**.)
 
 ## Product identity (summary)
 
 | Field | Value |
 |-------|--------|
 | Product / `APP_NAME` | `sudoer-cli` |
-| Version SSOT | `1.28.0` (ship unit hard-assign) |
+| Version SSOT | `1.29.0` (ship unit hard-assign) |
 | Ship unit | `src/sudoer-cli` |
 | Default install | `curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli \| sh` → `~/.local/bin/sudoer-cli` (global `/usr/local/bin/sudoer-cli` so `sudoer-adm` can review without a password) |
 | Install mode | **online-installable** (`curl \| sh`) |

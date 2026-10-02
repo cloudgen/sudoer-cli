@@ -11,8 +11,8 @@ Public product review surface (peer of `tests/`).
 | `index.md` | Report index |
 | `reports/` | Dated review run reports |
 
-**Ship unit:** `src/sudoer-cli` (**VERSION 1.28.0**)  
+**Ship unit:** `src/sudoer-cli` (**VERSION 1.29.0**)  
 **Suite:** `./tests/run.sh`  
 **Last suite baseline:** see `test-plan.md`
 
-**Review focus:** Type 0 **online-installable** lifecycle (`curl \| sh`, Type O empty argv, `self-update` / `self-uninstall`) **and** routed Type 0 domain convert/submit/list/show. Type 1 `setup` / `interactive` live (static **TP-SR-PRIV-03** / **TP-SR-INT-05**; no host `useradd` in CI). Numbered start list `menu` / `main` (empty argv is Type O; invalid choice reprints this layer). **Every full review** re-runs **AL-1..7** / **TP-ELEV-09** (no exclusive-LPU approve lock). Latest report: `reports/2026-09-06-human-readability-and-coverage.md`.
+**Review focus:** Type 0 **online-installable** lifecycle (`curl \| sh`, Type O empty argv, `self-update` / `self-uninstall`) **and** routed Type 0 domain convert/submit/list/show. Type 1 `setup` / `interactive` live (static **TP-SR-PRIV-03** / **TP-SR-INT-05**; no host `useradd` in CI). Numbered start list `menu` / `main` (empty argv is Type O; row **5** languages; invalid choice reprints this layer). **Every full review** re-runs **AL-1..7** / **TP-ELEV-09** (no exclusive-LPU approve lock). Latest report: `reports/2026-10-02-language-menu-5.md`.

@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-interface.md  
-**Status**: Active (Version 3.12.3) — stay-honest `VERSION` 1.28.0; login-hook doorbell `sudoer-review-hook`  
+**Status**: Active (Version 3.12.3) — stay-honest `VERSION` 1.29.0; menu **5** languages; login-hook doorbell `sudoer-review-hook`  
 **Area**: shell  
 **Key**: `requirement-shell-cli-interface`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -100,11 +100,11 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | **Primary executable** | `src/sudoer-cli` (POSIX `/bin/sh`, single-file ship unit) |
 | **Dispatcher** | `app_main` |
 | **Output SSOT** | `out_text` + wrappers (`out_info`, `out_success`, `out_warn`, `out_error`, `out_die`, `out_plain`, `out_json`, …) |
-| **Version SSOT** | `VERSION="1.28.0"` hard-assign in ship unit |
+| **Version SSOT** | `VERSION="1.29.0"` hard-assign in ship unit |
 | **Interactive rc write path** | `BASHRC` default `${HOME}/.bashrc`. User-bin `install` PATH ensure creates/modifies this file. Tests/CI **MAY** set `BASHRC` to a file in a temp folder. Dual mention: `requirement-shell-path-and-shell-support`. |
 | **Install paths** | Global: `GLOBAL_BIN` default `/usr/local/bin`; User: `USER_BIN` default `${HOME}/.local/bin` |
 | **Primary install story** | `curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli \| sh` → user bin; `sudo curl … \| sudo sh` → global; login-hook-symlink `/usr/local/bin/sudoer-review-hook` after global place |
-| **Default CLI main menu** | **Claimed.** Empty argv is Type O install-ensure. Verb `menu` / `main` opens the numbered list. Topic owner: `requirement-shell-cli-default-interaction`. Look printers: `util_app_ident` / `out_menu_choice` (**TP-CLI-17**) |
+| **Default CLI main menu** | **Claimed.** Empty argv is Type O install-ensure. Verb `menu` / `main` opens the numbered list. Row **5** is languages (N=16, Exit **99**). Topic owner: `requirement-shell-cli-default-interaction`. Language copy: `requirement-shell-cli-language`. Look printers: `util_app_ident` / `out_menu_choice` (**TP-CLI-17**, **TP-CLI-24**) |
 | **Online channel env** | `SCRIPT_URL` composed `https://raw.githubusercontent.com/${REPO_USER}/${REPO_NAME}/main/src/${APP_NAME}` |
 | **Type 1 / Type 2 commands** | Type 1 **routed, fail closed** without euid 0; setup = any admin sudo (live useradd/F6/hook); approve = same elev (F6 extra); Type 2 **not used** |
 | **Dedicated system user** | `sudoer-adm` (authorizer; see LPU REQ) |
@@ -295,6 +295,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | 2026-09-03 | Active 3.10.0 | Claimed case-3 `menu` / `main`; empty argv stays help; `VERSION` 1.19.0 |
 | 2026-09-03 | Active 3.10.1 | Stay-honest Implementation Notes `VERSION` 1.20.0 |
 | 2026-09-06 | Active 3.10.3 | Stay-honest Implementation Notes `VERSION` 1.21.0 |
+| 2026-10-02 | Active 3.12.3 | Stay-honest `VERSION` 1.29.0; menu **5** languages |
 | 2026-09-13 | Active 3.12.3 | Stay-honest `VERSION` 1.28.0; hook doorbell `sudoer-review-hook` |
 | 2026-09-13 | Active 3.12.2 | Stay-honest `VERSION` 1.27.0; hook doorbell `login-review-hook` |
 | 2026-09-13 | Active 3.12.1 | Stay-honest `VERSION` 1.26.0; `menu` invalid-choice retry dual mention |

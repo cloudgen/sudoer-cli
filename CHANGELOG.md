@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.29.0] - 2026-10-02
+
+### Added
+
+- Menu **5** **languages** on `sudoer-cli menu` / `main`. The board lists **51** English through **63** Greek (简体中文, 繁體中文, Español, العربية, Français, Português, Русский, Deutsch, 日本語, 한국어, Nederlands, Ελληνικά). A pick writes `${HOME}/.local/sudoer-cli/language` mode **0600** and redisplays the front board in that language. **0** / empty on that board goes back and does not save. **50** and **64–69** are not printed. `SUDOER_CLI_LANG` overrides the file for one process and does not write it. Human `help` and human `about` follow the code. Argv `version` and JSON about stay English. Old rows **5–15** shift to **6–16**. Exit stays **99**. Unused front example is **17**. Language REQ **1.0.0**. Default-interaction **1.3.0**. Storage **1.2.0**. **TP-CLI-24**. Ship unit **`VERSION="1.29.0"`**.
+
 ## [1.28.0] - 2026-09-13
 
 ### Changed

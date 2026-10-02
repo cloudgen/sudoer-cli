@@ -2,8 +2,8 @@
 # tests/test_cli.sh — CLI surface (online-installable Type O)
 # =============================================================================
 # Primary REQs: requirement-shell-cli-interface, requirement-shell-cli-zero-arguments,
-# requirement-shell-cli-default-interaction, requirement-shell-output-requirements,
-# requirement-shell-cli-storage
+# requirement-shell-cli-default-interaction, requirement-shell-cli-language,
+# requirement-shell-output-requirements, requirement-shell-cli-storage
 # TP family: TP-CLI-*
 # =============================================================================
 
@@ -192,6 +192,7 @@ run_test_cli() {
         printf '%s\n' 'out_menu_choice() { out_text menu_choice "" "${1-}" "${2-}" "${3-}"; }'
         sed -n '/^util_app_ident()/,/^}/p' "${SCRIPT}"
         printf '%s\n' 'APP_NAME=sudoer-cli'
+        printf '%s\n' 'APP_LANG=en'
         printf '%s\n' "VERSION='${PRODUCT_VERSION}'"
         printf '%s\n' 'JSON=0; QUIET=0'
         printf '%s\n' 'TTY=0'
@@ -240,12 +241,16 @@ run_test_cli() {
     assert_eq "TP-CLI-19 menu --quiet off-TTY exit 0" 0 "${_ec}"
     assert_contains "TP-CLI-19 menu --quiet still prints help" "${_out}" "Usage:"
 
-    # TP-CLI-20: membership + Exit 99 (N=15)
+    # TP-CLI-20: membership + Exit 99 (N=16; Exit text lives in app_menu_text)
     _fn=$(sed -n '/^app_main_menu_print()/,/^}/p' "${SCRIPT}")
+    _cat=$(sed -n '/^app_menu_text()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-CLI-20 row sudoers-to-json" "${_fn}" "sudoers-to-json"
     assert_contains "TP-CLI-20 row interactive" "${_fn}" "interactive"
-    assert_contains "TP-CLI-20 Exit 99" "${_fn}" "99. Exit"
-    assert_not_contains "TP-CLI-20 no 16. Exit" "${_fn}" "16. Exit"
+    assert_contains "TP-CLI-20 row languages" "${_fn}" "app_menu_text cat_languages"
+    assert_contains "TP-CLI-20 print calls Exit key" "${_fn}" "app_menu_text line_exit"
+    assert_contains "TP-CLI-20 Exit 99" "${_cat}" '*) _mt_out="99. Exit"'
+    assert_not_contains "TP-CLI-20 no 16. Exit" "${_fn}${_cat}" "16. Exit"
+    assert_not_contains "TP-CLI-20 no 17. Exit" "${_fn}${_cat}" "17. Exit"
     assert_not_contains "TP-CLI-20 no help row" "${_fn}" 'out_menu_choice 'help
     if printf '%s\n' "${_fn}" | grep -E 'out_menu_choice [0-9]+ install ' >/dev/null; then
         t_fail "TP-CLI-20 install must not be a numbered choice"
@@ -277,9 +282,11 @@ run_test_cli() {
         printf '%s\n' 'out_die() { printf "DIE:%s\n" "$*"; exit 1; }'
         printf '%s\n' 'out_error() { printf "ERROR:%s\n" "$*"; }'
         sed -n '/^util_app_ident()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_menu_text()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_main_menu_print()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_main_menu()/,/^}/p' "${SCRIPT}"
         printf '%s\n' 'APP_NAME=sudoer-cli'
+        printf '%s\n' 'APP_LANG=en'
         printf '%s\n' "VERSION='${PRODUCT_VERSION}'"
         printf '%s\n' 'prompt_ask() { PROMPT_ASK_VALUE=99; }'
         printf '%s\n' 'app_help() { printf "%s\n" HELPPATH; }'
@@ -307,14 +314,16 @@ run_test_cli() {
         printf '%s\n' 'out_die() { printf "DIE:%s\n" "$*"; exit 1; }'
         printf '%s\n' 'out_error() { printf "ERROR:%s\n" "$*"; }'
         sed -n '/^util_app_ident()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_menu_text()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_main_menu_print()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_main_menu()/,/^}/p' "${SCRIPT}"
         printf '%s\n' 'APP_NAME=sudoer-cli'
+        printf '%s\n' 'APP_LANG=en'
         printf '%s\n' "VERSION='${PRODUCT_VERSION}'"
         printf '%s\n' '_asks=0'
         printf '%s\n' 'prompt_ask() {'
         printf '%s\n' '  _asks=$((_asks + 1))'
-        printf '%s\n' '  if [ "${_asks}" -eq 1 ]; then PROMPT_ASK_VALUE=16; else PROMPT_ASK_VALUE=99; fi'
+        printf '%s\n' '  if [ "${_asks}" -eq 1 ]; then PROMPT_ASK_VALUE=17; else PROMPT_ASK_VALUE=99; fi'
         printf '%s\n' '}'
         printf '%s\n' 'app_help() { printf "%s\n" HELPPATH; }'
         printf '%s\n' 'app_run_command() { printf "%s\n" RAN; }'
@@ -323,17 +332,17 @@ run_test_cli() {
     } >"${_runner}"
     _out=$(sh "${_runner}")
     _ec=$?
-    assert_eq "TP-CLI-22 unused 16 exit 0" 0 "${_ec}"
-    assert_contains "TP-CLI-22 unused 16 is ERROR" "${_out}" "ERROR:Unknown menu choice '16'"
-    assert_contains "TP-CLI-22 unused 16 says not on this list" "${_out}" "not on this list"
-    assert_not_contains "TP-CLI-22 unused 16 is not DIE" "${_out}" "DIE:"
-    assert_not_contains "TP-CLI-22 unused 16 is not unknown argv" "${_out}" "Unknown command"
-    assert_not_contains "TP-CLI-22 unused 16 did not run a handler" "${_out}" "RAN"
+    assert_eq "TP-CLI-22 unused 17 exit 0" 0 "${_ec}"
+    assert_contains "TP-CLI-22 unused 17 is ERROR" "${_out}" "ERROR:Unknown menu choice '17'"
+    assert_contains "TP-CLI-22 unused 17 says not on this list" "${_out}" "not on this list"
+    assert_not_contains "TP-CLI-22 unused 17 is not DIE" "${_out}" "DIE:"
+    assert_not_contains "TP-CLI-22 unused 17 is not unknown argv" "${_out}" "Unknown command"
+    assert_not_contains "TP-CLI-22 unused 17 did not run a handler" "${_out}" "RAN"
     _exit_n=$(printf '%s' "${_out}" | grep -c "99. Exit" || true)
     if [ "${_exit_n}" -ge 2 ]; then
-        t_pass "TP-CLI-22 unused 16 reprints this layer (${_exit_n} Exit rows)"
+        t_pass "TP-CLI-22 unused 17 reprints this layer (${_exit_n} Exit rows)"
     else
-        t_fail "TP-CLI-22 unused 16 reprints this layer (Exit rows=${_exit_n}, want >=2)"
+        t_fail "TP-CLI-22 unused 17 reprints this layer (Exit rows=${_exit_n}, want >=2)"
     fi
     {
         printf '%s\n' 'set -u'
@@ -344,9 +353,11 @@ run_test_cli() {
         printf '%s\n' 'out_die() { printf "DIE:%s\n" "$*"; exit 1; }'
         printf '%s\n' 'out_error() { printf "ERROR:%s\n" "$*"; }'
         sed -n '/^util_app_ident()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_menu_text()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_main_menu_print()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_main_menu()/,/^}/p' "${SCRIPT}"
         printf '%s\n' 'APP_NAME=sudoer-cli'
+        printf '%s\n' 'APP_LANG=en'
         printf '%s\n' "VERSION='${PRODUCT_VERSION}'"
         printf '%s\n' '_asks=0'
         printf '%s\n' 'prompt_ask() {'
@@ -379,14 +390,16 @@ run_test_cli() {
         printf '%s\n' 'out_die() { printf "DIE:%s\n" "$*"; exit 1; }'
         printf '%s\n' 'out_error() { printf "ERROR:%s\n" "$*"; }'
         sed -n '/^util_app_ident()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_menu_text()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_main_menu_print()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_main_menu()/,/^}/p' "${SCRIPT}"
         printf '%s\n' 'APP_NAME=sudoer-cli'
+        printf '%s\n' 'APP_LANG=en'
         printf '%s\n' "VERSION='${PRODUCT_VERSION}'"
         printf '%s\n' '_asks=0'
         printf '%s\n' 'prompt_ask() {'
         printf '%s\n' '  _asks=$((_asks + 1))'
-        printf '%s\n' '  if [ "${_asks}" -eq 1 ]; then PROMPT_ASK_VALUE=16; else PROMPT_ASK_VALUE=1; fi'
+        printf '%s\n' '  if [ "${_asks}" -eq 1 ]; then PROMPT_ASK_VALUE=17; else PROMPT_ASK_VALUE=1; fi'
         printf '%s\n' '}'
         printf '%s\n' 'app_help() { printf "%s\n" HELPPATH; }'
         printf '%s\n' 'app_run_command() { printf "%s\n" RAN:"${COMMAND}"; }'
@@ -396,21 +409,23 @@ run_test_cli() {
     _out=$(sh "${_runner}")
     _ec=$?
     assert_eq "TP-CLI-22 retry then listed 1 exit 0" 0 "${_ec}"
-    assert_contains "TP-CLI-22 retry then listed 1 still ERROR first" "${_out}" "ERROR:Unknown menu choice '16'"
+    assert_contains "TP-CLI-22 retry then listed 1 still ERROR first" "${_out}" "ERROR:Unknown menu choice '17'"
     assert_contains "TP-CLI-22 retry then listed 1 runs handler" "${_out}" "RAN:sudoers-to-json"
     assert_not_contains "TP-CLI-22 retry then listed 1 is not DIE" "${_out}" "DIE:"
     rm -rf "${_th}"
 
     _menu=$(sed -n '/^app_main_menu()/,/^}/p' "${SCRIPT}")
-    assert_contains "TP-CLI-22 menu invalid uses out_error" "${_menu}" 'out_error "Unknown menu choice'
+    assert_contains "TP-CLI-22 menu invalid uses out_error" "${_menu}" 'out_error "$(app_menu_text unknown_front'
     assert_not_contains "TP-CLI-22 menu invalid does not out_die" "${_menu}" 'out_die "Unknown choice'
     assert_contains "TP-CLI-22 menu layer retry loop" "${_menu}" "Invalid choice retries this layer"
     assert_contains "TP-CLI-22 nested layer comment present" "${_menu}" "Nested numbered submenu"
 
     # TP-ELEV-10: do-not-capture-read (portable TP-CLI-16 hosted here; product TP-CLI-16 is fence-test)
     _menu=$(sed -n '/^app_main_menu()/,/^}/p' "${SCRIPT}")
-    assert_contains "TP-ELEV-10 menu calls prompt_ask" "${_menu}" 'prompt_ask "Choice"'
+    assert_contains "TP-ELEV-10 menu calls prompt_ask" "${_menu}" 'prompt_ask "$(app_menu_text choice_label)"'
     assert_contains "TP-ELEV-10 menu reads PROMPT_ASK_VALUE" "${_menu}" 'PROMPT_ASK_VALUE'
+    _langm=$(sed -n '/^app_cmd_menu_language()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-ELEV-10 language menu calls prompt_ask" "${_langm}" 'prompt_ask "$(app_menu_text choice_label)"'
     _menu_live=$(printf '%s\n' "${_menu}" | grep -v '^[[:space:]]*#' || true)
     if printf '%s\n' "${_menu_live}" | grep -E '\$\(prompt_|`prompt_' >/dev/null; then
         t_fail "TP-ELEV-10 app_main_menu must not \$() prompt_ask"
@@ -434,6 +449,170 @@ EOF
     fi
     _pask=$(sed -n '/^prompt_ask()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-ELEV-10 prompt_ask assigns PROMPT_ASK_VALUE" "${_pask}" "PROMPT_ASK_VALUE="
+
+    # TP-CLI-24: menu 5 languages. prompt_ask is stubbed so the runner does not read /dev/tty.
+    _th=$(mktemp -d "${TMPDIR:-/tmp}/sudoer-cli.menu24.XXXXXX")
+    _runner="${_th}/run-lang.sh"
+    {
+        printf '%s\n' 'set -u'
+        sed -n '/^out_text()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' 'out_info() { out_text out_info "$*"; }'
+        printf '%s\n' 'out_plain() { out_text plain "$*"; }'
+        printf '%s\n' 'out_warn() { out_text out_warn "$*"; }'
+        printf '%s\n' 'out_menu_choice() { out_text menu_choice "" "${1-}" "${2-}" "${3-}"; }'
+        printf '%s\n' 'out_die() { printf "DIE:%s\n" "$*"; exit 1; }'
+        printf '%s\n' 'out_error() { printf "ERROR:%s\n" "$*"; }'
+        sed -n '/^util_app_ident()/,/^}/p' "${SCRIPT}"
+        sed -n '/^util_persistent_storage_dir()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_lang_load()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_lang_save()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_menu_text()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_cmd_menu_language()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_main_menu_print()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_main_menu()/,/^}/p' "${SCRIPT}"
+        printf '%s\n' "APP_NAME=${APP_NAME}"
+        printf '%s\n' "VERSION='${PRODUCT_VERSION}'"
+        printf '%s\n' 'app_run_command() { printf "RAN:%s\n" "${COMMAND}"; }'
+        printf '%s\n' 'app_help() { printf "%s\n" HELPPATH; }'
+        printf '%s\n' 'prompt_ask() { IFS= read -r PROMPT_ASK_VALUE || PROMPT_ASK_VALUE=; }'
+        printf '%s\n' 'TTY=1; JSON=0; QUIET=0; PROMPT_ASK_VALUE=; COMMAND='
+        printf '%s\n' 'app_lang_load'
+        printf '%s\n' 'app_main_menu'
+    } >"${_runner}"
+    _lhome="${_th}/home"
+    mkdir -p "${_lhome}"
+    _lfile="${_lhome}/.local/${APP_NAME}/language"
+    _out=$(printf '%s\n' '5' '0' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    _ec=$?
+    assert_eq "TP-CLI-24 open language then Back exit 0" 0 "${_ec}"
+    assert_contains "TP-CLI-24 front language long" "${_out}" "display language for this menu"
+    assert_contains "TP-CLI-24 language row 51" "${_out}" "51."
+    assert_contains "TP-CLI-24 language English" "${_out}" "English"
+    assert_contains "TP-CLI-24 language row 52" "${_out}" "52."
+    assert_contains "TP-CLI-24 language Simplified Chinese" "${_out}" "简体中文"
+    assert_contains "TP-CLI-24 language Simplified Chinese long" "${_out}" "use Simplified Chinese for this menu"
+    assert_contains "TP-CLI-24 language row 53" "${_out}" "53."
+    assert_contains "TP-CLI-24 language Traditional Chinese" "${_out}" "繁體中文"
+    assert_contains "TP-CLI-24 language Traditional Chinese long" "${_out}" "use Traditional Chinese for this menu"
+    assert_contains "TP-CLI-24 language row 54" "${_out}" "54."
+    assert_contains "TP-CLI-24 language Spanish" "${_out}" "Español"
+    assert_contains "TP-CLI-24 language row 55" "${_out}" "55."
+    assert_contains "TP-CLI-24 language Arabic" "${_out}" "العربية"
+    assert_contains "TP-CLI-24 language row 56" "${_out}" "56."
+    assert_contains "TP-CLI-24 language French" "${_out}" "Français"
+    assert_contains "TP-CLI-24 language row 57" "${_out}" "57."
+    assert_contains "TP-CLI-24 language Portuguese" "${_out}" "Português"
+    assert_contains "TP-CLI-24 language row 58" "${_out}" "58."
+    assert_contains "TP-CLI-24 language Russian" "${_out}" "Русский"
+    assert_contains "TP-CLI-24 language row 59" "${_out}" "59."
+    assert_contains "TP-CLI-24 language German" "${_out}" "Deutsch"
+    assert_contains "TP-CLI-24 language row 60" "${_out}" "60."
+    assert_contains "TP-CLI-24 language Japanese" "${_out}" "日本語"
+    assert_contains "TP-CLI-24 language row 61" "${_out}" "61."
+    assert_contains "TP-CLI-24 language Korean" "${_out}" "한국어"
+    assert_contains "TP-CLI-24 language row 62" "${_out}" "62."
+    assert_contains "TP-CLI-24 language Dutch" "${_out}" "Nederlands"
+    assert_contains "TP-CLI-24 language row 63" "${_out}" "63."
+    assert_contains "TP-CLI-24 language Greek" "${_out}" "Ελληνικά"
+    assert_contains "TP-CLI-24 front language row 5" "${_out}" "5."
+    assert_not_contains "TP-CLI-24 no reserved row 50" "${_out}" "50."
+    assert_not_contains "TP-CLI-24 no reserved row 64" "${_out}" "64."
+    assert_not_contains "TP-CLI-24 no reserved row 69" "${_out}" "69."
+    assert_contains "TP-CLI-24 language Back" "${_out}" "0. Back"
+    assert_file_missing "TP-CLI-24 Back does not write language" "${_lfile}"
+    _out=$(printf '%s\n' '5' '50' '0' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 reserved 50 warns" "${_out}" "Unknown menu choice '50'"
+    assert_file_missing "TP-CLI-24 reserved 50 does not write language" "${_lfile}"
+    _out=$(printf '%s\n' '5' '64' '0' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 reserved 64 warns" "${_out}" "Unknown menu choice '64'"
+    assert_file_missing "TP-CLI-24 reserved 64 does not write language" "${_lfile}"
+    _out=$(printf '%s\n' '5' '69' '0' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 reserved 69 warns" "${_out}" "Unknown menu choice '69'"
+    assert_file_missing "TP-CLI-24 reserved 69 does not write language" "${_lfile}"
+    _out=$(printf '%s\n' '6' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 front 6 runs add-sudoer-request" "${_out}" "RAN:add-sudoer-request"
+    assert_not_contains "TP-CLI-24 front 6 does not open language rows" "${_out}" "51."
+    assert_file_missing "TP-CLI-24 front 6 does not write language" "${_lfile}"
+    _out=$(printf '%s\n' '51' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 front 51 is not a language save" "${_out}" "Unknown menu choice '51'"
+    assert_not_contains "TP-CLI-24 front 51 did not run a handler" "${_out}" "RAN:"
+    assert_file_missing "TP-CLI-24 front 51 does not write language" "${_lfile}"
+    _out=$(printf '%s\n' 'languages' '0' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 name languages opens the board" "${_out}" "0. Back"
+    assert_file_missing "TP-CLI-24 name languages Back does not write" "${_lfile}"
+    _out=$(printf '%s\n' '5' '' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 empty on language board is Back" "${_out}" "0. Back"
+    assert_not_contains "TP-CLI-24 empty Back did not save" "${_out}" "Menu language is"
+    assert_file_missing "TP-CLI-24 empty Back does not write language" "${_lfile}"
+    while IFS='|' read -r _num _code _saved _lexit; do
+        [ -n "${_num}" ] || continue
+        _out=$(printf '%s\n' '5' "${_num}" '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+        _ec=$?
+        assert_eq "TP-CLI-24 choose ${_code} exit 0" 0 "${_ec}"
+        assert_contains "TP-CLI-24 ${_code} saved" "${_out}" "${_saved}"
+        assert_contains "TP-CLI-24 ${_code} Exit" "${_out}" "${_lexit}"
+        _got=$(head -n 1 "${_lfile}" | tr -d '\r')
+        assert_eq "TP-CLI-24 file is ${_code}" "${_code}" "${_got}"
+    done <<'EOF'
+51|en|Menu language is English|99. Exit
+52|zh-Hans|菜单语言是简体中文|99. 离开
+53|zh-Hant|選單語言是繁體中文|99. 離開
+54|es|El idioma del menú es español|99. Salir
+55|ar|لغة القائمة هي العربية|99. خروج
+56|fr|La langue du menu est le français|99. Quitter
+57|pt|O idioma do menu é português|99. Sair
+58|ru|Язык меню — русский|99. Выход
+59|de|Die Menüsprache ist Deutsch|99. Beenden
+60|ja|メニューの言語は日本語|99. 終了
+61|ko|메뉴 언어는 한국어|99. 종료
+62|nl|De menutaal is Nederlands|99. Afsluiten
+63|el|Η γλώσσα του μενού είναι ελληνικά|99. Έξοδος
+EOF
+    _mode=$(stat -c '%a' "${_lfile}" 2>/dev/null || stat -f '%OLp' "${_lfile}")
+    assert_eq "TP-CLI-24 language file mode 600" "600" "${_mode}"
+    _out=$(printf '%s\n' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 next run stays Greek" "${_out}" "99. Έξοδος"
+    assert_not_contains "TP-CLI-24 next run is not the English header" "${_out}" "numbered list of live commands"
+    printf '%s\n' 'nope' > "${_lfile}"
+    _out=$(printf '%s\n' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 unrecognized file is English" "${_out}" "numbered list of live commands"
+    _got=$(head -n 1 "${_lfile}" | tr -d '\r')
+    assert_eq "TP-CLI-24 unrecognized file is left as written" "nope" "${_got}"
+    printf '%s\n' 'en' > "${_lfile}"
+    _out=$(printf '%s\n' '99' | HOME="${_lhome}" SUDOER_CLI_LANG=ja sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 SUDOER_CLI_LANG overrides the file" "${_out}" "99. 終了"
+    _got=$(head -n 1 "${_lfile}" | tr -d '\r')
+    assert_eq "TP-CLI-24 SUDOER_CLI_LANG does not rewrite the file" "en" "${_got}"
+    rm -rf "${_th}"
+
+    _h24=$(mktemp -d "${TMPDIR:-/tmp}/sudoer-cli.help24.XXXXXX")
+    _out=$(env -u SUDOER_CLI_LANG HOME="${_h24}" SUDOER_CLI_LANG=ja sh "${SCRIPT}" help 2>&1)
+    assert_contains "TP-CLI-24 Japanese help heading" "${_out}" "使い方:"
+    assert_not_contains "TP-CLI-24 Japanese help is not Usage" "${_out}" "Usage:"
+    assert_contains "TP-CLI-24 Japanese help keeps install" "${_out}" "install"
+    assert_file_missing "TP-CLI-24 help does not create the language file" "${_h24}/.local/${APP_NAME}/language"
+    _out=$(env -u SUDOER_CLI_LANG HOME="${_h24}" SUDOER_CLI_LANG=ko sh "${SCRIPT}" help 2>&1)
+    assert_contains "TP-CLI-24 Korean help heading" "${_out}" "사용법:"
+    assert_not_contains "TP-CLI-24 Korean help is not Usage" "${_out}" "Usage:"
+    _out=$(env -u SUDOER_CLI_LANG HOME="${_h24}" SUDOER_CLI_LANG=ja sh "${SCRIPT}" about 2>/dev/null)
+    assert_contains "TP-CLI-24 Japanese about title" "${_out}" "概要 / 診断"
+    assert_contains "TP-CLI-24 Japanese about storage" "${_out}" "使用中のストレージ"
+    assert_not_contains "TP-CLI-24 Japanese about is not About / Diagnostics" "${_out}" "About / Diagnostics"
+    _out=$(env -u SUDOER_CLI_LANG HOME="${_h24}" SUDOER_CLI_LANG=ko sh "${SCRIPT}" about 2>/dev/null)
+    assert_contains "TP-CLI-24 Korean about title" "${_out}" "개요 / 진단"
+    assert_not_contains "TP-CLI-24 Korean about is not About / Diagnostics" "${_out}" "About / Diagnostics"
+    _out=$(env -u SUDOER_CLI_LANG HOME="${_h24}" SUDOER_CLI_LANG=en sh "${SCRIPT}" help 2>/dev/null)
+    assert_contains "TP-CLI-24 English help still says Usage" "${_out}" "Usage:"
+    assert_contains "TP-CLI-24 English help still says Global Options" "${_out}" "Global Options"
+    assert_contains "TP-CLI-24 English help names Japanese" "${_out}" "60 Japanese"
+    assert_contains "TP-CLI-24 English help names Korean" "${_out}" "61 Korean"
+    assert_contains "TP-CLI-24 English help names Simplified Chinese" "${_out}" "52 Simplified Chinese"
+    _out=$(env -u SUDOER_CLI_LANG HOME="${_h24}" SUDOER_CLI_LANG=ja sh "${SCRIPT}" version 2>/dev/null)
+    assert_contains "TP-CLI-24 Japanese version stays the English one-liner" "${_out}" "${PRODUCT_VERSION}"
+    assert_not_contains "TP-CLI-24 Japanese version is not a help heading" "${_out}" "使い方:"
+    assert_file_missing "TP-CLI-24 version does not create the language file" "${_h24}/.local/${APP_NAME}/language"
+    rm -rf "${_h24}"
+    unset _out _ec _lhome _lfile _runner _got _mode _num _code _saved _lexit _h24
 
     # TP-ELEV-07: only top-level measure + sr_read_input data-source may use [ -t 0/1 ]
     # Specified exception: the login-hook *snippet* (rc policy, not CLI TTY SSOT).
@@ -464,6 +643,7 @@ EOF
         case "${_sl}" in
             *'#'*) continue ;;
             *out_plain*|*out_info*|*out_die*|*out_warn*|*sr_die*) continue ;;
+            *_mt_out*) continue ;;
             *lpu-hook-rc*) continue ;;
             *) _sudo_n_exec=1 ;;
         esac

@@ -1,6 +1,6 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.28.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.29.0-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
@@ -208,26 +208,27 @@ This product is **online-installable**. Global vs local here means install *loca
 
 ```text
 $ sudoer-cli menu
-[INFO] **sudoer-cli**(*1.28.0*) — numbered list of live commands
+[INFO] **sudoer-cli**(*1.29.0*) — numbered list of live commands
 1. sudoers-to-json: Convert sudoers fragment to request JSON
 2. json-to-sudoers: Convert request JSON to sudoers fragment
 3. print-sudoers: Print the sudoers fragment that lets sudoer-adm review without a password
 4. print-sudoers-install-script: Emit admin install script
-5. add-sudoer-request: Queue an add request (JSON or sudoers)
-6. update-sudoer-request: Queue an update request
-7. remove-sudoer-request: Queue a purpose-only remove (--service)
-8. list-approving: List waiting requests
-9. list-approved: List accepted requests
-10. list-rejected: List declined requests
-11. show: Show a known request
-12. remove-lpu: Remove the dedicated approver account (sudoer-adm)
-13. approve: Copy/overwrite dest in /etc/sudoers.d (product names only)
-14. reject: Decline a waiting request
-15. interactive: Review waiting requests one file at a time (not empty argv)
+5. languages: display language for this menu
+6. add-sudoer-request: Queue an add request (JSON or sudoers)
+7. update-sudoer-request: Queue an update request
+8. remove-sudoer-request: Queue a purpose-only remove (--service)
+9. list-approving: List waiting requests
+10. list-approved: List accepted requests
+11. list-rejected: List declined requests
+12. show: Show a known request
+13. remove-lpu: Remove the dedicated approver account (sudoer-adm)
+14. approve: Copy/overwrite dest in /etc/sudoers.d (product names only)
+15. reject: Decline a waiting request
+16. interactive: Review waiting requests one file at a time (not empty argv)
 99. Exit
 ```
 
-A number or name that is not on this list prints an error, reprints **this** list, and waits. Type `99` (or `exit` / `quit`) to leave.
+`5` opens languages **51** English through **63** Greek. A pick is saved at `~/.local/sudoer-cli/language` and the list redraws in that language. `0` on that board goes back and does not save. A number or name that is not on the front list prints an error, reprints **this** list, and waits. Type `99` (or `exit` / `quit`) to leave.
 
 **Source repository:** [cloudgen/sudoer-cli](https://github.com/cloudgen/sudoer-cli)  
 Config identity: `REPO_USER=cloudgen`, `REPO_NAME=sudoer-cli`. Default channel: `https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli`.
@@ -314,6 +315,7 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
+2026-10-02 — version **1.29.0** (menu **5** languages; rows **51–63** saved at `~/.local/sudoer-cli/language`; old **5–15** shift to **6–16**; Exit stays **99**).
 2026-09-13 — version **1.28.0** (doorbell `/usr/local/bin/sudoer-review-hook`; setup heals old `login-review-hook` rc and F6).
 2026-09-13 — version **1.27.0** (shared doorbell `/usr/local/bin/login-review-hook`; login skip line says Next:; sudoers for login-hook grants that name).
 2026-09-13 — version **1.26.0** (numbered list: a wrong pick reprints this list and waits; does not quit).

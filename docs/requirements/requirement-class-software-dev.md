@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-class-software-dev.md  
-**Status**: Active (Version 1.11.3 – stay-honest VERSION 1.28.0; shared doorbell `sudoer-review-hook`)  
+**Status**: Active (Version 1.11.3 – stay-honest VERSION 1.29.0; shared doorbell `sudoer-review-hook`)  
 **Area**: class  
 **Key**: `requirement-class-software-dev`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -129,7 +129,7 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | **Architectures supported** | any arch with POSIX sh and the external tools the script invokes |
 | **Git surface** | used when product is published |
 | **Ship unit / install** | yes — `src/sudoer-cli`; **online-installable** (`curl \| sh` via `SCRIPT_URL`) |
-| **Product version SSOT** | `VERSION="1.28.0"` hard-assign in `src/sudoer-cli` |
+| **Product version SSOT** | `VERSION="1.29.0"` hard-assign in `src/sudoer-cli` |
 | **Bootstrap origin** | Historical **cli-template**. This product is **sudoer-cli**. No live parent ship unit. |
 
 **Residual ownership table:**
@@ -286,6 +286,7 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | 2026-09-08 | Active 1.10.1 | Stay-honest Implementation Notes `VERSION` 1.23.0 (YAML review body two-space indent) |
 | 2026-09-08 | Active 1.10.2 | Residual **points** at `requirement-login-interactive-review-hook` |
 | 2026-09-08 | Active 1.10.3 | Stay-honest Implementation Notes `VERSION` 1.24.0 (old-hook review on `interactive`) |
+| 2026-10-02 | Active 1.11.3 | Stay-honest Implementation Notes `VERSION` 1.29.0; menu **5** languages |
 | 2026-09-13 | Active 1.11.3 | Stay-honest Implementation Notes `VERSION` 1.28.0; shared doorbell `sudoer-review-hook` |
 | 2026-09-13 | Active 1.11.2 | Stay-honest Implementation Notes `VERSION` 1.27.0; shared doorbell `login-review-hook` |
 | 2026-09-13 | Active 1.11.1 | Stay-honest Implementation Notes `VERSION` 1.26.0; default-interaction invalid-choice retry |

@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-storage.md  
-**Status**: Active (Version 1.1.1)  
+**Status**: Active (Version 1.2.0)  
 **Area**: shell  
 **Key**: `requirement-shell-cli-storage`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -85,6 +85,22 @@ First match that is available and writable:
 - **Anti-fragile:** Missing `/dev/shm` still works.  
 - **Principle 11 – Temps:** Cleanup, not museum copies of staging.
 
+### 2.7 Menu language persistence
+
+The scratch resolver above is volatile. The menu language file is durable and is **not** that root.
+
+| Item | Live value |
+|------|------------|
+| **Directory** | `${HOME}/.local/${APP_NAME}` printed by `util_persistent_storage_dir` (no `mkdir`) |
+| **Leaf** | `language` — one accepted code and a newline, mode **0600** |
+| **Codes** | `en`, `zh-Hans`, `zh-Hant`, `es`, `ar`, `fr`, `pt`, `ru`, `de`, `ja`, `ko`, `nl`, `el` |
+| **Create** | `app_lang_save` only (`mkdir -p` then write). `help`, `version`, and `about` **MUST NOT** create it |
+| **Load** | `app_lang_load` reads the file when it exists and does not rewrite a bad first line |
+| **Env** | `SUDOER_CLI_LANG` wins for that process and does not write the file |
+| **Not this path** | `util_resolve_storage` (`/dev/shm` → `/tmp` → cache). Not `/var/sudoer-cli` |
+
+Copy, numbers, and what follows `APP_LANG`: `requirement-shell-cli-language`. Proof **TP-CLI-24**.
+
 ---
 
 ## Under command line for normal user only
@@ -97,7 +113,7 @@ When this program runs on Termux, Git Bash, Windows cmd, or the same class (no r
 | Convert, queue, list, help, and local install into the user bin | In-tool `sudo`; wrap `apt` / `dnf`; `useradd`; write `/etc`; recommend `sudo curl | sh` |
 | Document setup / approve / interactive as **unused** on that class | Invent a dedicated account on that class |
 
-**This requirement:** scratch/cache resolve as this login; MUST NOT pick `/etc` or a dedicated-account home on this class.
+**This requirement:** scratch/cache resolve as this login; MUST NOT pick `/etc` or a dedicated-account home on this class. The language file is a separate durable leaf under this login’s `HOME` (§2.7). It is not the scratch root.
 
 Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` is set. Git Bash — `MSYSTEM` is `MINGW*` / `MSYS*`. Windows cmd — `OS` is `Windows_NT` and `COMSPEC` names `cmd.exe` (after excluding Git Bash / WSL).
 
@@ -119,6 +135,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 4. Leave the resolver dead with no call sites while claiming storage is product law.  
 5. Echo a tier path without creating it.  
 6. Treat `/var/backup` as a product storage path.
+7. Put the menu language file in the scratch resolver, or `mkdir` `~/.local/${APP_NAME}` from `help` / `version` / `about`.
 
 **Violating this rule is a critical storage isolation regression.**
 
@@ -132,6 +149,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | AC-2 | Priority matches §2.2 |
 | AC-3 | `app_main` sets `EFFECTIVE_STORAGE_DIR` / `TMPDIR` early |
 | AC-4 | About JSON includes `effective_storage` |
+| AC-5 | Language leaf is `${HOME}/.local/${APP_NAME}/language`, created only by save |
 
 ---
 
@@ -143,6 +161,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | `requirement-shell-cli-interface` | About fields |
 | `requirement-shell-local-self-management` | Install staging |
 | `requirement-shell-temp-file-system` | Unique `mktemp` leaves under this root |
+| `requirement-shell-cli-language` | Durable `language` leaf; not this resolver |
 | `docs/requirements/index.md` | Registry |
 
 ---
@@ -151,12 +170,13 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-10-02 | Active 1.2.0 | Persistence leaf `language` under `${HOME}/.local/${APP_NAME}`; created on save only. Scratch resolver unchanged. |
 | 2026-09-06 | Active 1.1.1 | Under command line for normal user only |
 | 2026-08-03 | Active 1.0.0 | folder-backup staging |
 | 2026-08-13 | Active 1.1.0 | cli-template: scratch only |
 
 ---
 
-**Last Updated**: 2026-08-13  
+**Last Updated**: 2026-10-02  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

@@ -1,7 +1,7 @@
 # Requirement ↔ test matrix — sudoer-cli
 
-**Updated:** 2026-09-13 (invalid-choice retry on numbered list; **TP-CLI-22**)  
-**Product VERSION:** 1.28.0  
+**Updated:** 2026-10-02 (menu **5** languages; **TP-CLI-24**)  
+**Product VERSION:** 1.29.0  
 **Suite:** `tests/run.sh`
 
 | Requirement key | Area | TP families | Coverage notes |
@@ -9,9 +9,10 @@
 | requirement-class-software-dev | class | TP-CLI-01, TP-CLI-11 | Syntax + stack residual; no online package |
 | requirement-bootstrap-chain | architecture | TP-CLI-04, TP-CLI-10, TP-CLI-13 | Origin selfmanaged; online verbs live; backup/restore unknown |
 | requirement-project-folder | architecture | TP-LC-01 | src ship unit + user bin |
-| requirement-shell-cli-interface | shell | TP-CLI-* (incl. **15** / **16** / **17** / **18..22**) | Commands, flags, dispatch; **test-purpose** `test-well-known-binary` / `fence-test` / `rc-test` routed; help lists testers apart from operational; claimed `menu` / `main`; invalid-choice retry |
+| requirement-shell-cli-interface | shell | TP-CLI-* (incl. **15** / **16** / **17** / **18..22** / **24**) | Commands, flags, dispatch; **test-purpose** `test-well-known-binary` / `fence-test` / `rc-test` routed; help lists testers apart from operational; claimed `menu` / `main`; invalid-choice retry; menu language |
 | requirement-shell-cli-zero-arguments | shell | TP-CLI-07 · **TP-CLI-18** · **TP-LC-11/14/15/18** · **TP-CURL-02/03/08** | Type O install-ensure; menu/main still numbered list |
-| requirement-shell-cli-default-interaction | shell | **TP-CLI-17** · **TP-CLI-18..22** · **TP-ELEV-10** | Case 3 `menu` / `main`; empty argv is Type O; no `$()` of `prompt_ask`; invalid choice reprints this layer |
+| requirement-shell-cli-default-interaction | shell | **TP-CLI-17** · **TP-CLI-18..22** · **TP-CLI-24** · **TP-ELEV-10** | Case 3 `menu` / `main`; empty argv is Type O; row **5** languages; N=16; Exit **99**; unused **17**; no `$()` of `prompt_ask`; invalid choice reprints this layer |
+| requirement-shell-cli-language | shell | **TP-CLI-24** · **TP-CLI-20** · **TP-ELEV-10** | Thirteen codes **51–63**; `${HOME}/.local/${APP_NAME}/language` mode 0600; `SUDOER_CLI_LANG` does not rewrite; help/about follow `APP_LANG` |
 | requirement-shell-self-management | shell | **TP-LC-01..08/12/13/16/17** · **TP-CLI-04/10** | install / version-check / self-update / self-uninstall / about; PATH companion **call site** |
 | requirement-shell-path-and-shell-support | shell | **TP-LC-20..22** · **TP-LC-27..31** · **TP-CLI-04** | This-login PATH / profile; sibling unify; scoped uninstall; heal; `rc-test` |
 | requirement-shell-automatic-checksum | shell | **TP-CSUM-01..05** · **TP-CURL-01** | Companion sidecar; pin mismatch/match; help/about omit CHECKSUM |
@@ -24,7 +25,7 @@
 | requirement-shell-interactive-vs-noninteractive | shell | TP-LC-05 · **TP-ELEV-07** · **TP-SR-INT-05** · **TP-SR-INT-06** · **TP-CLI-19** | Uninstall confirm; TTY measured outside functions; loop does not steal stdin; dest one-off yes/no; `menu` off-TTY no hang |
 | requirement-shell-prompt | shell | TP-LC-05 · **TP-ELEV-07** · **TP-SR-INT-06** · **TP-ELEV-10** | `prompt_*` consume `TTY`; dest review one `prompt_yes_no`; `PROMPT_ASK_VALUE` |
 | requirement-shell-temp-file-system | shell | **TP-TMP-01**, **TP-TMP-02**, TP-CLI-12, TP-LC-01 | `mktemp` leaves; no `$$` scratch |
-| requirement-shell-cli-storage | shell | TP-CLI-12 | Isolation |
+| requirement-shell-cli-storage | shell | TP-CLI-12 · **TP-CLI-24** | Isolation; language leaf created on save only |
 | requirement-three-layer-privilege-model | architecture | TP-SR-03, TP-SR-PRIV-01, **TP-SR-PRIV-02**, **TP-SR-PRIV-03**, **TP-SR-PRIV-04**, **TP-ELEV-08**, **TP-ELEV-09**, **TP-SR-HOOK-05**, **TP-SR-HOOK-09** | Table A ≠ user grant; Type 1 gate; live setup body; F6 grants `sudoer-review-hook`; stale F6 rewrite; no exclusive-LPU approve lock |
 | requirement-least-privilege-user | architecture | TP-SR-PRIV-01, **TP-SR-PRIV-02**, **TP-SR-PRIV-03**, **TP-SR-PRIV-04**, **TP-SR-HOOK-01..05** | F1–F7; setup any admin; LSU never `useradd`; setup helps submit; login hook **points** (`sudoer-review-hook`) |
 | requirement-login-interactive-review-hook | shell | **TP-SR-HOOK-01..09**, **TP-SR-INT-03**, **TP-SR-PRIV-03** | Rc snippet; `.profile` create-if-absent; shared `/usr/local/bin/sudoer-review-hook`; skip copy with Next:; Type 1 `interactive` replaces old product-binary and `{{APP_NAME}}-hook`; F6 grant matches snippet `sudo -n`; stale F6 rewrite; test-mode skip live `ln` |

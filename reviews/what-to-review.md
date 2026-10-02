@@ -3,10 +3,10 @@
 **Living checklist** (review plan). Product: **sudoer-cli** (Type 0 live; **Type 0 operational** convert/submit/list/show **plus Type 0 test-purpose** `test-json-format`/`test-well-known-binary`/`fence-test` routed; Type 1 `setup` / `interactive` live).  
 **Class:** software-development · **one** Active domain SSOT (`requirement-domain-sudoer-approval` **2.40.0**) · independent login hook (`requirement-login-interactive-review-hook` **1.0.0**) · **online-installable** (`curl \| sh`).  
 **Always load first:** `reviews/lessons.md`  
-**Latest report:** `reviews/reports/2026-09-06-human-readability-and-coverage.md` (README/help people words; related-shell **Under command line**; TP vs matrix). Prior: 2026-08-21 shell CLI suite; dest-owned stamps. Actor lock: INC-20260818-001. Cmnd identity: **INC-20260821-001** / **L-CMND-PATH-01**. Dest auto-reject / `set -u`: **INC-20260821-002** / **L-FENCE-ASK-01** / **L-INT-SETU-01**.
+**Latest report:** `reviews/reports/2026-10-02-language-menu-5.md` (menu **5** languages). Prior: 2026-09-06 human-readability. Actor lock: INC-20260818-001. Cmnd identity: **INC-20260821-001** / **L-CMND-PATH-01**. Dest auto-reject / `set -u`: **INC-20260821-002** / **L-FENCE-ASK-01** / **L-INT-SETU-01**.
 
-**Last plan update:** 2026-09-09  
-**Ship unit VERSION:** 1.28.0  
+**Last plan update:** 2026-10-02  
+**Ship unit VERSION:** 1.29.0  
 **Suite baseline:** see `reviews/test-plan.md`
 
 ---
@@ -16,9 +16,9 @@
 | # | Check | Notes |
 |---|--------|--------|
 | P1 | Read `docs/requirements/index.md` | Class + shell + three-layer + LPU + **prevention-set 1.6.5** + **domain 2.41.0** + **login-interactive-review-hook 1.2.0** + ARSA + dest Fence + coding-style + sudo-command + default-interaction |
-| P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.28.0**) |
+| P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.29.0**) |
 | P3 | Load `reviews/lessons.md` and re-check open L-* that still apply | Skip parent backup L-SUDOERS except **L-JSON-CMDS-01** |
-| P4 | Run `./tests/run.sh` | Record PASS/FAIL/SKIP; **must include TP-CURL-02/03**, **TP-LC-12..18**, **TP-CSUM-01..04**, **TP-SR-14/15/16**, **TP-SR-PRIV-04** / **TP-ELEV-09** / **TP-PREV-01..03**, **TP-SR-HOOK-01..09**, **TP-CLI-18..22** / **TP-ELEV-10**, **TP-SR-INT-07**, **TP-SR-INT-08**, and **TP-SR-INT-09** |
+| P4 | Run `./tests/run.sh` | Record PASS/FAIL/SKIP; **must include TP-CURL-02/03**, **TP-LC-12..18**, **TP-CSUM-01..04**, **TP-SR-14/15/16**, **TP-SR-PRIV-04** / **TP-ELEV-09** / **TP-PREV-01..03**, **TP-SR-HOOK-01..09**, **TP-CLI-18..22** / **TP-CLI-24** / **TP-ELEV-10**, **TP-SR-INT-07**, **TP-SR-INT-08**, and **TP-SR-INT-09** |
 | P5 | Confirm install **channel** is B’s `SCRIPT_URL` | `curl \| sh` one-liner; not selfmanaged’s channel |
 | P6 | Confirm trimmed verbs stay unknown | backup / restore / `remove-project-sudoers` (`print-sudoers` is domain) |
 | P7 | **JSON re-encode fidelity** | Complete section below. **Revise/Block** if skipped. |
@@ -34,7 +34,8 @@
 | Project folder | `requirement-project-folder.md` | `src/`, bins; no `/var/backup` |
 | CLI interface | `requirement-shell-cli-interface.md` | Type 0 commands, flags, dispatch |
 | Empty argv Type O | `requirement-shell-cli-zero-arguments.md` | Empty = install-ensure |
-| Numbered start list | `requirement-shell-cli-default-interaction.md` | Case 3: `menu` / `main`; empty argv is Type O; invalid choice reprints this layer |
+| Numbered start list | `requirement-shell-cli-default-interaction.md` | Case 3: `menu` / `main`; empty argv is Type O; row **5** languages; invalid choice reprints this layer |
+| Menu language | `requirement-shell-cli-language.md` | **51–63**; file `~/.local/sudoer-cli/language`; `SUDOER_CLI_LANG`; **TP-CLI-24** |
 | Online self-management | `requirement-shell-self-management.md` | install / version-check / self-update / self-uninstall |
 | Path / shell-rc | `requirement-shell-path-and-shell-support.md` | This-login PATH + profile; sibling unify; **TP-LC-20..22, 27..31**; `rc-test` |
 | Automatic checksum | `requirement-shell-automatic-checksum.md` | `${SCRIPT_URL}.sha256`; help/about omit CHECKSUM |

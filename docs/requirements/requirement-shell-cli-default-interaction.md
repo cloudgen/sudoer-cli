@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-default-interaction.md  
-**Status**: Active (Version 1.2.0)  
+**Status**: Active (Version 1.3.0)  
 **Area**: shell  
 **Key**: `requirement-shell-cli-default-interaction`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -20,7 +20,7 @@ This requirement is the **project Single Source of Truth** for sudoer-cli’s **
 
 | Includes | Excludes |
 |----------|----------|
-| Numbered live work commands; Exit **99** (fifteen rows); look with nametag and gray italic descriptions; a wrong number or name reprints **this** list so you can pick again | The `help` row; install / self-update / self-uninstall / setup; version / about; unit-test commands; `menu` / `main` as a choice; a hang in a pipe; quitting the program because you typed `16` |
+| Numbered live work commands plus row **5** languages; Exit **99** (sixteen rows); look with nametag and gray italic descriptions; a wrong number or name reprints **this** list so you can pick again | The `help` row; install / self-update / self-uninstall / setup; version / about; unit-test commands; `menu` / `main` as a choice; a hang in a pipe; quitting the program because you typed `17` |
 
 | Surface | What you open | What for |
 |---------|---------------|----------|
@@ -31,7 +31,7 @@ This requirement is the **project Single Source of Truth** for sudoer-cli’s **
 |---------|---------------|---------------|
 | See the start list | The first line is the program nametag with version. Each row is `command: what it does`. Last extra number is Exit. | `sudoer-cli menu` |
 | Leave without running a command | Type the Exit number, or `exit` / `quit`. | `99` |
-| Type a number that is not on the list | Stay on **this** list. The program says that number is not listed, reprints the same list, and waits. Unused numbers between 15 and 99 (example `16`) count. | `16` then a listed number or `99` |
+| Type a number that is not on the list | Stay on **this** list. The program says that number is not listed, reprints the same list, and waits. Unused numbers between 16 and 99 (example `17`) count. | `17` then a listed number or `99` |
 | Run with no arguments | That path is install-ensure. The list is `menu`. | `sudoer-cli menu` |
 
 ---
@@ -75,8 +75,8 @@ This requirement is the **project Single Source of Truth** for sudoer-cli’s **
 **MUST NOT** number Exit as **N+1** when the all-nines rule applies. Unused integers between **N** and Exit are omitted.
 
 7. Accept a **number** or the **verb token**; run the matching handler. Exit number (or `exit` / `quit`) returns 0.  
-8. **Do not capture `read`:** the choice **MUST** be read in the **current shell**. **MUST NOT** `_choice=$(prompt_ask …)` / `$()` / backticks of **any** function whose body contains `read`. Call `prompt_ask "Choice" ""` then `_choice="${PROMPT_ASK_VALUE}"`. Sending the prompt to stderr does **not** license `$()`. Proof **TP-ELEV-10**.  
-8c. **Invalid choice retries this layer:** a **menu layer** is one numbered list that owns the current `read` (the main menu is a layer; each nested submenu is another). An **invalid choice** is any input that is **not** a listed number, **not** a listed verb token, and **not** this layer’s Exit / `exit` / `quit` (unused integers between **N** and the Exit number count — here `16` … `98`). On an invalid choice the CLI **MUST**: print a loud operator-readable error via `out_error` (not `out_die`); **reprint this layer’s list**; **re-prompt** in the current shell. **MUST NOT** terminate the process. **MUST NOT** leave this layer. **MUST NOT** treat the pick as unknown argv. Nested layers obey the same rule; Exit on a submenu returns to the parent layer. This product has **one** numbered layer today (`app_main_menu`); any future nested numbered list **MUST** retry **that** list. Empty line **MAY** leave this layer. EOF / failed `read` **MUST** leave this layer without spinning. Proof **TP-CLI-22** (portable **TP-CLI-19** already names off-TTY `menu` help on this product).  
+8. **Do not capture `read`:** the choice **MUST** be read in the **current shell**. **MUST NOT** `_choice=$(prompt_ask …)` / `$()` / backticks of **any** function whose body contains `read`. Call `prompt_ask "$(app_menu_text choice_label)" ""` then `_choice="${PROMPT_ASK_VALUE}"`. English `choice_label` is `Choice`, so the visible prompt is `Choice: `. The language board uses the same call. Sending the prompt to stderr does **not** license `$()`. Proof **TP-ELEV-10**.  
+8c. **Invalid choice retries this layer:** a **menu layer** is one numbered list that owns the current choice (the main menu is a layer; the language board is another). An **invalid choice** is any input that is **not** a listed number, **not** a listed verb token, and **not** this layer’s Exit / `exit` / `quit` (unused integers between **N** and the Exit number count — here `17` … `98`). On an invalid choice the CLI **MUST**: print a loud operator-readable error via `out_error` (not `out_die`); **reprint this layer’s list**; **re-prompt** in the current shell. **MUST NOT** terminate the process. **MUST NOT** leave this layer. **MUST NOT** treat the pick as unknown argv. Nested layers obey the same rule; Back / empty / EOF on the language board returns to the front board and does not save. Empty line on the front board leaves. EOF / failed `read` **MUST** leave this layer without spinning. Proof **TP-CLI-22** (portable **TP-CLI-19** already names off-TTY `menu` help on this product). Language copy and rows **51–63**: `requirement-shell-cli-language`. Proof **TP-CLI-24**.  
 9. Handler: `app_main_menu` (`app_*`). Extra fields: TTY one-at-a-time with the same call shape, **or** print `Next: sudoer-cli <verb> …` and return — **MUST NOT** hang off-TTY.  
 10. Non-interactive help paths **MUST** reuse `app_help`. **MUST NOT** invent a second JSON help catalog.
 
@@ -89,11 +89,11 @@ This requirement is the **project Single Source of Truth** for sudoer-cli’s **
 | **Case** | **3** (zero-argument REQ owns empty argv; menu is verb `menu` / `main`) |
 | **Handler** | `app_main_menu` / `app_main_menu_print`; dispatch via `app_run_command` |
 | **Empty argv** | Type O install-ensure (`requirement-shell-cli-zero-arguments`) |
-| **N** | **15** operational rows after exclusions → Exit **99** |
-| **Numbered rows (kept-list order)** | `sudoers-to-json`, `json-to-sudoers`, `print-sudoers`, `print-sudoers-install-script`, `add-sudoer-request`, `update-sudoer-request`, `remove-sudoer-request`, `list-approving`, `list-approved`, `list-rejected`, `show`, `remove-lpu`, `approve`, `reject`, `interactive` |
+| **N** | **16** rows after exclusions (row **5** is languages) → Exit **99** |
+| **Numbered rows (kept-list order)** | `sudoers-to-json`, `json-to-sudoers`, `print-sudoers`, `print-sudoers-install-script`, `languages`, `add-sudoer-request`, `update-sudoer-request`, `remove-sudoer-request`, `list-approving`, `list-approved`, `list-rejected`, `show`, `remove-lpu`, `approve`, `reject`, `interactive` |
 | **Excluded (live but not numbered)** | `install`, `uninstall`, `where-is-me`, `version`, `about`, `help`, `setup`, `test-json-format`, `test-well-known-binary`, `fence-test`, `menu`, `main` |
-| **Choice `read`** | Current-shell `prompt_ask "Choice" ""` then `${PROMPT_ASK_VALUE}` |
-| **Invalid choice** | `out_error` + reprint this layer + re-prompt. Unused `16` (N=15, Exit **99**) and unknown names. Nested numbered submenu: none today; same retry if added. Empty line leaves. **TP-CLI-22** |
+| **Choice `read`** | Current-shell `prompt_ask "$(app_menu_text choice_label)" ""` then `${PROMPT_ASK_VALUE}` (English label `Choice`) |
+| **Invalid choice** | `out_error` + reprint this layer + re-prompt. Unused `17` (N=16, Exit **99**) and unknown names. Nested language board retries that layer. Empty line on the front board leaves. **TP-CLI-22** |
 | **Extra operands** | Existing handlers fail closed with `Next:` (no hang) |
 | **Gap vs live** | **Live** — dispatcher accepts `menu` / `main` |
 
@@ -146,14 +146,14 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 1. Invent menu labels instead of `command: what it does` from help.  
 2. Put `help`, install / setup, version, about, unit-test commands, or `menu` / `main` itself on the numbered list.  
-3. Number Exit as **N+1** when the all-nines rule applies (fifteen rows → **99. Exit**, not `16. Exit`).  
+3. Number Exit as **N+1** when the all-nines rule applies (sixteen rows → **99. Exit**, not `17. Exit`).  
 4. Draw the list in non-interactive mode, hang, or swallow help under `--quiet` off-TTY.  
 5. Attach the list to empty argv while `requirement-shell-cli-zero-arguments` owns that path.  
 6. Treat interactive `menu --json` as JSON help.  
 7. Ignore `--json` on non-interactive `menu`.  
 8. Capture the choice with `$()` / backticks of `prompt_ask` (or any `read` helper).  
 9. Print a bare `sudoer-cli` header without live `VERSION`, or unstyled descriptions on a real terminal.  
-10. **`out_die` / exit** on an invalid TTY menu choice (unused number such as `16` when `16` is not listed, unknown name, nested-layer typo) — **MUST** `out_error`, reprint **this** layer, and re-prompt (**TP-CLI-22**). **MUST NOT** treat that pick as unknown argv.
+10. **`out_die` / exit** on an invalid TTY menu choice (unused number such as `17` when `17` is not listed, unknown name, nested-layer typo) — **MUST** `out_error`, reprint **this** layer, and re-prompt (**TP-CLI-22**). **MUST NOT** treat that pick as unknown argv.
 
 **Violating this rule is a critical dispatcher / TTY-menu regression.**
 
@@ -168,7 +168,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | AC-3 | Interactive `menu` draws the numbered list and ignores `--json` |
 | AC-4 | Non-interactive `menu` prints help; `--json` prints JSON help; no hang |
 | AC-5 | Numbered rows exclude help, install/setup, version/about, testers, and `menu`/`main` |
-| AC-6 | Fifteen command rows → Exit **99** |
+| AC-6 | Sixteen rows (row **5** languages, then the shifted operational rows) → Exit **99** |
 | AC-7 | Choice uses current-shell `PROMPT_ASK_VALUE` (no `$()` of `prompt_ask`) |
 | AC-8 | Header is `sudoer-cli(VERSION)` bold/italic; descriptions italic + light gray on TTY |
 | AC-9 | Invalid choice at any menu layer prints `[ERROR]`, reprints **this** layer, and re-prompts; process stays alive (**TP-CLI-22**) |
@@ -179,7 +179,8 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 | Key | Relationship |
 |-----|--------------|
-| `requirement-shell-cli-zero-arguments` | Empty argv stays help |
+| `requirement-shell-cli-zero-arguments` | Empty argv is Type O install-ensure |
+| `requirement-shell-cli-language` | Row **5** and block **50–69** |
 | `requirement-shell-cli-interface` | Dual mention of `menu` / `main`; dispatcher table |
 | `requirement-shell-interactive-vs-noninteractive` | No hang; `TTY` measured outside functions |
 | `requirement-shell-prompt` | `prompt_ask` / `PROMPT_ASK_VALUE` |
@@ -199,8 +200,9 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | **TP-CLI-19** | `tests/test_cli.sh` | have | Off-TTY `menu` is help; `--json` is JSON help; `--quiet` does not swallow |
 | **TP-CLI-20** | `tests/test_cli.sh` | have | Membership + Exit **99** |
 | **TP-CLI-21** | `tests/test_cli.sh` | have | Interactive `menu --json` still draws the list (JSON ignored) |
-| **TP-CLI-22** | `tests/test_cli.sh` | have | Invalid choice at any menu layer reprints that layer (`out_error`; unused `16`; unknown name; **MUST NOT** `out_die`). Portable **TP-CLI-19** already names off-TTY `menu` help here. |
-| **TP-ELEV-10** | `tests/test_cli.sh` | have | No `$()` of `prompt_ask`; `PROMPT_ASK_VALUE` on the menu path |
+| **TP-CLI-22** | `tests/test_cli.sh` | have | Invalid choice at any menu layer reprints that layer (`out_error`; unused `17`; unknown name; **MUST NOT** `out_die`). Portable **TP-CLI-19** already names off-TTY `menu` help here. |
+| **TP-CLI-24** | `tests/test_cli.sh` | have | Row **5** opens the language board (**51–63**). Front **6** is `add-sudoer-request`. |
+| **TP-ELEV-10** | `tests/test_cli.sh` | have | No `$()` of `prompt_ask`; `prompt_ask "$(app_menu_text choice_label)"` on both boards |
 
 **Matrix:** `reviews/requirement-test-matrix.md`  
 **Map:** `reviews/test-plan.md`
@@ -209,12 +211,13 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-10-02 | Active 1.3.0 | Row **5** languages; operational rows shift to **6–16**; Exit **99**; unused example **17**. Language copy: `requirement-shell-cli-language`. Proof **TP-CLI-24**. |
 | 2026-09-13 | Active 1.2.0 | Invalid choice at any menu layer retries that layer (`out_error` + reprint; **MUST NOT** `out_die`). Proof **TP-CLI-22**. |
 | 2026-09-06 | Active 1.1.0 | Under command line for normal user only |
 | 2026-09-03 | Active 1.0.0 | Claimed case 3; live `menu` / `main`; empty argv stays help |
 
 ---
 
-**Last Updated**: 2026-09-13  
+**Last Updated**: 2026-10-02  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).
