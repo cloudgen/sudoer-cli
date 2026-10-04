@@ -14,7 +14,7 @@
 # - requirement-shell-cli-interface.md
 # - requirement-shell-cli-zero-arguments.md  (TTY menu; off-TTY Type O self-install)
 # - requirement-shell-cli-default-interaction.md  (TTY empty argv and menu / main)
-# - requirement-shell-cli-language.md  (menu 5 languages; block 50-69)
+# - requirement-shell-cli-language.md  (menu 5 languages; block 50-69, assigned 51-63)
 # - requirement-shell-self-management.md
 # - requirement-shell-automatic-checksum.md
 # - requirement-shell-cli-storage.md
@@ -42,7 +42,7 @@
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
 # APP NAME: hard-assign APP_NAME="sudoer-cli"
-# VERSION: hard-assign VERSION="1.30.0"
+# VERSION: hard-assign VERSION="1.31.0"
 # BASHRC: interactive rc write path for PATH ensure (default ${HOME}/.bashrc).
 #   Override for tests/CI so install can target a temp file instead of this
 #   login's real ~/.bashrc. Law: requirement-shell-path-and-shell-support.md.
@@ -62,7 +62,7 @@ APP_NAME="sudoer-cli"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
 : "${DESCRIPTION:=POSIX /bin/sh CLI: convert a sudoers fragment to JSON, queue it, and let a host admin who has used password sudo accept or decline it. First-time setup creates sudoer-adm.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.30.0"
+VERSION="1.31.0"
 : "${VERSION:=1.29.0}"
 # Shared login doorbell (requirement-login-interactive-review-hook.md).
 : "${COMMON_LOGIN_HOOK_NAME:=sudoer-review-hook}"
@@ -5712,6 +5712,23 @@ app_menu_text() {
                 *) _mt_out="Unknown menu choice '${_mt_extra}'. That number or name is not on this list. Choose a listed number, or 0 to go back." ;;
             esac
             ;;
+        unknown_family)
+            case "${_mt_lang}" in
+                zh-Hant) _mt_out="未知的選單選項 '${_mt_extra}'。這個編號或名稱不在這份清單上。請選清單上的編號或命令名稱，用 0 返回，或用 99 離開。" ;;
+                es) _mt_out="Opción de menú desconocida '${_mt_extra}'. Ese número o nombre no está en esta lista. Elija un número o un comando de la lista, 0 para volver, o 99 para salir." ;;
+                fr) _mt_out="Choix de menu inconnu '${_mt_extra}'. Ce numéro ou ce nom n'est pas dans cette liste. Choisissez un numéro ou un nom de commande de la liste, 0 pour revenir, ou 99 pour quitter." ;;
+                de) _mt_out="Unbekannte Menüauswahl '${_mt_extra}'. Diese Nummer oder dieser Name steht nicht auf dieser Liste. Wählen Sie eine Nummer oder einen Befehlsnamen von der Liste, 0 zum Zurückgehen, oder 99 zum Verlassen." ;;
+                zh-Hans) _mt_out="未知的菜单选项 '${_mt_extra}'。这个编号或名称不在这份清单上。请选清单上的编号或命令名称，用 0 返回，或用 99 离开。" ;;
+                ja) _mt_out="未知のメニュー選択 '${_mt_extra}'。その番号または名前はこの一覧にありません。一覧の番号かコマンド名を選ぶか、0 で戻るか、99 で終了してください。" ;;
+                ko) _mt_out="알 수 없는 메뉴 선택 '${_mt_extra}'. 그 번호나 이름은 이 목록에 없습니다. 목록의 번호나 명령 이름을 고르거나 0으로 돌아가거나 99로 나가세요." ;;
+                ar) _mt_out="خيار قائمة غير معروف '${_mt_extra}'. هذا الرقم أو الاسم ليس في هذه القائمة. اختر رقما أو اسم أمر من القائمة، أو 0 للرجوع، أو 99 للخروج." ;;
+                pt) _mt_out="Opção de menu desconhecida '${_mt_extra}'. Esse número ou nome não está nesta lista. Escolha um número ou um comando da lista, 0 para voltar, ou 99 para sair." ;;
+                ru) _mt_out="Неизвестный пункт меню '${_mt_extra}'. Этого номера или имени нет в этом списке. Выберите номер или имя команды из списка, 0 чтобы вернуться, или 99 чтобы выйти." ;;
+                nl) _mt_out="Onbekende menukeuze '${_mt_extra}'. Dat nummer of die naam staat niet op deze lijst. Kies een nummer of opdrachtnaam van de lijst, 0 om terug te gaan, of 99 om te stoppen." ;;
+                el) _mt_out="Άγνωστη επιλογή μενού '${_mt_extra}'. Αυτός ο αριθμός ή το όνομα δεν είναι σε αυτή τη λίστα. Επιλέξτε αριθμό ή όνομα εντολής από τη λίστα, 0 για επιστροφή, ή 99 για έξοδο." ;;
+                *) _mt_out="Unknown menu choice '${_mt_extra}'. That number or name is not on this list. Choose a listed number or command name, 0 to go back, or 99 to leave." ;;
+            esac
+            ;;
         row_s2j)
             case "${_mt_lang}" in
                 zh-Hant) _mt_out="把 sudoers 片段轉成請求 JSON" ;;
@@ -6579,6 +6596,60 @@ app_menu_text() {
                 *) _mt_out="display language for this menu" ;;
             esac
             ;;
+        cat_approval)
+            case "${_mt_lang}" in
+                zh-Hant) _mt_out="核准功能" ;;
+                es) _mt_out="funciones de aprobación" ;;
+                fr) _mt_out="fonctions d'approbation" ;;
+                de) _mt_out="Genehmigungsfunktionen" ;;
+                zh-Hans) _mt_out="核准功能" ;;
+                ja) _mt_out="承認機能" ;;
+                ko) _mt_out="승인 기능" ;;
+                ar) _mt_out="ميزات الموافقة" ;;
+                pt) _mt_out="funções de aprovação" ;;
+                ru) _mt_out="функции согласования" ;;
+                nl) _mt_out="goedkeuringsfuncties" ;;
+                el) _mt_out="λειτουργίες έγκρισης" ;;
+                *) _mt_out="approval features" ;;
+            esac
+            ;;
+        long_approval)
+            case "${_mt_lang}" in
+                zh-Hant) _mt_out="排隊、列出、顯示，並決定請求" ;;
+                es) _mt_out="poner en cola, listar, mostrar y decidir solicitudes" ;;
+                fr) _mt_out="mettre en file, lister, afficher et décider les demandes" ;;
+                de) _mt_out="Anfragen einreihen, auflisten, zeigen und entscheiden" ;;
+                zh-Hans) _mt_out="排队、列出、显示，并决定请求" ;;
+                ja) _mt_out="依頼を待ち行列へ入れ、一覧し、表示し、決める" ;;
+                ko) _mt_out="요청을 대기열에 넣고 목록으로 보고 표시하고 결정" ;;
+                ar) _mt_out="صف الطلبات واعرضها وقررها" ;;
+                pt) _mt_out="enfileirar, listar, mostrar e decidir pedidos" ;;
+                ru) _mt_out="ставить в очередь, показывать список и решать заявки" ;;
+                nl) _mt_out="aanvragen in de wachtrij, tonen en beslissen" ;;
+                el) _mt_out="ουρά, λίστα, εμφάνιση και απόφαση αιτημάτων" ;;
+                *) _mt_out="Queue, list, show, and decide requests" ;;
+            esac
+            ;;
+        cat_sudoers)
+            _mt_out="sudoers"
+            ;;
+        long_sudoers)
+            case "${_mt_lang}" in
+                zh-Hant) _mt_out="轉換並印出 sudoers 文字" ;;
+                es) _mt_out="convertir e imprimir texto sudoers" ;;
+                fr) _mt_out="convertir et afficher le texte sudoers" ;;
+                de) _mt_out="sudoers-Text umwandeln und drucken" ;;
+                zh-Hans) _mt_out="转换并打印 sudoers 文字" ;;
+                ja) _mt_out="sudoers の文字を変換して表示" ;;
+                ko) _mt_out="sudoers 문자를 변환하고 출력" ;;
+                ar) _mt_out="حوّل نص sudoers واطبعه" ;;
+                pt) _mt_out="converter e imprimir texto sudoers" ;;
+                ru) _mt_out="преобразовать и показать текст sudoers" ;;
+                nl) _mt_out="sudoers-tekst omzetten en afdrukken" ;;
+                el) _mt_out="μετατροπή και εκτύπωση κειμένου sudoers" ;;
+                *) _mt_out="Convert and print sudoers text" ;;
+            esac
+            ;;
         lang_en_long)
             case "${_mt_lang}" in
                 zh-Hant) _mt_out="這個選單改用英文" ;;
@@ -7068,60 +7139,204 @@ app_cmd_menu_language() {
 
 # END APP_LANG
 # =============================================================================
-# app_main_menu_print() - Numbered start list (default-cli-main-menu-style)
+# app_menu_approval_print() - Approval family list (front row 1)
 # =============================================================================
 #
 # GENERAL PURPOSE:
-# Print the claimed TTY main menu: nametag header, then live operational
-# rows (not help, install/setup, self-managed, version/about, test-purpose,
-# or menu/main itself), then row 5 languages, then Exit 99 (N=16).
+# Queue, list, show, decide, and the approver account. Listing is on this
+# layer (list-approving, list-approved, list-rejected). Not the sudoers
+# convert/print family. Back 0 and Exit 99.
 #
 # ALIGNMENT:
 # - requirement-shell-cli-default-interaction.md
-# - requirement-shell-output-requirements.md (util_app_ident / out_menu_choice)
 #
-# Last updated: 2026-10-02
+# Last updated: 2026-10-04
 # =============================================================================
-app_main_menu_print() {
-    out_info "$(util_app_ident) — $(app_menu_text menu_header)"
-    out_menu_choice 1 sudoers-to-json "$(app_menu_text row_s2j)"
-    out_menu_choice 2 json-to-sudoers "$(app_menu_text row_j2s)"
-    out_menu_choice 3 print-sudoers "$(app_menu_text row_ps)"
-    out_menu_choice 4 print-sudoers-install-script "$(app_menu_text row_psis)"
-    out_menu_choice 5 "$(app_menu_text cat_languages)" "$(app_menu_text front_language_long)"
-    out_menu_choice 6 add-sudoer-request "$(app_menu_text row_add)"
-    out_menu_choice 7 update-sudoer-request "$(app_menu_text row_upd)"
-    out_menu_choice 8 remove-sudoer-request "$(app_menu_text row_rm)"
-    out_menu_choice 9 list-approving "$(app_menu_text row_la)"
-    out_menu_choice 10 list-approved "$(app_menu_text row_ld)"
-    out_menu_choice 11 list-rejected "$(app_menu_text row_lr)"
-    out_menu_choice 12 show "$(app_menu_text row_show)"
-    out_menu_choice 13 remove-lpu "$(app_menu_text row_lpu)"
-    out_menu_choice 14 approve "$(app_menu_text row_ap)"
-    out_menu_choice 15 reject "$(app_menu_text row_rj)"
-    out_menu_choice 16 interactive "$(app_menu_text row_int)"
+app_menu_approval_print() {
+    out_info "$(util_app_ident) — $(app_menu_text cat_approval)"
+    out_menu_choice 1 add-sudoer-request "$(app_menu_text row_add)"
+    out_menu_choice 2 update-sudoer-request "$(app_menu_text row_upd)"
+    out_menu_choice 3 remove-sudoer-request "$(app_menu_text row_rm)"
+    out_menu_choice 4 list-approving "$(app_menu_text row_la)"
+    out_menu_choice 5 list-approved "$(app_menu_text row_ld)"
+    out_menu_choice 6 list-rejected "$(app_menu_text row_lr)"
+    out_menu_choice 7 show "$(app_menu_text row_show)"
+    out_menu_choice 8 remove-lpu "$(app_menu_text row_lpu)"
+    out_menu_choice 9 approve "$(app_menu_text row_ap)"
+    out_menu_choice 10 reject "$(app_menu_text row_rj)"
+    out_menu_choice 11 interactive "$(app_menu_text row_int)"
+    out_plain "$(app_menu_text line_back)"
     out_plain "$(app_menu_text line_exit)"
 }
 
 # =============================================================================
-# app_main_menu() - TTY menu (verb menu / main; empty argv is Type O install-ensure)
+# app_menu_approval() - Approval family loop
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Return 0 to go back to the front board (0 / back / empty / EOF).
+# Return 2 to leave the whole menu (99 / exit / quit).
+# Return 3 after COMMAND is set so the caller runs that handler.
+# A bad pick reprints this layer. MUST NOT out_die.
+#
+# ALIGNMENT:
+# - requirement-shell-cli-default-interaction.md
+# - requirement-shell-prompt.md
+#
+# Last updated: 2026-10-04
+# =============================================================================
+app_menu_approval() {
+    : "${PROMPT_ASK_VALUE:=}"
+    local _choice=""
+    while true; do
+        app_menu_approval_print
+        # WARNING — do-not-capture-read (PP-A-22)
+        prompt_ask "$(app_menu_text choice_label)" ""
+        _choice="${PROMPT_ASK_VALUE}"
+        _choice=$(printf '%s' "${_choice}" | tr -d '\r')
+        _choice=$(printf '%s' "${_choice}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        case "${_choice}" in
+            1|add-sudoer-request) COMMAND=add-sudoer-request ;;
+            2|update-sudoer-request) COMMAND=update-sudoer-request ;;
+            3|remove-sudoer-request) COMMAND=remove-sudoer-request ;;
+            4|list-approving) COMMAND=list-approving ;;
+            5|list-approved) COMMAND=list-approved ;;
+            6|list-rejected) COMMAND=list-rejected ;;
+            7|show) COMMAND=show ;;
+            8|remove-lpu) COMMAND=remove-lpu ;;
+            9|approve) COMMAND=approve ;;
+            10|reject) COMMAND=reject ;;
+            11|interactive) COMMAND=interactive ;;
+            0|back|Back|q|"")
+                unset _choice
+                return 0
+                ;;
+            99|exit|quit|Exit)
+                unset _choice
+                return 2
+                ;;
+            *)
+                out_error "$(app_menu_text unknown_family "${_choice}")"
+                continue
+                ;;
+        esac
+        unset _choice
+        return 3
+    done
+}
+
+# =============================================================================
+# app_menu_sudoers_print() - Sudoers family list (front row 7)
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Convert and print sudoers text. Not the approval queue. Back 0 and Exit 99.
+#
+# ALIGNMENT:
+# - requirement-shell-cli-default-interaction.md
+#
+# Last updated: 2026-10-04
+# =============================================================================
+app_menu_sudoers_print() {
+    out_info "$(util_app_ident) — $(app_menu_text cat_sudoers)"
+    out_menu_choice 1 sudoers-to-json "$(app_menu_text row_s2j)"
+    out_menu_choice 2 json-to-sudoers "$(app_menu_text row_j2s)"
+    out_menu_choice 3 print-sudoers "$(app_menu_text row_ps)"
+    out_menu_choice 4 print-sudoers-install-script "$(app_menu_text row_psis)"
+    out_plain "$(app_menu_text line_back)"
+    out_plain "$(app_menu_text line_exit)"
+}
+
+# =============================================================================
+# app_menu_sudoers() - Sudoers family loop
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Same return codes as app_menu_approval. A bad pick reprints this layer.
+#
+# ALIGNMENT:
+# - requirement-shell-cli-default-interaction.md
+# - requirement-shell-prompt.md
+#
+# Last updated: 2026-10-04
+# =============================================================================
+app_menu_sudoers() {
+    : "${PROMPT_ASK_VALUE:=}"
+    local _choice=""
+    while true; do
+        app_menu_sudoers_print
+        # WARNING — do-not-capture-read (PP-A-22)
+        prompt_ask "$(app_menu_text choice_label)" ""
+        _choice="${PROMPT_ASK_VALUE}"
+        _choice=$(printf '%s' "${_choice}" | tr -d '\r')
+        _choice=$(printf '%s' "${_choice}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        case "${_choice}" in
+            1|sudoers-to-json) COMMAND=sudoers-to-json ;;
+            2|json-to-sudoers) COMMAND=json-to-sudoers ;;
+            3|print-sudoers) COMMAND=print-sudoers ;;
+            4|print-sudoers-install-script) COMMAND=print-sudoers-install-script ;;
+            0|back|Back|q|"")
+                unset _choice
+                return 0
+                ;;
+            99|exit|quit|Exit)
+                unset _choice
+                return 2
+                ;;
+            *)
+                out_error "$(app_menu_text unknown_family "${_choice}")"
+                continue
+                ;;
+        esac
+        unset _choice
+        return 3
+    done
+}
+
+# =============================================================================
+# app_main_menu_print() - Numbered start list (default-cli-main-menu-style)
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Front board: 1 approval features, 5 languages, 7 sudoers, Exit 99.
+# Operational verbs live under 1 and 7. Rows 51-63 are the language board
+# only (50 and 64-69 unprinted). Front 6 is not a row.
+#
+# ALIGNMENT:
+# - requirement-shell-cli-default-interaction.md
+# - requirement-shell-cli-language.md
+# - requirement-shell-output-requirements.md (util_app_ident / out_menu_choice)
+#
+# Last updated: 2026-10-04
+# =============================================================================
+app_main_menu_print() {
+    out_info "$(util_app_ident) — $(app_menu_text menu_header)"
+    out_menu_choice 1 "$(app_menu_text cat_approval)" "$(app_menu_text long_approval)"
+    out_menu_choice 5 "$(app_menu_text cat_languages)" "$(app_menu_text front_language_long)"
+    out_menu_choice 7 "$(app_menu_text cat_sudoers)" "$(app_menu_text long_sudoers)"
+    out_plain "$(app_menu_text line_exit)"
+}
+
+# =============================================================================
+# app_main_menu() - TTY menu (verb menu / main; TTY empty argv uses this path)
 # =============================================================================
 #
 # GENERAL PURPOSE:
 # Interactive (TTY=1): ignore --json, draw the numbered list, read a choice
-# in the current shell (PROMPT_ASK_VALUE; MUST NOT $() prompt_ask), run that
-# handler. Invalid choice: out_error, reprint this layer, re-prompt
-# (MUST NOT out_die). Nested numbered submenu (language board) uses the same
-# retry on that layer. Empty line / EOF leaves this layer without spinning.
+# in the current shell (PROMPT_ASK_VALUE; MUST NOT $() prompt_ask), open a
+# family or run that handler. Invalid choice: out_error, reprint this layer,
+# re-prompt (MUST NOT out_die). Nested layers (approval, sudoers, language)
+# retry on that layer. Empty line / EOF on the front board leaves. On a
+# family layer, empty / 0 is Back. 99 on a family layer leaves the whole menu.
 # Non-interactive: help (human or JSON). MUST NOT hang. MUST NOT swallow
 # help under --quiet.
 #
 # ALIGNMENT:
 # - requirement-shell-cli-default-interaction.md
-# - requirement-shell-cli-zero-arguments.md (empty argv is not this path)
+# - requirement-shell-cli-zero-arguments.md (TTY empty argv is this path)
 # - requirement-shell-prompt.md (PROMPT_ASK_VALUE)
 #
-# Last updated: 2026-10-02
+# Last updated: 2026-10-04
 # =============================================================================
 app_main_menu() {
     : "${TTY:=0}"
@@ -7141,11 +7356,12 @@ app_main_menu() {
     local _menu_json="${JSON}"
     local _menu_quiet="${QUIET}"
     local _choice=""
+    local _layer=0
     JSON=0
     QUIET=0
 
     # Invalid choice retries this layer (out_error + reprint; MUST NOT out_die).
-    # Nested numbered submenu (language board) uses the same retry on that layer.
+    # Nested numbered submenu (language board, approval, sudoers) uses the same retry on that layer.
     while true; do
         app_main_menu_print
         # WARNING — do-not-capture-read (PP-A-22)
@@ -7156,28 +7372,42 @@ app_main_menu() {
         _choice=$(printf '%s' "${_choice}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 
         case "${_choice}" in
-            1|sudoers-to-json) COMMAND=sudoers-to-json; break ;;
-            2|json-to-sudoers) COMMAND=json-to-sudoers; break ;;
-            3|print-sudoers) COMMAND=print-sudoers; break ;;
-            4|print-sudoers-install-script) COMMAND=print-sudoers-install-script; break ;;
+            1|"approval features"|approval-features|approval|核准功能|"funciones de aprobación"|"fonctions d'approbation"|Genehmigungsfunktionen|承認機能|"승인 기능"|"ميزات الموافقة"|"funções de aprovação"|"функции согласования"|goedkeuringsfuncties|"λειτουργίες έγκρισης")
+                app_menu_approval
+                _layer=$?
+                if [ "${_layer}" -eq 0 ]; then
+                    continue
+                fi
+                if [ "${_layer}" -eq 2 ]; then
+                    JSON="${_menu_json}"
+                    QUIET="${_menu_quiet}"
+                    unset _choice _layer
+                    return 0
+                fi
+                break
+                ;;
             5|languages|language|語言|语言|idiomas|idioma|langues|langue|Sprachen|Sprache|言語|언어|لغات|لغة|языки|язык|talen|taal|γλώσσες|γλώσσα)
                 app_cmd_menu_language
                 continue
                 ;;
-            6|add-sudoer-request) COMMAND=add-sudoer-request; break ;;
-            7|update-sudoer-request) COMMAND=update-sudoer-request; break ;;
-            8|remove-sudoer-request) COMMAND=remove-sudoer-request; break ;;
-            9|list-approving) COMMAND=list-approving; break ;;
-            10|list-approved) COMMAND=list-approved; break ;;
-            11|list-rejected) COMMAND=list-rejected; break ;;
-            12|show) COMMAND=show; break ;;
-            13|remove-lpu) COMMAND=remove-lpu; break ;;
-            14|approve) COMMAND=approve; break ;;
-            15|reject) COMMAND=reject; break ;;
-            16|interactive) COMMAND=interactive; break ;;
+            7|sudoers)
+                app_menu_sudoers
+                _layer=$?
+                if [ "${_layer}" -eq 0 ]; then
+                    continue
+                fi
+                if [ "${_layer}" -eq 2 ]; then
+                    JSON="${_menu_json}"
+                    QUIET="${_menu_quiet}"
+                    unset _choice _layer
+                    return 0
+                fi
+                break
+                ;;
             99|exit|quit|Exit|"")
                 JSON="${_menu_json}"
                 QUIET="${_menu_quiet}"
+                unset _choice _layer
                 return 0
                 ;;
             *)

@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-language.md
-**Status**: Active (Version 1.1.0)
+**Status**: Active (Version 1.2.0)
 **Area**: shell
 **Key**: `requirement-shell-cli-language`
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -8,7 +8,7 @@
 
 This requirement is the product law for **menu language** on sudoer-cli: thirteen codes, the saved file, and the words the numbered menu, human `help`, and human `about` print.
 
-The flat numbered list (row **5**, Exit **99**, N=16) stays owned by `requirement-shell-cli-default-interaction`. This file owns the language codes, the `language` leaf, and the menu copy. The scratch resolver stays owned by `requirement-shell-cli-storage`.
+The front board (row **1** approval features, row **5** languages, row **7** sudoers, Exit **99**) stays owned by `requirement-shell-cli-default-interaction`. This file owns the language codes, the `language` leaf, and the menu copy. Rows **51–63** use the same names and order as the sibling grok-cli language board. **50** and **64–69** stay unprinted. The scratch resolver stays owned by `requirement-shell-cli-storage`.
 
 ### 1.1 Human-facing
 
@@ -94,7 +94,7 @@ Row **5** is numbered on every host, including Termux, Git Bash, and Windows cmd
 
 **MUST** follow `APP_LANG` on the front board and the language board: header, row longs, Back, Exit, the choice label, and the unknown-choice line.
 
-**MUST** keep each operational command token as the Latin verb in every language (`sudoers-to-json`, `add-sudoer-request`, `interactive`, and the other row tokens). The languages short follows `APP_LANG` (`languages` in English).
+**MUST** keep each operational command token as the Latin verb in every language (`sudoers-to-json`, `add-sudoer-request`, `interactive`, and the other row tokens). The languages short follows `APP_LANG` (`languages` in English). The approval-family short follows `APP_LANG` (`approval features` in English). The sudoers-family short stays the Latin token `sudoers` in every language.
 
 **MUST** follow `APP_LANG` on human `help` and human `about`. Section headings and the words after each command token follow the code. The command token, the flag, the path, and the env name stay the Latin spelling (`install`, `--json`, `SCRIPT_URL`, `SUDOER_CLI_LANG`). English `help` still prints `Usage:` and `Global Options:`. The English menu sentence in `help` names **51** English through **63** Greek, and names front **5**. The other codes use their own usage heading: `用法：`, `Uso:`, `Utilisation :`, `Verwendung:`, `الاستخدام:`, `Использование:`, `Gebruik:`, `Χρήση:`, `使い方:`, `사용법:`. English `about` still prints `About / Diagnostics`. Japanese about prints `概要 / 診断` and `使用中のストレージ`. Korean about prints `개요 / 진단`.
 
@@ -145,29 +145,18 @@ Back and Exit:
 Plain text of the front board, then the language board. The version token is the live `VERSION`. Choice prompt ends with the colon-space from `prompt_ask`.
 
 ```text
-[INFO] sudoer-cli(1.30.0) — numbered list of live commands
-1. sudoers-to-json: Convert sudoers fragment to request JSON
-2. json-to-sudoers: Convert request JSON to sudoers fragment
-3. print-sudoers: Print the sudoers fragment that lets sudoer-adm review without a password
-4. print-sudoers-install-script: Emit admin install script
+[INFO] sudoer-cli(1.31.0) — numbered list of live commands
+1. approval features: Queue, list, show, and decide requests
 5. languages: display language for this menu
-6. add-sudoer-request: Queue an add request (JSON or sudoers)
-7. update-sudoer-request: Queue an update request
-8. remove-sudoer-request: Queue a purpose-only remove (--service)
-9. list-approving: List waiting requests
-10. list-approved: List accepted requests
-11. list-rejected: List declined requests
-12. show: Show a known request
-13. remove-lpu: Remove the dedicated approver account (sudoer-adm)
-14. approve: Copy/overwrite dest in /etc/sudoers.d (product names only)
-15. reject: Decline a waiting request
-16. interactive: Review waiting requests one file at a time (not empty argv)
+7. sudoers: Convert and print sudoers text
 99. Exit
 Choice:
 ```
 
+Row **1** then lists `add-sudoer-request`, `update-sudoer-request`, `remove-sudoer-request`, `list-approving`, `list-approved`, `list-rejected`, `show`, `remove-lpu`, `approve`, `reject`, and `interactive`, plus `0. Back` and `99. Exit`. Row **7** then lists `sudoers-to-json`, `json-to-sudoers`, `print-sudoers`, and `print-sudoers-install-script`, plus `0. Back` and `99. Exit`.
+
 ```text
-[INFO] sudoer-cli(1.30.0) — languages
+[INFO] sudoer-cli(1.31.0) — languages
 51. English: use English for this menu
 52. 简体中文: use Simplified Chinese for this menu
 53. 繁體中文: use Traditional Chinese for this menu
@@ -221,7 +210,7 @@ When this program runs on Termux, Git Bash, Windows cmd, or the same class (no r
 6. Capture `prompt_ask` with `$()` or backticks.
 7. Put the four letters r, e, a, d in a row inside `app_menu_text`.
 8. Translate argv `version`, JSON about fields, or operational command output in this version.
-9. Treat front **6** as the language board, or treat **51** on the front board as a language save.
+9. Treat front **6** as the language board, or treat **51** on the front board as a language save. Front **6** is not a command row.
 
 **Violating this rule is a critical menu-language regression.**
 
@@ -263,7 +252,7 @@ When this program runs on Termux, Git Bash, Windows cmd, or the same class (no r
 | **TP-CLI-24** | `tests/test_cli.sh` | have | Rows 51–63, save, Back, reserved, env override, ja/ko help and about |
 | **TP-CLI-29** | `tests/test_cli.sh` | have | TTY empty argv and TTY `--debug` with `SUDOER_CLI_LANG=ja` show `99. 終了` and do not write the language file |
 | **TP-CLI-20** | `tests/test_cli.sh` | have | Exit **99** lives in `app_menu_text` `line_exit` |
-| **TP-CLI-22** | `tests/test_cli.sh` | have | Unused front integer is **17** (N=16, Exit **99**) |
+| **TP-CLI-22** | `tests/test_cli.sh` | have | Unused front integer **17** reprints the front board (Exit **99**) |
 | **TP-ELEV-10** | `tests/test_cli.sh` | have | Both boards call `prompt_ask "$(app_menu_text choice_label)"` |
 
 **Matrix:** `reviews/requirement-test-matrix.md`
@@ -273,6 +262,7 @@ When this program runs on Termux, Git Bash, Windows cmd, or the same class (no r
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-10-04 | Active 1.2.0 | Rows **51–63** stay the sibling grok-cli names and order. **50** and **64–69** stay unprinted. Front **1** and **7** are families, not language rows. Ship unit **1.31.0**. |
 | 2026-10-04 | Active 1.1.0 | `app_lang_load` runs for TTY empty argv and for `--json` with no command. TTY `--debug` shows the front board in `APP_LANG`. Proof **TP-CLI-29**. Ship unit **1.30.0**. |
 | 2026-10-02 | Active 1.0.0 | Menu **5** languages; block **50–69** assigned **51–63**; `SUDOER_CLI_LANG`; proof **TP-CLI-24**. Ship unit **1.29.0**. |
 

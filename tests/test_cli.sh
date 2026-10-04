@@ -114,7 +114,9 @@ run_test_cli() {
         _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
             PTY_IN="99" ci_pty_capture "${SCRIPT}")
         assert_contains "TP-CLI-07 TTY empty argv is numbered list" "${_out}" "99. Exit"
-        assert_contains "TP-CLI-07 TTY empty argv row 1" "${_out}" "1. sudoers-to-json:"
+        assert_contains "TP-CLI-07 TTY empty argv row 1" "${_out}" "1. approval features:"
+        assert_contains "TP-CLI-07 TTY empty argv row 7" "${_out}" "7. sudoers:"
+        assert_not_contains "TP-CLI-07 TTY empty argv row 1 is not sudoers-to-json" "${_out}" "1. sudoers-to-json:"
         assert_contains "TP-CLI-07 TTY empty argv header app" "${_out}" "${APP_NAME}"
         assert_contains "TP-CLI-07 TTY empty argv header version" "${_out}" "${PRODUCT_VERSION}"
         assert_not_contains "TP-CLI-07 TTY empty argv not help dump" "${_out}" "Usage:"
@@ -168,7 +170,8 @@ run_test_cli() {
         _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
             PTY_IN="99" ci_pty_capture "${SCRIPT}" --debug)
         assert_contains "TP-CLI-29 TTY --debug no command is numbered list" "${_out}" "99. Exit"
-        assert_contains "TP-CLI-29 TTY --debug no command row 1" "${_out}" "1. sudoers-to-json:"
+        assert_contains "TP-CLI-29 TTY --debug no command row 1" "${_out}" "1. approval features:"
+        assert_contains "TP-CLI-29 TTY --debug no command row 7" "${_out}" "7. sudoers:"
         assert_contains "TP-CLI-29 TTY --debug no command dispatch menu" "${_out}" "command=menu"
         assert_not_contains "TP-CLI-29 TTY --debug no command not help dump" "${_out}" "Usage:"
         assert_not_contains "TP-CLI-29 TTY --debug no command not ensure" "${_out}" "command=ensure"
@@ -176,6 +179,8 @@ run_test_cli() {
             SUDOER_CLI_LANG=ja PTY_IN="99" ci_pty_capture "${SCRIPT}")
         assert_contains "TP-CLI-29 TTY empty argv ja exit row" "${_out}" "99. 終了"
         assert_contains "TP-CLI-29 TTY empty argv ja languages row" "${_out}" "言語"
+        assert_contains "TP-CLI-29 TTY empty argv ja approval row" "${_out}" "承認機能"
+        assert_contains "TP-CLI-29 TTY empty argv ja sudoers row" "${_out}" "7. sudoers:"
         assert_not_contains "TP-CLI-29 TTY empty argv ja not English exit" "${_out}" "99. Exit"
         if [ ! -f "${CI_HOME}/.local/${APP_NAME}/language" ]; then
             t_pass "TP-CLI-29 TTY empty argv ja does not write language file"
@@ -330,13 +335,30 @@ run_test_cli() {
     assert_eq "TP-CLI-19 menu --quiet off-TTY exit 0" 0 "${_ec}"
     assert_contains "TP-CLI-19 menu --quiet still prints help" "${_out}" "Usage:"
 
-    # TP-CLI-20: membership + Exit 99 (N=16; Exit text lives in app_menu_text)
-    _fn=$(sed -n '/^app_main_menu_print()/,/^}/p' "${SCRIPT}")
+    # TP-CLI-20: front families 1 and 7 + Exit 99 (verbs live on those layers)
+    _front=$(sed -n '/^app_main_menu_print()/,/^}/p' "${SCRIPT}")
+    _ap=$(sed -n '/^app_menu_approval_print()/,/^}/p' "${SCRIPT}")
+    _su=$(sed -n '/^app_menu_sudoers_print()/,/^}/p' "${SCRIPT}")
     _cat=$(sed -n '/^app_menu_text()/,/^}/p' "${SCRIPT}")
-    assert_contains "TP-CLI-20 row sudoers-to-json" "${_fn}" "sudoers-to-json"
-    assert_contains "TP-CLI-20 row interactive" "${_fn}" "interactive"
-    assert_contains "TP-CLI-20 row languages" "${_fn}" "app_menu_text cat_languages"
-    assert_contains "TP-CLI-20 print calls Exit key" "${_fn}" "app_menu_text line_exit"
+    _fn="${_front}
+${_ap}
+${_su}"
+    assert_contains "TP-CLI-20 front approval family" "${_front}" "app_menu_text cat_approval"
+    assert_contains "TP-CLI-20 front sudoers family" "${_front}" "app_menu_text cat_sudoers"
+    assert_contains "TP-CLI-20 row languages" "${_front}" "app_menu_text cat_languages"
+    assert_contains "TP-CLI-20 print calls Exit key" "${_front}" "app_menu_text line_exit"
+    assert_not_contains "TP-CLI-20 front has no sudoers-to-json" "${_front}" "sudoers-to-json"
+    assert_not_contains "TP-CLI-20 front has no list-approving" "${_front}" "list-approving"
+    assert_contains "TP-CLI-20 approval lists waiting" "${_ap}" "list-approving"
+    assert_contains "TP-CLI-20 approval lists accepted" "${_ap}" "list-approved"
+    assert_contains "TP-CLI-20 approval lists declined" "${_ap}" "list-rejected"
+    assert_contains "TP-CLI-20 approval add" "${_ap}" "add-sudoer-request"
+    assert_contains "TP-CLI-20 row interactive" "${_ap}" "interactive"
+    assert_contains "TP-CLI-20 sudoers convert" "${_su}" "sudoers-to-json"
+    assert_contains "TP-CLI-20 sudoers round trip" "${_su}" "json-to-sudoers"
+    assert_contains "TP-CLI-20 sudoers print" "${_su}" "print-sudoers"
+    assert_contains "TP-CLI-20 sudoers install script" "${_su}" "print-sudoers-install-script"
+    assert_not_contains "TP-CLI-20 sudoers family has no listing" "${_su}" "list-approving"
     assert_contains "TP-CLI-20 Exit 99" "${_cat}" '*) _mt_out="99. Exit"'
     assert_not_contains "TP-CLI-20 no 16. Exit" "${_fn}${_cat}" "16. Exit"
     assert_not_contains "TP-CLI-20 no 17. Exit" "${_fn}${_cat}" "17. Exit"
@@ -480,6 +502,10 @@ run_test_cli() {
         printf '%s\n' 'out_error() { printf "ERROR:%s\n" "$*"; }'
         sed -n '/^util_app_ident()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_menu_text()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_menu_approval_print()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_menu_approval()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_menu_sudoers_print()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_menu_sudoers()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_main_menu_print()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_main_menu()/,/^}/p' "${SCRIPT}"
         printf '%s\n' 'APP_NAME=sudoer-cli'
@@ -499,7 +525,8 @@ run_test_cli() {
     _ec=$?
     assert_eq "TP-CLI-22 retry then listed 1 exit 0" 0 "${_ec}"
     assert_contains "TP-CLI-22 retry then listed 1 still ERROR first" "${_out}" "ERROR:Unknown menu choice '17'"
-    assert_contains "TP-CLI-22 retry then listed 1 runs handler" "${_out}" "RAN:sudoers-to-json"
+    assert_contains "TP-CLI-22 retry then listed 1 opens approval" "${_out}" "list-approving"
+    assert_contains "TP-CLI-22 retry then listed 1 runs handler" "${_out}" "RAN:add-sudoer-request"
     assert_not_contains "TP-CLI-22 retry then listed 1 is not DIE" "${_out}" "DIE:"
     rm -rf "${_th}"
 
@@ -515,6 +542,10 @@ run_test_cli() {
     assert_contains "TP-ELEV-10 menu reads PROMPT_ASK_VALUE" "${_menu}" 'PROMPT_ASK_VALUE'
     _langm=$(sed -n '/^app_cmd_menu_language()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-ELEV-10 language menu calls prompt_ask" "${_langm}" 'prompt_ask "$(app_menu_text choice_label)"'
+    _apm=$(sed -n '/^app_menu_approval()/,/^}/p' "${SCRIPT}")
+    _sum=$(sed -n '/^app_menu_sudoers()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-ELEV-10 approval menu calls prompt_ask" "${_apm}" 'prompt_ask "$(app_menu_text choice_label)"'
+    assert_contains "TP-ELEV-10 sudoers menu calls prompt_ask" "${_sum}" 'prompt_ask "$(app_menu_text choice_label)"'
     _menu_live=$(printf '%s\n' "${_menu}" | grep -v '^[[:space:]]*#' || true)
     if printf '%s\n' "${_menu_live}" | grep -E '\$\(prompt_|`prompt_' >/dev/null; then
         t_fail "TP-ELEV-10 app_main_menu must not \$() prompt_ask"
@@ -557,6 +588,10 @@ EOF
         sed -n '/^app_lang_save()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_menu_text()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_cmd_menu_language()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_menu_approval_print()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_menu_approval()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_menu_sudoers_print()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_menu_sudoers()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_main_menu_print()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_main_menu()/,/^}/p' "${SCRIPT}"
         printf '%s\n' "APP_NAME=${APP_NAME}"
@@ -606,6 +641,10 @@ EOF
     assert_contains "TP-CLI-24 front language row 5" "${_out}" "5."
     assert_not_contains "TP-CLI-24 no reserved row 50" "${_out}" "50."
     assert_not_contains "TP-CLI-24 no reserved row 64" "${_out}" "64."
+    assert_not_contains "TP-CLI-24 no reserved row 65" "${_out}" "65."
+    assert_not_contains "TP-CLI-24 no reserved row 66" "${_out}" "66."
+    assert_not_contains "TP-CLI-24 no reserved row 67" "${_out}" "67."
+    assert_not_contains "TP-CLI-24 no reserved row 68" "${_out}" "68."
     assert_not_contains "TP-CLI-24 no reserved row 69" "${_out}" "69."
     assert_contains "TP-CLI-24 language Back" "${_out}" "0. Back"
     assert_file_missing "TP-CLI-24 Back does not write language" "${_lfile}"
@@ -619,9 +658,29 @@ EOF
     assert_contains "TP-CLI-24 reserved 69 warns" "${_out}" "Unknown menu choice '69'"
     assert_file_missing "TP-CLI-24 reserved 69 does not write language" "${_lfile}"
     _out=$(printf '%s\n' '6' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
-    assert_contains "TP-CLI-24 front 6 runs add-sudoer-request" "${_out}" "RAN:add-sudoer-request"
+    assert_contains "TP-CLI-24 front 6 is not a row" "${_out}" "Unknown menu choice '6'"
+    assert_not_contains "TP-CLI-24 front 6 does not run add-sudoer-request" "${_out}" "RAN:"
     assert_not_contains "TP-CLI-24 front 6 does not open language rows" "${_out}" "51."
     assert_file_missing "TP-CLI-24 front 6 does not write language" "${_lfile}"
+    _out=$(printf '%s\n' '1' '0' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 front 1 is approval features" "${_out}" "1. approval features:"
+    assert_contains "TP-CLI-24 approval lists waiting" "${_out}" "4. list-approving:"
+    assert_contains "TP-CLI-24 approval lists accepted" "${_out}" "5. list-approved:"
+    assert_contains "TP-CLI-24 approval lists declined" "${_out}" "6. list-rejected:"
+    assert_contains "TP-CLI-24 approval Back" "${_out}" "0. Back"
+    assert_not_contains "TP-CLI-24 approval Back did not run" "${_out}" "RAN:"
+    _out=$(printf '%s\n' '1' '4' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 approval 4 runs list-approving" "${_out}" "RAN:list-approving"
+    _out=$(printf '%s\n' '7' '1' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 sudoers 1 runs sudoers-to-json" "${_out}" "RAN:sudoers-to-json"
+    assert_contains "TP-CLI-24 sudoers row token" "${_out}" "1. sudoers-to-json:"
+    _out=$(printf '%s\n' '7' '5' '0' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 sudoers unused 5 warns" "${_out}" "Unknown menu choice '5'"
+    assert_not_contains "TP-CLI-24 sudoers unused 5 did not run" "${_out}" "RAN:"
+    _out=$(printf '%s\n' 'sudoers' '0' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 name sudoers opens the family" "${_out}" "3. print-sudoers:"
+    _out=$(printf '%s\n' 'approval features' '0' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 name approval features opens the family" "${_out}" "11. interactive:"
     _out=$(printf '%s\n' '51' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
     assert_contains "TP-CLI-24 front 51 is not a language save" "${_out}" "Unknown menu choice '51'"
     assert_not_contains "TP-CLI-24 front 51 did not run a handler" "${_out}" "RAN:"

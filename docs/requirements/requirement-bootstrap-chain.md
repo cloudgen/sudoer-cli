@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-bootstrap-chain.md  
-**Status**: Active (Version 5.3.4)  
+**Status**: Active (Version 5.3.5)  
 **Area**: architecture  
 **Key**: `requirement-bootstrap-chain`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -96,7 +96,7 @@ These are **this product’s** structural contracts, inherited from selfmanaged 
 | Concern | Value |
 |---------|---------|
 | `APP_NAME` | `sudoer-cli` |
-| `VERSION` | `1.30.0` (product version SSOT in ship unit) |
+| `VERSION` | `1.31.0` (product version SSOT in ship unit) |
 | Primary install story | `curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli \| sh` |
 | README one-liner | **Yes** — B’s composed `SCRIPT_URL` |
 
@@ -195,6 +195,7 @@ These are **this product’s** structural contracts, inherited from selfmanaged 
 | 2026-09-03 | Active 5.2.3 | Stay-honest Implementation Notes `VERSION` **1.20.0** |
 | 2026-09-06 | Active 5.2.4 | Stay-honest Implementation Notes `VERSION` **1.21.0** |
 | 2026-09-07 | Active 5.3.0 | Live origin **selfmanaged**; Type O `curl \| sh`; VERSION **1.22.0** |
+| 2026-10-04 | Active 5.3.5 | Stay-honest `VERSION` **1.31.0**. Front **1** approval features. Front **7** sudoers. Languages stay **51–63** |
 | 2026-10-04 | Active 5.3.4 | Stay-honest `VERSION` **1.30.0**. Off-TTY empty argv stays Type O. TTY empty argv is the numbered list |
 | 2026-10-02 | Active 5.3.3 | Stay-honest Implementation Notes `VERSION` **1.29.0** |
 | 2026-09-13 | Active 5.3.3 | Stay-honest Implementation Notes `VERSION` **1.28.0** |

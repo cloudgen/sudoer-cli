@@ -1,6 +1,6 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.30.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.31.0-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
@@ -208,27 +208,14 @@ This product is **online-installable**. Global vs local here means install *loca
 
 ```text
 $ sudoer-cli
-[INFO] **sudoer-cli**(*1.30.0*) — numbered list of live commands
-1. sudoers-to-json: Convert sudoers fragment to request JSON
-2. json-to-sudoers: Convert request JSON to sudoers fragment
-3. print-sudoers: Print the sudoers fragment that lets sudoer-adm review without a password
-4. print-sudoers-install-script: Emit admin install script
+[INFO] **sudoer-cli**(*1.31.0*) — numbered list of live commands
+1. approval features: Queue, list, show, and decide requests
 5. languages: display language for this menu
-6. add-sudoer-request: Queue an add request (JSON or sudoers)
-7. update-sudoer-request: Queue an update request
-8. remove-sudoer-request: Queue a purpose-only remove (--service)
-9. list-approving: List waiting requests
-10. list-approved: List accepted requests
-11. list-rejected: List declined requests
-12. show: Show a known request
-13. remove-lpu: Remove the dedicated approver account (sudoer-adm)
-14. approve: Copy/overwrite dest in /etc/sudoers.d (product names only)
-15. reject: Decline a waiting request
-16. interactive: Review waiting requests one file at a time (not empty argv)
+7. sudoers: Convert and print sudoers text
 99. Exit
 ```
 
-`5` opens languages **51** English through **63** Greek. A pick is saved at `~/.local/sudoer-cli/language` and the list redraws in that language. `0` on that board goes back and does not save. A number or name that is not on the front list prints an error, reprints **this** list, and waits. Type `99` (or `exit` / `quit`) to leave.
+`1` opens approval work, including `list-approving`, `list-approved`, and `list-rejected`. `7` opens `sudoers-to-json`, `json-to-sudoers`, `print-sudoers`, and `print-sudoers-install-script`. `0` on either family goes back. `99` leaves. `5` opens languages **51** English through **63** Greek (same names and order as sibling grok-cli; **50** and **64–69** are not printed). A language pick is saved at `~/.local/sudoer-cli/language` and the list redraws in that language. `0` on that board goes back and does not save. A number or name that is not on the current list prints an error, reprints **this** list, and waits. Type `99` (or `exit` / `quit`) to leave.
 
 **Source repository:** [cloudgen/sudoer-cli](https://github.com/cloudgen/sudoer-cli)  
 Config identity: `REPO_USER=cloudgen`, `REPO_NAME=sudoer-cli`. Default channel: `https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli`.
@@ -315,6 +302,7 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
+2026-10-04 — version **1.31.0** (front **1** approval features, including listing; front **7** sudoers; languages stay **51–63**).
 2026-10-04 — version **1.30.0** (at a prompt, `sudoer-cli` or `sudoer-cli --debug` opens the numbered list; a pipe with no command still installs or confirms install; `sudoer-cli --json` with no command prints JSON help).
 2026-10-02 — version **1.29.0** (menu **5** languages; rows **51–63** saved at `~/.local/sudoer-cli/language`; old **5–15** shift to **6–16**; Exit stays **99**).
 2026-09-13 — version **1.28.0** (doorbell `/usr/local/bin/sudoer-review-hook`; setup heals old `login-review-hook` rc and F6).

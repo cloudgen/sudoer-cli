@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-interface.md  
-**Status**: Active (Version 3.13.0) — stay-honest `VERSION` 1.30.0; TTY empty argv is the numbered list; off-TTY empty argv is Type O; menu **5** languages; login-hook doorbell `sudoer-review-hook`  
+**Status**: Active (Version 3.14.0) — stay-honest `VERSION` 1.31.0; front **1** approval features; front **7** sudoers; menu **5** languages; TTY empty argv is the numbered list; off-TTY empty argv is Type O; login-hook doorbell `sudoer-review-hook`  
 **Area**: shell  
 **Key**: `requirement-shell-cli-interface`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -100,11 +100,11 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | **Primary executable** | `src/sudoer-cli` (POSIX `/bin/sh`, single-file ship unit) |
 | **Dispatcher** | `app_main` |
 | **Output SSOT** | `out_text` + wrappers (`out_info`, `out_success`, `out_warn`, `out_error`, `out_die`, `out_plain`, `out_json`, …) |
-| **Version SSOT** | `VERSION="1.30.0"` hard-assign in ship unit |
+| **Version SSOT** | `VERSION="1.31.0"` hard-assign in ship unit |
 | **Interactive rc write path** | `BASHRC` default `${HOME}/.bashrc`. User-bin `install` PATH ensure creates/modifies this file. Tests/CI **MAY** set `BASHRC` to a file in a temp folder. Dual mention: `requirement-shell-path-and-shell-support`. |
 | **Install paths** | Global: `GLOBAL_BIN` default `/usr/local/bin`; User: `USER_BIN` default `${HOME}/.local/bin` |
 | **Primary install story** | `curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli \| sh` → user bin; `sudo curl … \| sudo sh` → global; login-hook-symlink `/usr/local/bin/sudoer-review-hook` after global place |
-| **Default CLI main menu** | **Claimed.** TTY empty argv (including `--debug` with no command) opens the numbered list. Off-TTY empty argv is Type O install-ensure. Verb `menu` / `main` opens the same list on a TTY and prints help off-TTY. `--json` with no command is JSON help. Row **5** is languages (N=16, Exit **99**). Topic owner: `requirement-shell-cli-default-interaction`. Language copy: `requirement-shell-cli-language`. Look printers: `util_app_ident` / `out_menu_choice` (**TP-CLI-17**, **TP-CLI-24**, **TP-CLI-29**) |
+| **Default CLI main menu** | **Claimed.** TTY empty argv (including `--debug` with no command) opens the numbered list. Off-TTY empty argv is Type O install-ensure. Verb `menu` / `main` opens the same list on a TTY and prints help off-TTY. `--json` with no command is JSON help. Front **1** is approval features (listing included). Front **5** is languages (**51–63**). Front **7** is sudoers. Exit **99**. Topic owner: `requirement-shell-cli-default-interaction`. Language copy: `requirement-shell-cli-language`. Look printers: `util_app_ident` / `out_menu_choice` (**TP-CLI-17**, **TP-CLI-24**, **TP-CLI-29**) |
 | **Online channel env** | `SCRIPT_URL` composed `https://raw.githubusercontent.com/${REPO_USER}/${REPO_NAME}/main/src/${APP_NAME}` |
 | **Type 1 / Type 2 commands** | Type 1 **routed, fail closed** without euid 0; setup = any admin sudo (live useradd/F6/hook); approve = same elev (F6 extra); Type 2 **not used** |
 | **Dedicated system user** | `sudoer-adm` (authorizer; see LPU REQ) |
@@ -295,6 +295,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | 2026-09-03 | Active 3.10.0 | Claimed case-3 `menu` / `main`; empty argv stays help; `VERSION` 1.19.0 |
 | 2026-09-03 | Active 3.10.1 | Stay-honest Implementation Notes `VERSION` 1.20.0 |
 | 2026-09-06 | Active 3.10.3 | Stay-honest Implementation Notes `VERSION` 1.21.0 |
+| 2026-10-04 | Active 3.14.0 | Stay-honest `VERSION` 1.31.0. Front **1** approval features. Front **7** sudoers. Languages stay **51–63**. Exit stays **99**. |
 | 2026-10-04 | Active 3.13.0 | Stay-honest `VERSION` 1.30.0. TTY empty argv (including `--debug`) is the numbered list. Off-TTY empty argv stays Type O. `--json` with no command is JSON help. |
 | 2026-10-02 | Active 3.12.3 | Stay-honest `VERSION` 1.29.0; menu **5** languages |
 | 2026-09-13 | Active 3.12.3 | Stay-honest `VERSION` 1.28.0; hook doorbell `sudoer-review-hook` |

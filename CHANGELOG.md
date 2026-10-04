@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.31.0] - 2026-10-04
+
+### Changed
+
+- The numbered list groups approval work, including `list-approving`, `list-approved`, and `list-rejected`, under **1. approval features**. Convert and print sit under **7. sudoers** (`sudoers-to-json`, `json-to-sudoers`, `print-sudoers`, `print-sudoers-install-script`). Front **5** still opens languages **51** English through **63** Greek, the same names and order as sibling grok-cli. **50** and **64–69** stay unprinted. Front **6** is not a row. Exit stays **99**. Typed commands such as `sudoer-cli list-approving` still run without the menu. Default-interaction REQ **1.5.0**. Language **1.2.0**. **TP-CLI-20** · **TP-CLI-24**. Ship unit **`VERSION="1.31.0"`**.
+
 ## [1.30.0] - 2026-10-04
 
 ### Changed
