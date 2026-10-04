@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-interface.md  
-**Status**: Active (Version 3.12.3) — stay-honest `VERSION` 1.29.0; menu **5** languages; login-hook doorbell `sudoer-review-hook`  
+**Status**: Active (Version 3.13.0) — stay-honest `VERSION` 1.30.0; TTY empty argv is the numbered list; off-TTY empty argv is Type O; menu **5** languages; login-hook doorbell `sudoer-review-hook`  
 **Area**: shell  
 **Key**: `requirement-shell-cli-interface`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -18,7 +18,7 @@ Help lists only commands that actually run. As yourself you install, convert, qu
 |-----|---------|---------|
 | You / this login | Run listed commands without becoming root | `sudoer-cli help` |
 | The other role | Host admin already using sudo for setup and review | `sudo sudoer-cli setup` |
-| Not this file | Domain schema, dest fences, empty-argv help-only rule, numbered-list membership | `requirement-domain-sudoer-approval` · `requirement-shell-cli-zero-arguments` · `requirement-shell-cli-default-interaction` |
+| Not this file | Domain schema, dest fences, empty-argv split, numbered-list membership | `requirement-domain-sudoer-approval` · `requirement-shell-cli-zero-arguments` · `requirement-shell-cli-default-interaction` |
 
 | Includes | Excludes |
 |----------|----------|
@@ -74,7 +74,7 @@ Additional flags **MAY** be added only when documented here (or a superseding re
 
 1. **Single entry:** `app_main` **MUST** parse global flags and route commands.  
 2. **Unknown command:** **MUST** fail loudly with pointer to `help` (via output SSOT).  
-3. **Empty argv:** **Type O → install-ensure** (`requirement-shell-cli-zero-arguments.md`).  
+3. **Empty argv:** after flag parse, no command token. TTY → numbered list. Off-TTY → **Type O install-ensure**. `--json` with no command → JSON help. Overlay switches (`--debug`, `--quiet`/`-q`, `--force`, `--global`) with no command token follow that split (`requirement-shell-cli-zero-arguments.md`).  
 4. **No raw user I/O:** User-facing messages **MUST** go through `out_*`.  
 5. Script end **MUST** call `app_main "$@"` (no basename gate that blocks dispatch).  
 6. Trimmed parent verbs (`backup`, `restore`, `remove-project-sudoers`) **MUST** fail as unknown. `print-sudoers` and `print-sudoers-install-script` are **domain Type 0** (not trimmed).
@@ -100,11 +100,11 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | **Primary executable** | `src/sudoer-cli` (POSIX `/bin/sh`, single-file ship unit) |
 | **Dispatcher** | `app_main` |
 | **Output SSOT** | `out_text` + wrappers (`out_info`, `out_success`, `out_warn`, `out_error`, `out_die`, `out_plain`, `out_json`, …) |
-| **Version SSOT** | `VERSION="1.29.0"` hard-assign in ship unit |
+| **Version SSOT** | `VERSION="1.30.0"` hard-assign in ship unit |
 | **Interactive rc write path** | `BASHRC` default `${HOME}/.bashrc`. User-bin `install` PATH ensure creates/modifies this file. Tests/CI **MAY** set `BASHRC` to a file in a temp folder. Dual mention: `requirement-shell-path-and-shell-support`. |
 | **Install paths** | Global: `GLOBAL_BIN` default `/usr/local/bin`; User: `USER_BIN` default `${HOME}/.local/bin` |
 | **Primary install story** | `curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli \| sh` → user bin; `sudo curl … \| sudo sh` → global; login-hook-symlink `/usr/local/bin/sudoer-review-hook` after global place |
-| **Default CLI main menu** | **Claimed.** Empty argv is Type O install-ensure. Verb `menu` / `main` opens the numbered list. Row **5** is languages (N=16, Exit **99**). Topic owner: `requirement-shell-cli-default-interaction`. Language copy: `requirement-shell-cli-language`. Look printers: `util_app_ident` / `out_menu_choice` (**TP-CLI-17**, **TP-CLI-24**) |
+| **Default CLI main menu** | **Claimed.** TTY empty argv (including `--debug` with no command) opens the numbered list. Off-TTY empty argv is Type O install-ensure. Verb `menu` / `main` opens the same list on a TTY and prints help off-TTY. `--json` with no command is JSON help. Row **5** is languages (N=16, Exit **99**). Topic owner: `requirement-shell-cli-default-interaction`. Language copy: `requirement-shell-cli-language`. Look printers: `util_app_ident` / `out_menu_choice` (**TP-CLI-17**, **TP-CLI-24**, **TP-CLI-29**) |
 | **Online channel env** | `SCRIPT_URL` composed `https://raw.githubusercontent.com/${REPO_USER}/${REPO_NAME}/main/src/${APP_NAME}` |
 | **Type 1 / Type 2 commands** | Type 1 **routed, fail closed** without euid 0; setup = any admin sudo (live useradd/F6/hook); approve = same elev (F6 extra); Type 2 **not used** |
 | **Dedicated system user** | `sudoer-adm` (authorizer; see LPU REQ) |
@@ -114,7 +114,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 
 | Command | Type | Handler family | Required behavior |
 |---------|------|----------------|-------------------|
-| *(no args — empty argv)* | Type 0 | `app_main` → `inst_perform_install` / `inst_maybe_install` | **Type O install-ensure** — not help |
+| *(no command token — empty argv)* | Type 0 | TTY → `app_main_menu`; off-TTY → `inst_perform_install` / `inst_maybe_install`; `--json` → `app_help` | TTY numbered list (including `--debug`). Off-TTY **Type O install-ensure**. `--json` with no command is JSON help. Not `interactive` |
 | `install` | Type 0 | `inst_perform_install` | Place from `SCRIPT_URL`; user-bin companion PATH/profile (`inst_ensure_companion`). Idempotent unless `--force`. Dual mention: `requirement-shell-self-management` · `requirement-shell-path-and-shell-support` |
 | `version-check` | Type 0 | `ver_check` | Local vs remote on channel; fail loud if channel missing |
 | `self-update` | Type 0 | `inst_self_update` | Fetch newer from channel; no silent downgrade |
@@ -122,7 +122,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | `version` | Type 0 | `app_version` | Local `VERSION` only; no network |
 | `about` | Type 0 | `app_about` | Diagnostics: install presence, paths, user, shell, TTY, storage, **resolved queue paths**, install channel; **no** `CHECKSUM`; **no** backup/restore fields |
 | `help` | Type 0 | `app_help` | Full usage in human mode; short JSON note in JSON mode |
-| `menu` / `main` | Type 0 | `app_main_menu` | Numbered TTY start list. Invalid choice reprints this layer (`out_error`; **MUST NOT** `out_die`). Empty argv is Type O. Dual mention on `requirement-shell-cli-default-interaction`. |
+| `menu` / `main` | Type 0 | `app_main_menu` | Numbered TTY start list (same handler as TTY empty argv). Invalid choice reprints this layer (`out_error`; **MUST NOT** `out_die`). Off-TTY `menu` is help. TTY `menu --json` still draws the list. Dual mention on `requirement-shell-cli-default-interaction`. |
 | `sudoers-to-json` | Type 0 | `sr_sudoers_to_json` | Named here; text dual / visudo on `requirement-sudoers-file`; convert catalog on domain SSOT |
 | `json-to-sudoers` | Type 0 | `sr_json_to_sudoers` | Named here; text dual / visudo on `requirement-sudoers-file`; convert catalog on domain SSOT |
 | `test-json-format` | Type 0 **test-purpose** | `sr_test_json_format` | Named here; Fence body on `requirement-incorrect-json-format`. Unit test; local test folder. |
@@ -145,16 +145,16 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 
 | Flag | Required wiring |
 |------|-----------------|
-| `--quiet`, `-q` | `QUIET=1` in `app_main` |
-| `--json` | `JSON=1` and `QUIET=1` in `app_main` |
-| `--debug` | `DEBUG=1` in `app_main` |
-| `--force` | `FORCE=1` (and install reinstall policy when applicable) |
-| `--global` | `FORCE_GLOBAL=1` |
+| `--quiet`, `-q` | `QUIET=1` in `app_main`. With no command token, still empty argv (TTY menu; off-TTY ensure) |
+| `--json` | `JSON=1` and `QUIET=1` in `app_main`. With no command token, JSON help on a TTY and off-TTY |
+| `--debug` | `DEBUG=1` in `app_main`. With no command token, still empty argv (`sudoer-cli --debug` matches `DEBUG=1 sudoer-cli`) |
+| `--force` | `FORCE=1` (and install reinstall policy when applicable). With no command token, still empty argv |
+| `--global` | `FORCE_GLOBAL=1`. With no command token, still empty argv |
 
 #### Dispatcher acceptance criteria
 
 1. Unknown token after flag parse → `out_die` with pointer to `sudoer-cli help`.  
-2. Zero-arg → Type O install-ensure (not help).  
+2. No command token → TTY numbered list; off-TTY Type O install-ensure; `--json` → JSON help. Overlay flags do not make that help.  
 3. Command routing table in `app_main` **must** include every lifecycle row above **and** the live domain Type 0 verbs from the domain SSOT, and **no** trimmed parent verbs (`backup` / `restore` / `remove-project-sudoers`).  
 4. Help text **must** stay aligned with that table.
 
@@ -206,7 +206,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 **Future AI assistants, Grok, or maintainers MUST NOT**:
 
 1. List a verb in `help` that has no dispatcher arm, or reintroduce `backup` / `restore`.  
-2. Change empty argv from Type O install-ensure back to help while `SCRIPT_URL` is the product channel.  
+2. Change off-TTY empty argv from Type O install-ensure back to help while `SCRIPT_URL` is the product channel, or replace TTY empty argv with help or with self-install.  
 3. Bypass `out_*` for user-facing messages.  
 4. Hide the install channel in help/about, or advertise `CHECKSUM` as everyday UX.  
 5. Collapse Type 1/2 into “just run as root.”  
@@ -225,7 +225,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | AC-1 | Help lists lifecycle Type 0 **and** every named domain/Type 1 verb in the Supported commands table (`sudoers-to-json` / `json-to-sudoers` / `test-json-format` / `test-well-known-binary` / `fence-test` / `rc-test` / `print-sudoers` / `print-sudoers-install-script` / `add-sudoer-request` / `update-sudoer-request` / `remove-sudoer-request` / `list-*` / `show` / `setup` / `remove-lpu` / `approve` / `reject` / `interactive` / `menu` / `main`) |
 | AC-2 | Help and about omit `backup` / `restore` / `remove-project-sudoers` |
 | AC-3 | Unknown and trimmed verbs exit non-zero |
-| AC-4 | Empty argv is help |
+| AC-4 | TTY empty argv is the numbered list. Off-TTY empty argv is Type O install-ensure. `--json` with no command is JSON help |
 
 ---
 
@@ -295,6 +295,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | 2026-09-03 | Active 3.10.0 | Claimed case-3 `menu` / `main`; empty argv stays help; `VERSION` 1.19.0 |
 | 2026-09-03 | Active 3.10.1 | Stay-honest Implementation Notes `VERSION` 1.20.0 |
 | 2026-09-06 | Active 3.10.3 | Stay-honest Implementation Notes `VERSION` 1.21.0 |
+| 2026-10-04 | Active 3.13.0 | Stay-honest `VERSION` 1.30.0. TTY empty argv (including `--debug`) is the numbered list. Off-TTY empty argv stays Type O. `--json` with no command is JSON help. |
 | 2026-10-02 | Active 3.12.3 | Stay-honest `VERSION` 1.29.0; menu **5** languages |
 | 2026-09-13 | Active 3.12.3 | Stay-honest `VERSION` 1.28.0; hook doorbell `sudoer-review-hook` |
 | 2026-09-13 | Active 3.12.2 | Stay-honest `VERSION` 1.27.0; hook doorbell `login-review-hook` |
@@ -303,6 +304,6 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 ---
 
-**Last Updated**: 2026-09-13 (3.12.3 — `sudoer-review-hook`)  
+**Last Updated**: 2026-10-04 (3.13.0 — TTY empty argv menu)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

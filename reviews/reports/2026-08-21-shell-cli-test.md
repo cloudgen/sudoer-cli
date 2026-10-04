@@ -36,8 +36,8 @@
 
 ### Issue 4 -- Severity: nit
 - File: tests/fixtures/fence-test/match/ci-homes-gbin.json:14
-- Description: Fixture and WKBIN-05 inline JSON used `/home/leolio/prjs/dns-cli/.ci-homes/home.Nh7l39/gbin/dns-cli` (operator tree). Fence match is `.ci-homes` / home, not that host inode.
-- Suggestion: Synthetic `/home/alice/prjs/dns-cli/.ci-homes/home.TEST/gbin/dns-cli`. Incident file keeps the live dest path.
+- Description: Fixture and WKBIN-05 inline JSON used an operator-tree `.ci-homes` gbin path. Fence match is `.ci-homes` / home, not that host inode.
+- Suggestion: Synthetic `{{HOME}}/prjs/dns-cli/.ci-homes/home.TEST/gbin/dns-cli`. Incident file keeps the live dest path.
 - Lesson: L-CMND-PATH-01
 - Test: TP-SR-WKBIN-05 · TP-SR-FT-05
 - Status: closed

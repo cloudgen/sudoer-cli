@@ -2,6 +2,7 @@
 
 | Date | Report | Scope | Verdict | Suite |
 |------|--------|-------|---------|-------|
+| 2026-10-04 | `reports/2026-10-04-tty-empty-argv-menu.md` | TTY empty argv (including `--debug`) is the numbered list; off-TTY stays Type O | **Pass** | PASS=880 FAIL=0 SKIP=10 |
 | 2026-10-02 | `reports/2026-10-02-language-menu-5.md` | Menu **5** languages; **51–63**; persistence; help/about | **Pass** | PASS=844 FAIL=0 SKIP=10 |
 | 2026-09-06 | `reports/2026-09-06-human-readability-and-coverage.md` | README/help people words; related-shell **Under command line**; review-plan VERSION drift | **Pass** (SR-DOC-01 / SR-REQ-01 / SR-REV-01 / SR-IDX-01 fixed; SR-CL-01 deferred) | PASS=513 FAIL=0 SKIP=7 |
 | 2026-09-03 | `cli-routed-verb-table.md` | Full dispatcher inventory after claimed `menu` / `main` | living table | PASS=502 FAIL=0 SKIP=6 |

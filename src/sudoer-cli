@@ -12,8 +12,8 @@
 # - requirement-bootstrap-chain.md
 # - requirement-project-folder.md
 # - requirement-shell-cli-interface.md
-# - requirement-shell-cli-zero-arguments.md  (Type O empty argv = install-ensure)
-# - requirement-shell-cli-default-interaction.md  (TTY menu / main; empty argv is Type O)
+# - requirement-shell-cli-zero-arguments.md  (TTY menu; off-TTY Type O self-install)
+# - requirement-shell-cli-default-interaction.md  (TTY empty argv and menu / main)
 # - requirement-shell-cli-language.md  (menu 5 languages; block 50-69)
 # - requirement-shell-self-management.md
 # - requirement-shell-automatic-checksum.md
@@ -42,7 +42,7 @@
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
 # APP NAME: hard-assign APP_NAME="sudoer-cli"
-# VERSION: hard-assign VERSION="1.29.0"
+# VERSION: hard-assign VERSION="1.30.0"
 # BASHRC: interactive rc write path for PATH ensure (default ${HOME}/.bashrc).
 #   Override for tests/CI so install can target a temp file instead of this
 #   login's real ~/.bashrc. Law: requirement-shell-path-and-shell-support.md.
@@ -62,7 +62,7 @@ APP_NAME="sudoer-cli"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
 : "${DESCRIPTION:=POSIX /bin/sh CLI: convert a sudoers fragment to JSON, queue it, and let a host admin who has used password sudo accept or decline it. First-time setup creates sudoer-adm.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.29.0"
+VERSION="1.30.0"
 : "${VERSION:=1.29.0}"
 # Shared login doorbell (requirement-login-interactive-review-hook.md).
 : "${COMMON_LOGIN_HOOK_NAME:=sudoer-review-hook}"
@@ -6479,19 +6479,19 @@ app_menu_text() {
             ;;
         help_empty)
             case "${_mt_lang}" in
-                zh-Hant) _mt_out="空參數會安裝或確認安裝（Type O — curl|sh 安裝確保）。說明是：${APP_NAME} help" ;;
-                es) _mt_out="argv vacío instala o confirma la instalación (Type O — curl|sh install-ensure). La ayuda es: ${APP_NAME} help" ;;
-                fr) _mt_out="un argv vide installe ou confirme l'installation (Type O — curl|sh install-ensure). L'aide est : ${APP_NAME} help" ;;
-                de) _mt_out="Leeres argv installiert oder bestätigt die Installation (Type O — curl|sh install-ensure). Hilfe ist: ${APP_NAME} help" ;;
-                zh-Hans) _mt_out="空参数会安装或确认安装（Type O — curl|sh 安装确保）。说明是：${APP_NAME} help" ;;
-                ja) _mt_out="空の argv は導入するか導入を確認する（Type O — curl|sh install-ensure）。説明は ${APP_NAME} help" ;;
-                ko) _mt_out="빈 argv 는 설치하거나 설치를 확인한다(Type O — curl|sh install-ensure). 도움말은 ${APP_NAME} help" ;;
-                ar) _mt_out="argv الفارغ يثبّت أو يؤكد التثبيت (Type O — curl|sh install-ensure). المساعدة هي: ${APP_NAME} help" ;;
-                pt) _mt_out="argv vazio instala ou confirma a instalação (Type O — curl|sh install-ensure). A ajuda é: ${APP_NAME} help" ;;
-                ru) _mt_out="Пустой argv устанавливает или подтверждает установку (Type O — curl|sh install-ensure). Справка: ${APP_NAME} help" ;;
-                nl) _mt_out="Lege argv installeert of bevestigt de installatie (Type O — curl|sh install-ensure). Hulp is: ${APP_NAME} help" ;;
-                el) _mt_out="Κενό argv εγκαθιστά ή επιβεβαιώνει την εγκατάσταση (Type O — curl|sh install-ensure). Η βοήθεια είναι: ${APP_NAME} help" ;;
-                *) _mt_out="Empty argv installs or confirms install (Type O — curl|sh install-ensure). Help is: ${APP_NAME} help" ;;
+                zh-Hant) _mt_out="真實終端上沒有命令（含 --debug）會打開編號清單。管道會安裝或確認安裝。${APP_NAME} --json 且沒有命令會印出 JSON 說明。說明是：${APP_NAME} help" ;;
+                es) _mt_out="En un terminal real, sin comando (también --debug) se abre la lista numerada. Una tubería instala o confirma la instalación. ${APP_NAME} --json sin comando imprime ayuda JSON. La ayuda es: ${APP_NAME} help" ;;
+                fr) _mt_out="Sur un vrai terminal, sans commande (aussi --debug) ouvre la liste numérotée. Un tuyau installe ou confirme l'installation. ${APP_NAME} --json sans commande affiche l'aide JSON. L'aide est : ${APP_NAME} help" ;;
+                de) _mt_out="An einem echten Terminal öffnet kein Befehl (auch --debug) die nummerierte Liste. Eine Pipe installiert oder bestätigt die Installation. ${APP_NAME} --json ohne Befehl zeigt JSON-Hilfe. Hilfe ist: ${APP_NAME} help" ;;
+                zh-Hans) _mt_out="在真实终端上，没有命令（含 --debug）会打开编号列表。管道会安装或确认安装。${APP_NAME} --json 且没有命令会打印 JSON 说明。说明是：${APP_NAME} help" ;;
+                ja) _mt_out="本物の端末でコマンドなし（--debug も含む）は番号一覧を開く。パイプは導入するか導入を確認する。${APP_NAME} --json でコマンドなしは JSON の説明。説明は ${APP_NAME} help" ;;
+                ko) _mt_out="실제 터미널에서 명령이 없으면(--debug 포함) 번호 목록이 열린다. 파이프는 설치하거나 설치를 확인한다. ${APP_NAME} --json 에 명령이 없으면 JSON 도움말이다. 도움말은 ${APP_NAME} help" ;;
+                ar) _mt_out="على طرفية حقيقية، بلا أمر (بما فيه --debug) تُفتح القائمة المرقمة. الأنبوب يثبّت أو يؤكد التثبيت. ${APP_NAME} --json بلا أمر يطبع مساعدة JSON. المساعدة هي: ${APP_NAME} help" ;;
+                pt) _mt_out="Num terminal real, sem comando (também --debug) abre a lista numerada. Um pipe instala ou confirma a instalação. ${APP_NAME} --json sem comando imprime ajuda JSON. A ajuda é: ${APP_NAME} help" ;;
+                ru) _mt_out="На настоящем терминале без команды (и с --debug) открывается нумерованный список. Канал устанавливает или подтверждает установку. ${APP_NAME} --json без команды печатает справку JSON. Справка: ${APP_NAME} help" ;;
+                nl) _mt_out="Op een echte terminal opent geen commando (ook --debug) de genummerde lijst. Een pijp installeert of bevestigt de installatie. ${APP_NAME} --json zonder commando toont JSON-hulp. Hulp is: ${APP_NAME} help" ;;
+                el) _mt_out="Σε πραγματικό τερματικό, χωρίς εντολή (και με --debug) ανοίγει η αριθμημένη λίστα. Ένας αγωγός εγκαθιστά ή επιβεβαιώνει την εγκατάσταση. ${APP_NAME} --json χωρίς εντολή τυπώνει βοήθεια JSON. Η βοήθεια είναι: ${APP_NAME} help" ;;
+                *) _mt_out="On a real terminal, no command (also --debug) opens the numbered list. A pipe installs or confirms install. ${APP_NAME} --json with no command prints JSON help. Help is: ${APP_NAME} help" ;;
             esac
             ;;
         about_missing)
@@ -7334,6 +7334,9 @@ app_help() {
     out_plain "  sudo ${APP_NAME} install          # any admin → /usr/local/bin (password sudo OK)"
     out_plain "  sudo ${APP_NAME} setup            # any admin bootstrap (password sudo OK; not -n)"
     out_plain "  sudo ${APP_NAME} interactive      # any admin after setup (password sudo is the approval)"
+    out_plain "  ${APP_NAME}                       # numbered list on a real terminal (pipe installs)"
+    out_plain "  ${APP_NAME} --debug               # same list; debug on stderr"
+    out_plain "  ${APP_NAME} --json                # JSON help when no command is given"
     out_plain "  ${APP_NAME} menu                  # numbered list (real terminal)"
     out_plain "  ${APP_NAME} version"
     out_plain "  ${APP_NAME} about"
@@ -7358,16 +7361,19 @@ app_help() {
 #
 # GENERAL PURPOSE:
 # Single dispatcher: Type 0 lifecycle + routed domain verbs.
-# Empty argv = Type O install-ensure (not help; not interactive; not the menu).
+# Empty argv = no command token after flag parse (overlay --debug / --quiet
+# / --force / --global follow). TTY → numbered menu. Off-TTY → Type O
+# self-install. --json with no command is JSON help on a TTY and off-TTY.
 # Verb menu / main = TTY numbered list (requirement-shell-cli-default-interaction).
 #
 # ALIGNMENT:
 # - requirement-shell-cli-interface.md
 # - requirement-shell-cli-zero-arguments.md
 # - requirement-shell-cli-default-interaction.md
+# - requirement-shell-cli-language.md
 # - requirement-domain-sudoer-approval.md
 #
-# Last updated: 2026-09-03
+# Last updated: 2026-10-04
 # =============================================================================
 app_main() {
     : "${COMMAND:=help}"
@@ -7402,18 +7408,11 @@ app_main() {
     export TMPDIR="${EFFECTIVE_STORAGE_DIR}"
     trap util_scratch_cleanup EXIT INT TERM
 
-    if [ $# -eq 0 ]; then
-        if [ "${JSON}" -eq 1 ] || [ "${QUIET}" -eq 1 ]; then
-            inst_perform_install
-            return $?
-        elif inst_is_installed; then
-            inst_perform_install
-            return $?
-        else
-            inst_maybe_install
-            return $?
-        fi
-    fi
+    # Empty argv is decided after flag parse. A default COMMAND=help must not
+    # look like a command token (requirement-shell-cli-zero-arguments).
+    COMMAND=""
+    COMMAND_SET=0
+    _saw_command=0
 
     while [ $# -gt 0 ]; do
         case "$1" in
@@ -7494,6 +7493,7 @@ app_main() {
                 else
                     COMMAND="$1"
                     COMMAND_SET=1
+                    _saw_command=1
                 fi
                 ;;
             -*)
@@ -7516,9 +7516,37 @@ app_main() {
         shift
     done
 
-    out_debug "dispatch command=${COMMAND} quiet=${QUIET} json=${JSON}"
-
+    # One language load per process, including TTY empty argv (the menu).
+    # A later menu pick sets APP_LANG itself. Do not call app_lang_load again.
     app_lang_load
+
+    # No command token: overlay switches still follow empty argv.
+    # --json is the special case (JSON help on a TTY and off-TTY).
+    if [ "${_saw_command}" -eq 0 ]; then
+        if [ "${JSON}" -eq 1 ]; then
+            COMMAND=help
+            out_debug "dispatch command=${COMMAND} quiet=${QUIET} json=${JSON}"
+            app_help
+            return $?
+        elif [ "${TTY:-0}" -eq 1 ]; then
+            COMMAND=menu
+            out_debug "dispatch command=${COMMAND} quiet=${QUIET} json=${JSON}"
+            app_main_menu
+            return $?
+        else
+            COMMAND=ensure
+            out_debug "dispatch command=${COMMAND} quiet=${QUIET} json=${JSON}"
+            if [ "${QUIET}" -eq 1 ] || [ "${FORCE_REINSTALL}" -eq 1 ] || inst_is_installed; then
+                inst_perform_install
+                return $?
+            else
+                inst_maybe_install
+                return $?
+            fi
+        fi
+    fi
+
+    out_debug "dispatch command=${COMMAND} quiet=${QUIET} json=${JSON}"
     app_run_command
 }
 
@@ -7526,6 +7554,6 @@ app_main() {
 # BOOTSTRAP
 # =============================================================================
 # Always invoke app_main. No basename gate (pipe-safe entry).
-# Product law: requirement-shell-cli-zero-arguments.md (Type O).
+# Product law: requirement-shell-cli-zero-arguments.md (TTY menu; off-TTY Type O).
 # =============================================================================
 app_main "$@"

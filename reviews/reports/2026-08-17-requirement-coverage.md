@@ -1,7 +1,7 @@
 # Report: requirement coverage + folder-backup alignment — sudoer-cli 1.6.2
 
 **Date:** 2026-08-17  
-**Mode:** `SK-REQUIREMENT-REVIEW` (class/registry/bootstrap + 0-ID + 0-LP) + `SK-REQUIREMENT-SUFFICIENT-CHECK` (C-full-product) + sibling alignment vs `/home/leolio/prjs/folder-backup`  
+**Mode:** `SK-REQUIREMENT-REVIEW` (class/registry/bootstrap + 0-ID + 0-LP) + `SK-REQUIREMENT-SUFFICIENT-CHECK` (C-full-product) + sibling alignment vs folder-backup  
 **Status:** Issues 1–2 closed in the 1.6.2 honesty pass; Issue 3 (sibling command-identity) still open  
 **Suite:** PASS=244 FAIL=0 SKIP=2 (`./tests/run.sh` this turn)  
 **Lessons loaded:** `reviews/lessons.md` (L-JSON-CMDS-01 closed in 1.6.2)
@@ -153,7 +153,7 @@ Law owns the live surface for C-full-product. Gaps are honesty drift and an unde
 
 ## Folder-backup alignment
 
-**Peer SSOT:** `/home/leolio/prjs/folder-backup` (hard-disk; no `/dev/shm/folder-backup`).  
+**Peer SSOT:** sibling folder-backup checkout (hard-disk; no `/dev/shm/folder-backup`).  
 **Peer role:** Type 0 submitter + Type 1 **deposit**. Not this product’s bootstrap origin.
 
 ### Registry shape (folder-backup)
@@ -253,7 +253,7 @@ Law owns the live surface for C-full-product. Gaps are honesty drift and an unde
 
 ## Addendum — folder-backup explore pass (same turn)
 
-A second read-only pass over `/home/leolio/prjs/folder-backup/docs/requirements/` confirmed the same verdicts. Extra disk-truth:
+A second read-only pass over the sibling folder-backup requirements confirmed the same verdicts. Extra disk-truth:
 
 ### Folder-backup only (not sudoer-cli work)
 

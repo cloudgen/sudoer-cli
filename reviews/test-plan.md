@@ -3,9 +3,9 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.29.0  
-**Last plan update:** 2026-10-02 (menu **5** languages; block **50–69**)  
-**Last suite run:** PASS=844 FAIL=0 SKIP=10 (2026-10-02; 1.29.0 menu languages; live Type 1 skipped)  
+**Product VERSION:** 1.30.0  
+**Last plan update:** 2026-10-04 (TTY empty argv is the numbered list; off-TTY stays Type O)  
+**Last suite run:** PASS=880 FAIL=0 SKIP=10 (2026-10-04; 1.30.0 TTY empty argv menu; live Type 1 skipped)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)
@@ -18,8 +18,8 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 |------|--------|----------|
 | Syntax `sh -n` | have | TP-CLI-01 |
 | version / help / about human + JSON | have | TP-CLI-02..06 |
-| Type O empty argv = install-ensure | have | TP-CLI-07 · **TP-CLI-18** · **TP-LC-11/14/15** · **TP-CURL-02/03/08** |
-| Numbered start list (`menu` / `main`) | have | **TP-CLI-18..22** · **TP-CLI-24** · **TP-ELEV-10** |
+| Empty argv split (TTY menu; off-TTY Type O) | have | TP-CLI-07 · **TP-CLI-18** · **TP-CLI-29** · **TP-LC-11/14/15** · **TP-CURL-02/03/08** |
+| Numbered start list (TTY empty argv and `menu` / `main`) | have | **TP-CLI-07** · **TP-CLI-18..22** · **TP-CLI-24** · **TP-CLI-29** · **TP-ELEV-10** |
 | Unknown + quiet + set -u HOME | have | TP-CLI-08..11 |
 | Storage isolation | have | TP-CLI-12 |
 | Online lifecycle verbs + SCRIPT_URL UX | have | TP-CLI-04, TP-CLI-10 |
@@ -52,7 +52,7 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-CLI-04 | help online lifecycle + domain; no backup/restore; no CHECKSUM | test_cli | requirement-shell-cli-interface · bootstrap-chain | **have** |
 | TP-CLI-05 | help JSON short | test_cli | requirement-shell-output-requirements | **have** |
 | TP-CLI-06 | about JSON storage; queue paths allowed | test_cli | requirement-shell-cli-storage | **have** |
-| TP-CLI-07 | empty argv Type O (dead channel non-zero, not help) | test_cli | requirement-shell-cli-zero-arguments | **have** |
+| TP-CLI-07 | off-TTY empty argv Type O (dead channel non-zero, not help); TTY empty argv is the numbered list; `--json` no command is JSON help | test_cli | requirement-shell-cli-zero-arguments · requirement-shell-cli-default-interaction | **have** |
 | TP-CLI-08 | unknown fail-closed | test_cli | requirement-shell-cli-interface | **have** |
 | TP-CLI-09 | quiet suppresses version | test_cli | requirement-shell-output-requirements | **have** |
 | TP-CLI-10 | online verbs routed (not unknown) | test_cli | requirement-bootstrap-chain · requirement-shell-self-management | **have** |
@@ -191,7 +191,8 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-SR-FT-07 | `--expect-match` without `--dir` fail closed | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval | **have** |
 | TP-CLI-16 | `fence-test` is routed (xor fail is not unknown) | `tests/test_cli.sh` | requirement-shell-cli-interface | **have** |
 | TP-CLI-17 | default-cli-main-menu-style printers: TTY bold/italic ident + gray italic explain; off-TTY plain (claimed menu uses them) | `tests/test_cli.sh` | requirement-shell-output-requirements · requirement-shell-cli-interface · requirement-shell-cli-default-interaction | **have** |
-| TP-CLI-18 | `menu` / `main` routed; empty argv still help (case 3) | `tests/test_cli.sh` | requirement-shell-cli-default-interaction · requirement-shell-cli-zero-arguments | **have** |
+| TP-CLI-18 | `menu` / `main` routed; off-TTY empty argv is Type O (not the list) | `tests/test_cli.sh` | requirement-shell-cli-default-interaction · requirement-shell-cli-zero-arguments | **have** |
+| TP-CLI-29 | Overlay `--debug` / `--quiet` follow empty argv; TTY `--debug` is the numbered list; `--json --debug` is JSON help; `SUDOER_CLI_LANG=ja` shows `99. 終了` and does not write the language file | `tests/test_cli.sh` | requirement-shell-cli-zero-arguments · requirement-shell-cli-default-interaction · requirement-shell-cli-language | **have** |
 | TP-CLI-19 | Off-TTY `menu` is help; `--json` JSON help; `--quiet` does not swallow | `tests/test_cli.sh` | requirement-shell-cli-default-interaction · requirement-shell-interactive-vs-noninteractive | **have** |
 | TP-CLI-20 | Membership: no help/install/setup/testers/`menu`; Exit **99** in `app_menu_text` `line_exit` (N=16) | `tests/test_cli.sh` | requirement-shell-cli-default-interaction · requirement-shell-cli-language | **have** |
 | TP-CLI-21 | Interactive `menu --json` still draws the list | `tests/test_cli.sh` | requirement-shell-cli-default-interaction | **have** |

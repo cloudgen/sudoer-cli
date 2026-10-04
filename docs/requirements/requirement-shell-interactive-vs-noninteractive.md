@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-interactive-vs-noninteractive.md  
-**Status**: Active (Version 1.5.1)  
+**Status**: Active (Version 1.6.0)  
 **Area**: shell  
 **Key**: `requirement-shell-interactive-vs-noninteractive`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -75,13 +75,14 @@ Rules:
 | Login hook (LPU `.bashrc`) | May launch `sudo -n … interactive` once | **Skip** (`scp` / `SSH_ORIGINAL_COMMAND` / no TTY / no `PS1`). `sudo -n` failure is a warning; login continues |
 | Missing required operand | Clear error | Clear error; non-zero exit |
 | `menu` / `main` | Numbered start list; `--json` ignored | **Help** (human; `--json` → JSON help). **MUST NOT** hang. `--quiet` must not swallow help |
+| Empty argv (no command token) | Numbered start list, including `--debug` / `--quiet` / `--force` / `--global`. **MUST NOT** become `interactive` | Type O self-install. **MUST NOT** draw the list. **MUST NOT** hang. `--json` with no command is JSON help on both sides |
 
 ### 2.4 Implementation Notes (this project)
 
 | Item | Value |
 |------|--------|
 | **Product** | `sudoer-cli` |
-| **No curl\|sh auto-install path** | Local-only; non-interactive does not mean Type O install-ensure |
+| **Off-TTY empty argv** | Type O self-install (`curl \| sh`). TTY empty argv is the numbered menu, not `interactive` |
 | **Prompt helper** | `prompt_yes_no` for uninstall and dest review (one-off; domain SSOT owns yes=approve / no=reject). Helpers **read `TTY`**, they do not re-test `[ -t` |  
 | **TTY SSOT** | Set once at script top (`[ -t 0 ] && [ -t 1 ] && TTY=1`); consume thereafter |
 | **Domain review** | `interactive` loop and hook snippet owned by `requirement-domain-sudoer-approval`; this file owns mode / no-hang |
@@ -161,7 +162,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | `requirement-domain-sudoer-approval` | `interactive` loop |
 | `requirement-login-interactive-review-hook` | Login rc snippet + labeled `sudoer-review-hook` |
 | `requirement-shell-cli-zero-arguments` | Empty argv ≠ review |
-| `requirement-shell-cli-default-interaction` | `menu` / `main` no-hang; empty argv stays help |
+| `requirement-shell-cli-default-interaction` | `menu` / `main` no-hang; TTY empty argv is that list |
 | `docs/requirements/index.md` | Registry |
 
 ---
@@ -183,6 +184,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-10-04 | Active 1.6.0 | Empty argv: TTY numbered list (not `interactive`); off-TTY Type O. `--json` with no command is JSON help |
 | 2026-09-06 | Active 1.5.1 | Under command line for normal user only |
 | 2026-08-03 | Active 1.0.0 | Interactive vs non-interactive for folder-backup |
 | 2026-08-14 | Active 1.1.0 | TTY measured outside functions; helpers consume `TTY` (no-retest) |
@@ -193,6 +195,6 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 ---
 
-**Last Updated**: 2026-09-03  
+**Last Updated**: 2026-10-04  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

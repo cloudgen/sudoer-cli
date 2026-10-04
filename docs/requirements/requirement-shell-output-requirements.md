@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-output-requirements.md  
-**Status**: Active (Version 1.4.0) — skip/warn that still needs action fills happened / Next: (login-hook `sudo -n` fail)  
+**Status**: Active (Version 1.4.1) — skip/warn that still needs action fills happened / Next: (login-hook `sudo -n` fail); TTY empty argv uses the menu printers  
 **Area**: shell  
 **Key**: `requirement-shell-output-requirements`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -127,7 +127,7 @@ Rules:
 | **Product** | `sudoer-cli` |
 | **Ship unit** | `src/sudoer-cli` |
 | **Human prefixes** | `[INFO]`, `[OK]`, `[WARN]`, `[ERROR]` (or equivalent consistent set) |
-| **Default CLI main menu style** | Look printers live: `util_app_ident` + `out_menu_choice`. Header nametag **sudoer-cli**(*VERSION*) (bold name, italic version on TTY). Numbered `explain` *italic* + light gray on TTY; number and short-descript unstyled; off-TTY / JSON plain. Claimed numbered list is verb `menu` / `main` (`requirement-shell-cli-default-interaction`; empty argv stays help). About identity title uses `util_app_ident`. |
+| **Default CLI main menu style** | Look printers live: `util_app_ident` + `out_menu_choice`. Header nametag **sudoer-cli**(*VERSION*) (bold name, italic version on TTY). Numbered `explain` *italic* + light gray on TTY; number and short-descript unstyled; off-TTY / JSON plain. Claimed numbered list is TTY empty argv and verb `menu` / `main` (`requirement-shell-cli-default-interaction`; off-TTY empty argv is Type O). About identity title uses `util_app_ident`. |
 | **Domain messages** | Convert / submit / list / show / Type 1 fatals use the same `out_*` family. Fatals fill happened / means / Next: |
 | **Login-hook skip** | Planted `.bashrc` `printf` (exception **F**): happened + login continues + `Next: sudo sudoer-cli interactive`. Owner of snippet: `requirement-login-interactive-review-hook`. |
 | **Banned jargon (whole message)** | `Type 1`, `euid 0`, `authorization failed`, `host validation`, `host sudoers checker` |
@@ -218,10 +218,11 @@ Rules:
 | 2026-08-26 | Active 1.2.0 | Operator-readable fatal slots (happened / means / Next:); visudo-fail worked example; **TP-SR-21** |
 | 2026-09-03 | Active 1.3.0 | Look printers `util_app_ident` / `out_menu_choice` (default-cli-main-menu-style). Main menu **not** claimed. **TP-CLI-17**. |
 | 2026-09-03 | Active 1.3.1 | Printers used by claimed `menu` / `main` (`requirement-shell-cli-default-interaction`) |
+| 2026-10-04 | Active 1.4.1 | Menu printers also cover TTY empty argv. Off-TTY empty argv stays Type O (not a help dump). |
 | 2026-09-13 | Active 1.4.0 | Skip/warn that still needs action fills happened / Next:. Planted login-rc `printf` exception **F**. Worked login-hook `sudo -n` fail. **TP-SR-HOOK-07**. |
 
 ---
 
-**Last Updated**: 2026-09-13  
+**Last Updated**: 2026-10-04  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

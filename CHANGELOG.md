@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.30.0] - 2026-10-04
+
+### Changed
+
+- At a real terminal, no command opens the numbered list. `sudoer-cli --debug`, `--quiet`, `--force`, or `--global` with no command does the same. A pipe or script with no command still installs or confirms install. `sudoer-cli --json` with no command prints JSON help on a terminal and in a pipe. `sudoer-cli menu --json` on a terminal still draws the list. The list stays the flat sixteen rows (row **5** languages, Exit **99**). Japanese `SUDOER_CLI_LANG=ja` shows `99. 終了` and does not write the language file. Zero-arguments REQ **1.4.0**. Default-interaction **1.4.0**. Language **1.1.0**. **TP-CLI-07** · **TP-CLI-29**. Ship unit **`VERSION="1.30.0"`**.
+
 ## [1.29.0] - 2026-10-02
 
 ### Added

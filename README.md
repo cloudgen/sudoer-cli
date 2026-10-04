@@ -1,6 +1,6 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.29.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.30.0-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
@@ -127,8 +127,8 @@ Approve this request (y/N)?
 ## Features
 
 - **Install and keep yourself** — `install`, `version-check`, `self-update`, `self-uninstall`, `version`, `about`, `help` work in your user bin and in `/usr/local/bin`
-- **No arguments installs** — empty argv is install-ensure (`curl | sh`); it does not start a review
-- **Numbered start list** — `sudoer-cli menu` (or `main`) on a real terminal; a pipe still prints help
+- **No arguments at a prompt opens the list** — `sudoer-cli` or `sudoer-cli --debug` on a real terminal shows the numbered list. A pipe or script with no command installs or confirms install (`curl | sh`). `sudoer-cli --json` with no command prints JSON help. None of these start a review
+- **Numbered start list** — the same list as `sudoer-cli menu` (or `main`) on a real terminal; a pipe of `menu` still prints help
 - **Everyone can run the installed program** — mode `0755`
 - **Unknown commands fail** (non-zero exit)
 - **CIAO / CIAO-Lite** defensive design
@@ -204,11 +204,11 @@ sudo sudoer-cli setup
 
 This product is **online-installable**. Global vs local here means install *location* (user bin vs `/usr/local/bin`).
 
-**Numbered start list** (after install; running with no arguments installs or confirms install):
+**Numbered start list** (at a prompt, `sudoer-cli` or `sudoer-cli --debug` opens this list; a pipe with no command installs or confirms install):
 
 ```text
-$ sudoer-cli menu
-[INFO] **sudoer-cli**(*1.29.0*) — numbered list of live commands
+$ sudoer-cli
+[INFO] **sudoer-cli**(*1.30.0*) — numbered list of live commands
 1. sudoers-to-json: Convert sudoers fragment to request JSON
 2. json-to-sudoers: Convert request JSON to sudoers fragment
 3. print-sudoers: Print the sudoers fragment that lets sudoer-adm review without a password
@@ -315,6 +315,7 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
+2026-10-04 — version **1.30.0** (at a prompt, `sudoer-cli` or `sudoer-cli --debug` opens the numbered list; a pipe with no command still installs or confirms install; `sudoer-cli --json` with no command prints JSON help).
 2026-10-02 — version **1.29.0** (menu **5** languages; rows **51–63** saved at `~/.local/sudoer-cli/language`; old **5–15** shift to **6–16**; Exit stays **99**).
 2026-09-13 — version **1.28.0** (doorbell `/usr/local/bin/sudoer-review-hook`; setup heals old `login-review-hook` rc and F6).
 2026-09-13 — version **1.27.0** (shared doorbell `/usr/local/bin/login-review-hook`; login skip line says Next:; sudoers for login-hook grants that name).

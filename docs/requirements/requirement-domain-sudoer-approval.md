@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-domain-sudoer-approval.md  
-**Status**: Active (Version 2.41.0) — login hook **points** at `requirement-login-interactive-review-hook` (`sudoer-review-hook`); YAML review display indented two spaces; keep-latest duplicate inbound; unused on Termux / Git Bash / Windows cmd  
+**Status**: Active (Version 2.41.1) — login hook **points** at `requirement-login-interactive-review-hook` (`sudoer-review-hook`); YAML review display indented two spaces; keep-latest duplicate inbound; unused on Termux / Git Bash / Windows cmd; empty argv is not `interactive`  
 **Area**: domain  
 **Key**: `requirement-domain-sudoer-approval`  
 **id**: RQ-DOMAIN-SUDOER-APPROVAL  
@@ -410,7 +410,7 @@ The handler is **live**. Non-TTY / `--json` / `--quiet` fail closed `confirm_req
 
 `help` **MUST** list Type 0 lifecycle **and** the live domain rows. **Test-purpose** verbs (`test-json-format`, `test-well-known-binary`, `fence-test`) **MUST** appear under a heading **apart** from **operational** Type 0 (conversion, submit, list, show, print-sudoers) and Type 1 notes for setup/approve/interactive. Those headings **MUST** name the job in people/folder words first. **MUST NOT** lead them with Type 0 / Type 1 / F6 / LPU as the only words. Examples **MUST** include `sudoers-to-json`, `fence-test --file` with a JSON path (no `sudo`), `add-sudoer-request`, and a list/show pair. `fence-test` examples **MUST NOT** use `sudo`.
 
-Empty argv remains **Type N help** for every uid. `interactive` is never implied by empty argv.
+Off-TTY empty argv is Type O self-install. TTY empty argv is the numbered menu. Neither path is `interactive`. `interactive` is never implied by empty argv.
 
 ### 2.4 Specialized project about items (pillar 4)
 
@@ -606,6 +606,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-10-04 | Active 2.41.1 | Empty argv is not `interactive`: off-TTY Type O; TTY numbered menu. |
 | 2026-09-13 | Active 2.41.0 | Login hook **points** at `requirement-login-interactive-review-hook` (`/usr/local/bin/sudoer-review-hook`). `login-hook-elev` sudoers path **points** at `requirement-sudoers-file`. |
 | 2026-09-08 | Active 2.40.0 | Login hook **points** at independent `requirement-login-interactive-review-hook` (labeled `/usr/local/bin/{{APP_NAME}}-hook`). Review loop stays here. |
 | 2026-09-08 | Active 2.39.0 | Login-hook / `interactive` YAML review body (`queued by` + YAML) indented **two spaces** under the Request id line. Protection rule 34; **TP-SR-INT-09**. |
@@ -654,6 +655,6 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 ---
 
-**Last Updated**: 2026-09-13  
+**Last Updated**: 2026-10-04  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; peer `requirement-login-interactive-review-hook.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

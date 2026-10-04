@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-language.md
-**Status**: Active (Version 1.0.0)
+**Status**: Active (Version 1.1.0)
 **Area**: shell
 **Key**: `requirement-shell-cli-language`
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -12,7 +12,7 @@ The flat numbered list (row **5**, Exit **99**, N=16) stays owned by `requiremen
 
 ### 1.1 Human-facing
 
-**In one sentence:** Menu **5** chooses English, 简体中文, 繁體中文, Español, العربية, Français, Português, Русский, Deutsch, 日本語, 한국어, Nederlands, or Ελληνικά for the numbered menu, for `help`, and for `about`, and the next run opens in that language.
+**In one sentence:** Menu **5** chooses English, 简体中文, 繁體中文, Español, العربية, Français, Português, Русский, Deutsch, 日本語, 한국어, Nederlands, or Ελληνικά for the numbered menu, for `help`, and for `about`, and the next run — including a bare `sudoer-cli` at a real terminal — opens in that language.
 
 | Box | Meaning | Example |
 |-----|---------|---------|
@@ -56,7 +56,7 @@ The short names on the language board are the same words in every language (each
 1. The leaf is `${HOME}/.local/${APP_NAME}/language`. **MUST NOT** put it in the scratch/cache path from `util_resolve_storage`. **MUST NOT** put it under `/var/sudoer-cli`.
 2. The file is one line, one of `en`, `zh-Hans`, `zh-Hant`, `es`, `ar`, `fr`, `pt`, `ru`, `de`, `ja`, `ko`, `nl`, or `el`, then a newline. Mode **0600**. A trailing CR is ignored. Only the first line is read.
 3. `util_persistent_storage_dir` only prints `${HOME}/.local/${APP_NAME}`. It does **not** create the directory.
-4. `app_lang_load` sets `APP_LANG` once, inside `app_main`, after storage resolve and flag parse, immediately before `app_run_command`. Empty argv returns before that call (Type O). Human `help`, human `about`, and a later menu in that process see the loaded value. **MUST NOT** call `app_lang_load` again in that same process: a later call would let `SUDOER_CLI_LANG` cover a pick just saved.
+4. `app_lang_load` sets `APP_LANG` once, inside `app_main`, after storage resolve and flag parse, including TTY empty argv and `--json` with no command. Off-TTY empty argv may load too; the load is read-only and **MUST NOT** create `~/.local/${APP_NAME}`. Human `help`, human `about`, and the numbered menu in that process see the loaded value. TTY empty argv and TTY `--debug` with no command **MUST** show the front board in `APP_LANG`. **MUST NOT** call `app_lang_load` again in that same process: a later call would let `SUDOER_CLI_LANG` cover a pick just saved.
 5. When `SUDOER_CLI_LANG` is one of those thirteen codes, that value wins over the file for this process. It does not write the file. A menu pick still writes the file and sets `APP_LANG` for the rest of that process.
 6. `app_lang_save` creates the directory, writes the line, sets mode **0600**, and sets `APP_LANG` only after the write succeeds. A code outside the thirteen returns failure and leaves `APP_LANG` unchanged. A failed `mkdir` or write returns failure, warns (`lang_save_fail`), and does **not** `out_die`. The front board still redisplays.
 
@@ -145,7 +145,7 @@ Back and Exit:
 Plain text of the front board, then the language board. The version token is the live `VERSION`. Choice prompt ends with the colon-space from `prompt_ask`.
 
 ```text
-[INFO] sudoer-cli(1.29.0) — numbered list of live commands
+[INFO] sudoer-cli(1.30.0) — numbered list of live commands
 1. sudoers-to-json: Convert sudoers fragment to request JSON
 2. json-to-sudoers: Convert request JSON to sudoers fragment
 3. print-sudoers: Print the sudoers fragment that lets sudoer-adm review without a password
@@ -167,7 +167,7 @@ Choice:
 ```
 
 ```text
-[INFO] sudoer-cli(1.29.0) — languages
+[INFO] sudoer-cli(1.30.0) — languages
 51. English: use English for this menu
 52. 简体中文: use Simplified Chinese for this menu
 53. 繁體中文: use Traditional Chinese for this menu
@@ -239,6 +239,7 @@ When this program runs on Termux, Git Bash, Windows cmd, or the same class (no r
 | AC-6 | `SUDOER_CLI_LANG` wins for that process and does not rewrite the file |
 | AC-7 | Japanese and Korean `help` / `about` follow the code; English `help` still prints `Usage:` and `Global Options:` |
 | AC-8 | `help` does not create the language file |
+| AC-9 | TTY empty argv and TTY `--debug` with `SUDOER_CLI_LANG=ja` show `99. 終了` and do not write the language file |
 
 ---
 
@@ -246,7 +247,8 @@ When this program runs on Termux, Git Bash, Windows cmd, or the same class (no r
 
 | Key | Relationship |
 |-----|--------------|
-| `requirement-shell-cli-default-interaction` | Front row **5**, Exit **99**, invalid-choice retry |
+| `requirement-shell-cli-default-interaction` | Front row **5**, Exit **99**, invalid-choice retry; TTY empty argv uses this copy |
+| `requirement-shell-cli-zero-arguments` | TTY empty argv opens the translated front board; off-TTY stays Type O |
 | `requirement-shell-cli-storage` | Persistence leaf vs scratch resolver |
 | `requirement-shell-prompt` | `prompt_ask` / `PROMPT_ASK_VALUE` |
 | `requirement-shell-cli-interface` | Human `help` / `about`; argv `version` stays English |
@@ -259,6 +261,7 @@ When this program runs on Termux, Git Bash, Windows cmd, or the same class (no r
 | TP family / ID | Suite | Status | Note |
 |----------------|-------|--------|------|
 | **TP-CLI-24** | `tests/test_cli.sh` | have | Rows 51–63, save, Back, reserved, env override, ja/ko help and about |
+| **TP-CLI-29** | `tests/test_cli.sh` | have | TTY empty argv and TTY `--debug` with `SUDOER_CLI_LANG=ja` show `99. 終了` and do not write the language file |
 | **TP-CLI-20** | `tests/test_cli.sh` | have | Exit **99** lives in `app_menu_text` `line_exit` |
 | **TP-CLI-22** | `tests/test_cli.sh` | have | Unused front integer is **17** (N=16, Exit **99**) |
 | **TP-ELEV-10** | `tests/test_cli.sh` | have | Both boards call `prompt_ask "$(app_menu_text choice_label)"` |
@@ -270,10 +273,11 @@ When this program runs on Termux, Git Bash, Windows cmd, or the same class (no r
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-10-04 | Active 1.1.0 | `app_lang_load` runs for TTY empty argv and for `--json` with no command. TTY `--debug` shows the front board in `APP_LANG`. Proof **TP-CLI-29**. Ship unit **1.30.0**. |
 | 2026-10-02 | Active 1.0.0 | Menu **5** languages; block **50–69** assigned **51–63**; `SUDOER_CLI_LANG`; proof **TP-CLI-24**. Ship unit **1.29.0**. |
 
 ---
 
-**Last Updated**: 2026-10-02
+**Last Updated**: 2026-10-04
 **Owner**: project maintainers
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

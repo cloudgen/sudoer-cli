@@ -38,4 +38,4 @@ Durable failure modes. **Always re-check on product review.**
 
 **Related-product only (do not re-apply as this origin’s law):** L-DEPOSIT-01, L-SUDOERS-01..05, L-OVERWRITE-01 stay on folder-backup. Type O empty-argv / online-channel lessons stay on products that own those surfaces. This product is hop 0.
 
-**This origin’s kept surfaces:** output SSOT, no basename gate on entry, storage isolation, Type N empty argv.
+**This origin’s kept surfaces:** output SSOT, no basename gate on entry, storage isolation, off-TTY Type O empty argv (TTY empty argv is the numbered menu, not review).

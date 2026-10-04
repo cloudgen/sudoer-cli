@@ -89,7 +89,7 @@ run_test_cli() {
     assert_contains "TP-CLI-06 json script_url" "$_out" '"script_url"'
     assert_not_contains "TP-CLI-06 no CHECKSUM key" "$_out" '"checksum"'
 
-    # TP-CLI-07 empty argv is Type O install-ensure, not help
+    # TP-CLI-07 empty argv: off-TTY Type O (not help). TTY: numbered menu.
     ci_isolated_env
     _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
         SCRIPT_URL="http://127.0.0.1:1/sudoer-cli-unreachable" sh "${SCRIPT}" </dev/null 2>/dev/null)
@@ -100,7 +100,96 @@ run_test_cli() {
         t_fail "TP-CLI-07 empty argv dead channel expected non-zero"
     fi
     assert_not_contains "TP-CLI-07 empty argv is not help" "${_out}" "Usage:"
+    assert_not_contains "TP-CLI-07 empty argv off-TTY not numbered list" "${_out}" "99. Exit"
+    _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        sh "${SCRIPT}" --json </dev/null 2>/dev/null)
+    _ec=$?
+    assert_eq "TP-CLI-07 --json no command exit 0" 0 "${_ec}"
+    assert_contains "TP-CLI-07 --json no command is JSON help" "${_out}" '"type":"success"'
+    assert_not_contains "TP-CLI-07 --json no command not numbered list" "${_out}" "99. Exit"
     ci_cleanup_env
+
+    if command -v python3 >/dev/null 2>&1; then
+        ci_isolated_env
+        _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+            PTY_IN="99" ci_pty_capture "${SCRIPT}")
+        assert_contains "TP-CLI-07 TTY empty argv is numbered list" "${_out}" "99. Exit"
+        assert_contains "TP-CLI-07 TTY empty argv row 1" "${_out}" "1. sudoers-to-json:"
+        assert_contains "TP-CLI-07 TTY empty argv header app" "${_out}" "${APP_NAME}"
+        assert_contains "TP-CLI-07 TTY empty argv header version" "${_out}" "${PRODUCT_VERSION}"
+        assert_not_contains "TP-CLI-07 TTY empty argv not help dump" "${_out}" "Usage:"
+        assert_not_contains "TP-CLI-07 TTY empty argv not already installed" "${_out}" "already installed"
+        _jout=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+            PTY_IN="99" ci_pty_capture "${SCRIPT}" --json)
+        assert_contains "TP-CLI-07 TTY --json no command is JSON help" "${_jout}" '"type":"success"'
+        assert_not_contains "TP-CLI-07 TTY --json no command not numbered list" "${_jout}" "99. Exit"
+        assert_not_contains "TP-CLI-07 TTY --json no command not menu dispatch" "${_jout}" "command=menu"
+        unset _jout
+        ci_cleanup_env
+    else
+        t_skip "TP-CLI-07 TTY empty argv (no python3 for PTY)"
+        t_skip "TP-CLI-07 TTY --json no command (no python3 for PTY)"
+    fi
+
+    # TP-CLI-29 overlay flags-only follow empty argv; --json stays JSON help.
+    ci_isolated_env
+    cp "${SCRIPT}" "${CI_USER_BIN}/${APP_NAME}"
+    chmod 0755 "${CI_USER_BIN}/${APP_NAME}"
+    _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        sh "${SCRIPT}" --debug </dev/null 2>/dev/null)
+    _ec=$?
+    assert_eq "TP-CLI-29 --debug no command off-TTY exit 0" 0 "${_ec}"
+    assert_contains "TP-CLI-29 --debug no command off-TTY ensure" "${_out}" "already installed"
+    assert_not_contains "TP-CLI-29 --debug no command off-TTY not help dump" "${_out}" "Usage:"
+    assert_not_contains "TP-CLI-29 --debug no command off-TTY not numbered list" "${_out}" "99. Exit"
+    _err=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        sh "${SCRIPT}" --debug </dev/null 2>&1 >/dev/null)
+    assert_contains "TP-CLI-29 --debug no command off-TTY debug tag" "${_err}" "[DEBUG]"
+    assert_contains "TP-CLI-29 --debug no command off-TTY dispatch ensure" "${_err}" "command=ensure"
+    _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        sh "${SCRIPT}" --quiet </dev/null 2>/dev/null)
+    _ec=$?
+    assert_eq "TP-CLI-29 --quiet no command off-TTY exit 0" 0 "${_ec}"
+    assert_not_contains "TP-CLI-29 --quiet no command off-TTY not help dump" "${_out}" "Usage:"
+    assert_not_contains "TP-CLI-29 --quiet no command off-TTY not numbered list" "${_out}" "99. Exit"
+    _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        sh "${SCRIPT}" --json --debug </dev/null 2>/dev/null)
+    _ec=$?
+    assert_eq "TP-CLI-29 --json --debug no command exit 0" 0 "${_ec}"
+    assert_contains "TP-CLI-29 --json --debug no command is JSON help" "${_out}" '"type":"success"'
+    assert_not_contains "TP-CLI-29 --json --debug no command not numbered list" "${_out}" "99. Exit"
+    _err=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        sh "${SCRIPT}" --json --debug </dev/null 2>&1 >/dev/null)
+    assert_not_contains "TP-CLI-29 --json --debug no command suppresses debug" "${_err}" "[DEBUG]"
+    ci_cleanup_env
+
+    if command -v python3 >/dev/null 2>&1; then
+        ci_isolated_env
+        _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+            PTY_IN="99" ci_pty_capture "${SCRIPT}" --debug)
+        assert_contains "TP-CLI-29 TTY --debug no command is numbered list" "${_out}" "99. Exit"
+        assert_contains "TP-CLI-29 TTY --debug no command row 1" "${_out}" "1. sudoers-to-json:"
+        assert_contains "TP-CLI-29 TTY --debug no command dispatch menu" "${_out}" "command=menu"
+        assert_not_contains "TP-CLI-29 TTY --debug no command not help dump" "${_out}" "Usage:"
+        assert_not_contains "TP-CLI-29 TTY --debug no command not ensure" "${_out}" "command=ensure"
+        _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+            SUDOER_CLI_LANG=ja PTY_IN="99" ci_pty_capture "${SCRIPT}")
+        assert_contains "TP-CLI-29 TTY empty argv ja exit row" "${_out}" "99. 終了"
+        assert_contains "TP-CLI-29 TTY empty argv ja languages row" "${_out}" "言語"
+        assert_not_contains "TP-CLI-29 TTY empty argv ja not English exit" "${_out}" "99. Exit"
+        if [ ! -f "${CI_HOME}/.local/${APP_NAME}/language" ]; then
+            t_pass "TP-CLI-29 TTY empty argv ja does not write language file"
+        else
+            t_fail "TP-CLI-29 TTY empty argv ja wrote the language file"
+        fi
+        _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+            SUDOER_CLI_LANG=ja PTY_IN="99" ci_pty_capture "${SCRIPT}" --debug)
+        assert_contains "TP-CLI-29 TTY --debug ja exit row" "${_out}" "99. 終了"
+        ci_cleanup_env
+    else
+        t_skip "TP-CLI-29 TTY --debug no command (no python3 for PTY)"
+        t_skip "TP-CLI-29 TTY empty argv ja (no python3 for PTY)"
+    fi
 
     # TP-CLI-08 unknown command fail-closed
     _err=$(sh "${SCRIPT}" no-such-command 2>&1 >/dev/null)
@@ -213,7 +302,7 @@ run_test_cli() {
     assert_contains "TP-CLI-17 TTY row keeps unstyled name" "${_out}" "ONROW:1. convert: "
     rm -rf "${_th}"
 
-    # TP-CLI-18: menu / main routed; empty argv is Type O (not help)
+    # TP-CLI-18: menu / main routed; off-TTY empty argv is Type O (not the list)
     _out=$(sh "${SCRIPT}" menu 2>/dev/null)
     _ec=$?
     assert_eq "TP-CLI-18 menu off-TTY exit 0" 0 "${_ec}"

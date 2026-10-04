@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-class-software-dev.md  
-**Status**: Active (Version 1.11.3 – stay-honest VERSION 1.29.0; shared doorbell `sudoer-review-hook`)  
+**Status**: Active (Version 1.11.4 – stay-honest VERSION 1.30.0; TTY empty argv is the numbered list; shared doorbell `sudoer-review-hook`)  
 **Area**: class  
 **Key**: `requirement-class-software-dev`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -129,7 +129,7 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | **Architectures supported** | any arch with POSIX sh and the external tools the script invokes |
 | **Git surface** | used when product is published |
 | **Ship unit / install** | yes — `src/sudoer-cli`; **online-installable** (`curl \| sh` via `SCRIPT_URL`) |
-| **Product version SSOT** | `VERSION="1.29.0"` hard-assign in `src/sudoer-cli` |
+| **Product version SSOT** | `VERSION="1.30.0"` hard-assign in `src/sudoer-cli` |
 | **Bootstrap origin** | Historical **cli-template**. This product is **sudoer-cli**. No live parent ship unit. |
 
 **Residual ownership table:**
@@ -153,8 +153,8 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | In-tool sudo / chmod wrappers | `requirement-shell-sudo-command` | Sudo-wrapping function; check before sudo; chmod example |
 | Project layout / ship path | `requirement-project-folder` | `src/` + bin targets |
 | Type 0 CLI surface / flags / dispatch | `requirement-shell-cli-interface` | Do not duplicate |
-| Empty argv Type O install-ensure | `requirement-shell-cli-zero-arguments` | Online-installable |
-| Numbered TTY start list | `requirement-shell-cli-default-interaction` | Verb `menu` / `main`; empty argv is Type O; invalid choice reprints this layer |
+| Empty argv split | `requirement-shell-cli-zero-arguments` | TTY numbered list; off-TTY Type O install-ensure; `--json` no command is JSON help |
+| Numbered TTY start list | `requirement-shell-cli-default-interaction` | TTY empty argv and verb `menu` / `main`; off-TTY empty argv is Type O; invalid choice reprints this layer |
 | Online self-managed lifecycle | `requirement-shell-self-management` | install / version-check / self-update / self-uninstall |
 | Output SSOT (`out_*`) | `requirement-shell-output-requirements` | Do not duplicate |
 | Scratch/cache storage resolve | `requirement-shell-cli-storage` | Do not duplicate |
@@ -286,6 +286,7 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | 2026-09-08 | Active 1.10.1 | Stay-honest Implementation Notes `VERSION` 1.23.0 (YAML review body two-space indent) |
 | 2026-09-08 | Active 1.10.2 | Residual **points** at `requirement-login-interactive-review-hook` |
 | 2026-09-08 | Active 1.10.3 | Stay-honest Implementation Notes `VERSION` 1.24.0 (old-hook review on `interactive`) |
+| 2026-10-04 | Active 1.11.4 | Stay-honest Implementation Notes `VERSION` 1.30.0; TTY empty argv is the numbered list |
 | 2026-10-02 | Active 1.11.3 | Stay-honest Implementation Notes `VERSION` 1.29.0; menu **5** languages |
 | 2026-09-13 | Active 1.11.3 | Stay-honest Implementation Notes `VERSION` 1.28.0; shared doorbell `sudoer-review-hook` |
 | 2026-09-13 | Active 1.11.2 | Stay-honest Implementation Notes `VERSION` 1.27.0; shared doorbell `login-review-hook` |
@@ -294,6 +295,6 @@ This file is **not** a second copy of install, output, storage, or writing-style
 
 ---
 
-**Last Updated**: 2026-09-13  
+**Last Updated**: 2026-10-04  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

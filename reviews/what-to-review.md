@@ -3,10 +3,10 @@
 **Living checklist** (review plan). Product: **sudoer-cli** (Type 0 live; **Type 0 operational** convert/submit/list/show **plus Type 0 test-purpose** `test-json-format`/`test-well-known-binary`/`fence-test` routed; Type 1 `setup` / `interactive` live).  
 **Class:** software-development · **one** Active domain SSOT (`requirement-domain-sudoer-approval` **2.40.0**) · independent login hook (`requirement-login-interactive-review-hook` **1.0.0**) · **online-installable** (`curl \| sh`).  
 **Always load first:** `reviews/lessons.md`  
-**Latest report:** `reviews/reports/2026-10-02-language-menu-5.md` (menu **5** languages). Prior: 2026-09-06 human-readability. Actor lock: INC-20260818-001. Cmnd identity: **INC-20260821-001** / **L-CMND-PATH-01**. Dest auto-reject / `set -u`: **INC-20260821-002** / **L-FENCE-ASK-01** / **L-INT-SETU-01**.
+**Latest report:** `reviews/reports/2026-10-04-tty-empty-argv-menu.md` (TTY empty argv menu). Prior: 2026-10-02 menu languages. Actor lock: INC-20260818-001. Cmnd identity: **INC-20260821-001** / **L-CMND-PATH-01**. Dest auto-reject / `set -u`: **INC-20260821-002** / **L-FENCE-ASK-01** / **L-INT-SETU-01**.
 
-**Last plan update:** 2026-10-02  
-**Ship unit VERSION:** 1.29.0  
+**Last plan update:** 2026-10-04  
+**Ship unit VERSION:** 1.30.0  
 **Suite baseline:** see `reviews/test-plan.md`
 
 ---
@@ -16,7 +16,7 @@
 | # | Check | Notes |
 |---|--------|--------|
 | P1 | Read `docs/requirements/index.md` | Class + shell + three-layer + LPU + **prevention-set 1.6.5** + **domain 2.41.0** + **login-interactive-review-hook 1.2.0** + ARSA + dest Fence + coding-style + sudo-command + default-interaction |
-| P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.29.0**) |
+| P2 | Confirm ship unit `src/sudoer-cli` | `APP_NAME` / `VERSION` hard-assign (**1.30.0**) |
 | P3 | Load `reviews/lessons.md` and re-check open L-* that still apply | Skip parent backup L-SUDOERS except **L-JSON-CMDS-01** |
 | P4 | Run `./tests/run.sh` | Record PASS/FAIL/SKIP; **must include TP-CURL-02/03**, **TP-LC-12..18**, **TP-CSUM-01..04**, **TP-SR-14/15/16**, **TP-SR-PRIV-04** / **TP-ELEV-09** / **TP-PREV-01..03**, **TP-SR-HOOK-01..09**, **TP-CLI-18..22** / **TP-CLI-24** / **TP-ELEV-10**, **TP-SR-INT-07**, **TP-SR-INT-08**, and **TP-SR-INT-09** |
 | P5 | Confirm install **channel** is B’s `SCRIPT_URL` | `curl \| sh` one-liner; not selfmanaged’s channel |
@@ -33,8 +33,8 @@
 | Bootstrap chain | `requirement-bootstrap-chain.md` | sudoer-cli specialized from **selfmanaged** (A→B) |
 | Project folder | `requirement-project-folder.md` | `src/`, bins; no `/var/backup` |
 | CLI interface | `requirement-shell-cli-interface.md` | Type 0 commands, flags, dispatch |
-| Empty argv Type O | `requirement-shell-cli-zero-arguments.md` | Empty = install-ensure |
-| Numbered start list | `requirement-shell-cli-default-interaction.md` | Case 3: `menu` / `main`; empty argv is Type O; row **5** languages; invalid choice reprints this layer |
+| Empty argv split | `requirement-shell-cli-zero-arguments.md` | TTY numbered list (including `--debug`); off-TTY Type O; `--json` no command is JSON help |
+| Numbered start list | `requirement-shell-cli-default-interaction.md` | Case 3: TTY empty argv and `menu` / `main`; off-TTY empty argv is Type O; row **5** languages; invalid choice reprints this layer |
 | Menu language | `requirement-shell-cli-language.md` | **51–63**; file `~/.local/sudoer-cli/language`; `SUDOER_CLI_LANG`; **TP-CLI-24** |
 | Online self-management | `requirement-shell-self-management.md` | install / version-check / self-update / self-uninstall |
 | Path / shell-rc | `requirement-shell-path-and-shell-support.md` | This-login PATH + profile; sibling unify; **TP-LC-20..22, 27..31**; `rc-test` |
@@ -92,7 +92,7 @@
 | R23 | Type 0 `fence-test` is a **test-purpose** verb (unit test of a local test folder; `--file PATH`; no sudo except wrap chmod/chown of that folder; no queue). Help lists testers apart from operational. Sample `tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json` | **have** (1.15.2; **TP-SR-FT-01..07** · **TP-CLI-16**) |
 | R24 | Dest-owned `submit_app` / `submit_version`: testers/convert require strings; sibling app/version is not a fence; Type 0 convert/submit stamps live Config (overwrite inbound); interactive prints `queued by {app} {version}` | **have** (1.17.0; dest Fence 1.5.0; **TP-SR-FENCE-13..17**) |
 | R25 | Dest `interactive` asks yes/no on waiting grants (warn on missing `submit_app` / home / `.ci-homes`; do not dest-drain without the question). Must not die `SR_D_SUBMIT_APP: parameter not set` | **have** (1.17.0; **L-FENCE-ASK-01** · **L-INT-SETU-01**; **TP-SR-FENCE-16/17** · **TP-SR-WKBIN-11**; INC-20260821-002) |
-| R26 | Numbered start list is verb `menu` / `main` (case 3); empty argv stays help; no `$()` of `prompt_ask`; Exit **99**; invalid choice reprints this layer | **have** (1.26.0; **TP-CLI-18..22** · **TP-ELEV-10**) |
+| R26 | Numbered start list is TTY empty argv and verb `menu` / `main` (case 3); off-TTY empty argv is Type O; `--json` with no command is JSON help; no `$()` of `prompt_ask`; Exit **99**; invalid choice reprints this layer | **have** (1.30.0; **TP-CLI-07** · **TP-CLI-18..22** · **TP-CLI-29** · **TP-ELEV-10**) |
 
 ## JSON re-encode / convert fidelity — review plan gate
 
