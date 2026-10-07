@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.33.0] - 2026-10-07
+
+### Added
+
+- Front **8** **self-management**, the same card as sibling sshd-cli. **81** `install`, **82** `version` (runs about), **83** `about`, **84** `version-check`, **85** `self-update`, **86** `self-uninstall`, **87** `self-install`. On this product `install` and `self-install` both place the CLI from the channel. **0** goes back. Exit stays **99**. Typed `sudoer-cli version` stays the one-line version. Default-interaction REQ **1.6.0**. Language **1.2.1**. Self-management **1.2.3**. **TP-CLI-20** · **TP-CLI-24**. Ship unit **`VERSION="1.33.0"`**.
+
 ## [1.32.0] - 2026-10-04
 
 ### Changed

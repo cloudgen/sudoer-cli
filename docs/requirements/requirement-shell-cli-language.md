@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-language.md
-**Status**: Active (Version 1.2.0)
+**Status**: Active (Version 1.2.1)
 **Area**: shell
 **Key**: `requirement-shell-cli-language`
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -84,7 +84,7 @@ The language board accepts:
 | **62** | `dutch`, `nl`, `Nederlands`, `nederlands` |
 | **63** | `greek`, `el`, `Ελληνικά`, `ελληνικά` |
 
-`language` and `languages` are not argv verbs. Picking **51** on the **front** board is an invalid front choice. The operator enters **5** first. Front **6** is `add-sudoer-request`. It does not open the language board.
+`language` and `languages` are not argv verbs. Picking **51** on the **front** board is an invalid front choice. The operator enters **5** first. Front **6** is not a row. Front **8** opens self-management. It does not open the language board.
 
 The choice on both boards **MUST** be current-shell `prompt_ask "$(app_menu_text choice_label)" ""` then `${PROMPT_ASK_VALUE}`. English `choice_label` is `Choice`, so the visible prompt is `Choice: `. **MUST NOT** capture `prompt_ask` with `$()` or backticks.
 
@@ -92,9 +92,9 @@ Row **5** is numbered on every host, including Termux, Git Bash, and Windows cmd
 
 ### 2.4 What follows the saved language
 
-**MUST** follow `APP_LANG` on the front board and the language board: header, row longs, Back, Exit, the choice label, and the unknown-choice line.
+**MUST** follow `APP_LANG` on the front board, the language board, and the self-management board: header, row longs, Back, Exit, the choice label, and the unknown-choice line.
 
-**MUST** keep each operational command token as the Latin verb in every language (`sudoers-to-json`, `add-sudoer-request`, `interactive`, and the other row tokens). The languages short follows `APP_LANG` (`languages` in English). The approval-family short follows `APP_LANG` (`approval features` in English). The sudoers-family short stays the Latin token `sudoers` in every language.
+**MUST** keep each operational command token as the Latin verb in every language (`sudoers-to-json`, `add-sudoer-request`, `install`, `self-install`, `interactive`, and the other row tokens). The languages short follows `APP_LANG` (`languages` in English). The approval-family short follows `APP_LANG` (`approval features` in English). The self-management short follows `APP_LANG` (`self-management` in English). The sudoers-family short stays the Latin token `sudoers` in every language.
 
 **MUST** follow `APP_LANG` on human `help` and human `about`. Section headings and the words after each command token follow the code. The command token, the flag, the path, and the env name stay the Latin spelling (`install`, `--json`, `SCRIPT_URL`, `SUDOER_CLI_LANG`). English `help` still prints `Usage:` and `Global Options:`. The English menu sentence in `help` names **51** English through **63** Greek, and names front **5**. The other codes use their own usage heading: `用法：`, `Uso:`, `Utilisation :`, `Verwendung:`, `الاستخدام:`, `Использование:`, `Gebruik:`, `Χρήση:`, `使い方:`, `사용법:`. English `about` still prints `About / Diagnostics`. Japanese about prints `概要 / 診断` and `使用中のストレージ`. Korean about prints `개요 / 진단`.
 
@@ -145,15 +145,16 @@ Back and Exit:
 Plain text of the front board, then the language board. The version token is the live `VERSION`. Choice prompt ends with the colon-space from `prompt_ask`.
 
 ```text
-[INFO] sudoer-cli(1.31.0) — numbered list of live commands
+[INFO] sudoer-cli(1.33.0) — numbered list of live commands
 1. approval features: Queue, list, show, and decide requests
 5. languages: display language for this menu
 7. sudoers: Convert and print sudoers text
+8. self-management: this CLI install, version, update, uninstall
 99. Exit
 Choice:
 ```
 
-Row **1** then lists `add-sudoer-request`, `update-sudoer-request`, `remove-sudoer-request`, `list-approving`, `list-approved`, `list-rejected`, `show`, `remove-lpu`, `approve`, `reject`, and `interactive`, plus `0. Back` and `99. Exit`. Row **7** then lists `sudoers-to-json`, `json-to-sudoers`, `print-sudoers`, and `print-sudoers-install-script`, plus `0. Back` and `99. Exit`.
+Row **1** then lists `add-sudoer-request`, `update-sudoer-request`, `remove-sudoer-request`, `list-approving`, `list-approved`, `list-rejected`, `show`, `remove-lpu`, `approve`, `reject`, and `interactive`, plus `0. Back` and `99. Exit`. Row **7** then lists `sudoers-to-json`, `json-to-sudoers`, `print-sudoers`, and `print-sudoers-install-script`, plus `0. Back` and `99. Exit`. Row **8** then lists **81** `install`, **82** `version`, **83** `about`, **84** `version-check`, **85** `self-update`, **86** `self-uninstall`, and **87** `self-install`, plus `0. Back` and `99. Exit`.
 
 ```text
 [INFO] sudoer-cli(1.31.0) — languages
@@ -262,12 +263,13 @@ When this program runs on Termux, Git Bash, Windows cmd, or the same class (no r
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-10-07 | Active 1.2.1 | Self-management board follows `APP_LANG`. Front **8** is not a language row. Ship unit **1.33.0**. |
 | 2026-10-04 | Active 1.2.0 | Rows **51–63** stay the sibling grok-cli names and order. **50** and **64–69** stay unprinted. Front **1** and **7** are families, not language rows. Ship unit **1.31.0**. |
 | 2026-10-04 | Active 1.1.0 | `app_lang_load` runs for TTY empty argv and for `--json` with no command. TTY `--debug` shows the front board in `APP_LANG`. Proof **TP-CLI-29**. Ship unit **1.30.0**. |
 | 2026-10-02 | Active 1.0.0 | Menu **5** languages; block **50–69** assigned **51–63**; `SUDOER_CLI_LANG`; proof **TP-CLI-24**. Ship unit **1.29.0**. |
 
 ---
 
-**Last Updated**: 2026-10-04
+**Last Updated**: 2026-10-07
 **Owner**: project maintainers
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

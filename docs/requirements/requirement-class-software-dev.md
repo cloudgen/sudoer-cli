@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-class-software-dev.md  
-**Status**: Active (Version 1.11.7 – stay-honest VERSION 1.32.0; a check does not change the input; front **1** approval features; front **7** sudoers; shared doorbell `sudoer-review-hook`)  
+**Status**: Active (Version 1.11.8 – stay-honest VERSION 1.33.0; front **8** self-management; a check does not change the input; front **1** approval features; front **7** sudoers; shared doorbell `sudoer-review-hook`)  
 **Area**: class  
 **Key**: `requirement-class-software-dev`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -130,7 +130,7 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | **Architectures supported** | any arch with POSIX sh and the external tools the script invokes |
 | **Git surface** | used when product is published |
 | **Ship unit / install** | yes — `src/sudoer-cli`; **online-installable** (`curl \| sh` via `SCRIPT_URL`) |
-| **Product version SSOT** | `VERSION="1.32.0"` hard-assign in `src/sudoer-cli` |
+| **Product version SSOT** | `VERSION="1.33.0"` hard-assign in `src/sudoer-cli` |
 | **Bootstrap origin** | Historical **cli-template**. This product is **sudoer-cli**. No live parent ship unit. |
 
 **Residual ownership table:**
@@ -288,6 +288,7 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | 2026-09-08 | Active 1.10.1 | Stay-honest Implementation Notes `VERSION` 1.23.0 (YAML review body two-space indent) |
 | 2026-09-08 | Active 1.10.2 | Residual **points** at `requirement-login-interactive-review-hook` |
 | 2026-09-08 | Active 1.10.3 | Stay-honest Implementation Notes `VERSION` 1.24.0 (old-hook review on `interactive`) |
+| 2026-10-07 | Active 1.11.8 | Stay-honest ship unit `VERSION` 1.33.0. Front **8** self-management lives on the default-interaction requirement. |
 | 2026-10-04 | Active 1.11.7 | §2.8 rule 36a: a check does not change the input. Ship unit stays 1.32.0. |
 | 2026-10-04 | Active 1.11.6 | Stay-honest Implementation Notes `VERSION` 1.32.0. |
 | 2026-10-04 | Active 1.11.5 | Stay-honest Implementation Notes `VERSION` 1.31.0; front **1** approval features; front **7** sudoers |
@@ -300,6 +301,6 @@ This file is **not** a second copy of install, output, storage, or writing-style
 
 ---
 
-**Last Updated**: 2026-10-04 (1.11.7 a check does not change the input)  
+**Last Updated**: 2026-10-07 (1.11.8 front **8** self-management; ship unit **1.33.0**)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

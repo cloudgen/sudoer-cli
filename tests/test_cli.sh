@@ -346,6 +346,7 @@ ${_su}"
     assert_contains "TP-CLI-20 front approval family" "${_front}" "app_menu_text cat_approval"
     assert_contains "TP-CLI-20 front sudoers family" "${_front}" "app_menu_text cat_sudoers"
     assert_contains "TP-CLI-20 row languages" "${_front}" "app_menu_text cat_languages"
+    assert_contains "TP-CLI-20 front self-management" "${_front}" "app_menu_text cat_self"
     assert_contains "TP-CLI-20 print calls Exit key" "${_front}" "app_menu_text line_exit"
     assert_not_contains "TP-CLI-20 front has no sudoers-to-json" "${_front}" "sudoers-to-json"
     assert_not_contains "TP-CLI-20 front has no list-approving" "${_front}" "list-approving"
@@ -364,10 +365,22 @@ ${_su}"
     assert_not_contains "TP-CLI-20 no 17. Exit" "${_fn}${_cat}" "17. Exit"
     assert_not_contains "TP-CLI-20 no help row" "${_fn}" 'out_menu_choice 'help
     if printf '%s\n' "${_fn}" | grep -E 'out_menu_choice [0-9]+ install ' >/dev/null; then
-        t_fail "TP-CLI-20 install must not be a numbered choice"
+        t_fail "TP-CLI-20 install must not be a front or approval or sudoers choice"
     else
-        t_pass "TP-CLI-20 no install choice"
+        t_pass "TP-CLI-20 no install choice on front, approval, or sudoers"
     fi
+    _self=$(sed -n '/^app_menu_self_print()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-CLI-20 self row 81 install" "${_self}" "out_menu_choice 81 install"
+    assert_contains "TP-CLI-20 self row 82 version" "${_self}" "out_menu_choice 82 version"
+    assert_contains "TP-CLI-20 self row 83 about" "${_self}" "out_menu_choice 83 about"
+    assert_contains "TP-CLI-20 self row 84 version-check" "${_self}" "out_menu_choice 84 version-check"
+    assert_contains "TP-CLI-20 self row 85 self-update" "${_self}" "out_menu_choice 85 self-update"
+    assert_contains "TP-CLI-20 self row 86 self-uninstall" "${_self}" "out_menu_choice 86 self-uninstall"
+    assert_contains "TP-CLI-20 self row 87 self-install" "${_self}" "out_menu_choice 87 self-install"
+    assert_contains "TP-CLI-20 self Back" "${_self}" "app_menu_text line_back"
+    assert_contains "TP-CLI-20 self Exit" "${_self}" "app_menu_text line_exit"
+    assert_not_contains "TP-CLI-20 self has no setup" "${_self}" "setup"
+    assert_not_contains "TP-CLI-20 self has no fence-test" "${_self}" "fence-test"
     assert_not_contains "TP-CLI-20 no setup choice" "${_fn}" 'out_menu_choice 12 setup'
     assert_not_contains "TP-CLI-20 no version choice" "${_fn}" "out_menu_choice"version
     assert_not_contains "TP-CLI-20 no about as choice name" "${_fn}" 'out_menu_choice '*' about '
@@ -546,6 +559,8 @@ ${_su}"
     _sum=$(sed -n '/^app_menu_sudoers()/,/^}/p' "${SCRIPT}")
     assert_contains "TP-ELEV-10 approval menu calls prompt_ask" "${_apm}" 'prompt_ask "$(app_menu_text choice_label)"'
     assert_contains "TP-ELEV-10 sudoers menu calls prompt_ask" "${_sum}" 'prompt_ask "$(app_menu_text choice_label)"'
+    _sfm=$(sed -n '/^app_menu_self()/,/^}/p' "${SCRIPT}")
+    assert_contains "TP-ELEV-10 self menu calls prompt_ask" "${_sfm}" 'prompt_ask "$(app_menu_text choice_label)"'
     _menu_live=$(printf '%s\n' "${_menu}" | grep -v '^[[:space:]]*#' || true)
     if printf '%s\n' "${_menu_live}" | grep -E '\$\(prompt_|`prompt_' >/dev/null; then
         t_fail "TP-ELEV-10 app_main_menu must not \$() prompt_ask"
@@ -592,6 +607,8 @@ EOF
         sed -n '/^app_menu_approval()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_menu_sudoers_print()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_menu_sudoers()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_menu_self_print()/,/^}/p' "${SCRIPT}"
+        sed -n '/^app_menu_self()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_main_menu_print()/,/^}/p' "${SCRIPT}"
         sed -n '/^app_main_menu()/,/^}/p' "${SCRIPT}"
         printf '%s\n' "APP_NAME=${APP_NAME}"
@@ -677,6 +694,43 @@ EOF
     _out=$(printf '%s\n' '7' '5' '0' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
     assert_contains "TP-CLI-24 sudoers unused 5 warns" "${_out}" "Unknown menu choice '5'"
     assert_not_contains "TP-CLI-24 sudoers unused 5 did not run" "${_out}" "RAN:"
+    _out=$(printf '%s\n' '8' '0' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 front 8 is self-management" "${_out}" "8. self-management:"
+    assert_contains "TP-CLI-24 front 8 long" "${_out}" "this CLI install, version, update, uninstall"
+    assert_contains "TP-CLI-24 self row 81" "${_out}" "81. install:"
+    assert_contains "TP-CLI-24 self row 82" "${_out}" "82. version:"
+    assert_contains "TP-CLI-24 self row 83" "${_out}" "83. about:"
+    assert_contains "TP-CLI-24 self row 84" "${_out}" "84. version-check:"
+    assert_contains "TP-CLI-24 self row 85" "${_out}" "85. self-update:"
+    assert_contains "TP-CLI-24 self row 86" "${_out}" "86. self-uninstall:"
+    assert_contains "TP-CLI-24 self row 87" "${_out}" "87. self-install:"
+    assert_contains "TP-CLI-24 self Back" "${_out}" "0. Back"
+    assert_not_contains "TP-CLI-24 self Back did not run" "${_out}" "RAN:"
+    _out=$(printf '%s\n' '8' '82' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 self 82 runs about" "${_out}" "RAN:about"
+    _out=$(printf '%s\n' '8' '83' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 self 83 runs about" "${_out}" "RAN:about"
+    _out=$(printf '%s\n' '8' '81' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 self 81 runs install" "${_out}" "RAN:install"
+    _out=$(printf '%s\n' '8' '87' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 self 87 runs self-install" "${_out}" "RAN:self-install"
+    _out=$(printf '%s\n' '8' '84' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 self 84 runs version-check" "${_out}" "RAN:version-check"
+    _out=$(printf '%s\n' '8' '85' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 self 85 runs self-update" "${_out}" "RAN:self-update"
+    _out=$(printf '%s\n' '8' '86' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 self 86 runs self-uninstall" "${_out}" "RAN:self-uninstall"
+    _out=$(printf '%s\n' 'self-management' '0' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 name self-management opens the board" "${_out}" "81. install:"
+    _out=$(printf '%s\n' '8' 'nope' '0' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
+    assert_contains "TP-CLI-24 self unknown warns" "${_out}" "Unknown menu choice 'nope'"
+    assert_not_contains "TP-CLI-24 self unknown did not run" "${_out}" "RAN:"
+    _exit_n=$(printf '%s' "${_out}" | grep -c "81. install:" || true)
+    if [ "${_exit_n}" -ge 2 ]; then
+        t_pass "TP-CLI-24 self unknown reprints this layer (${_exit_n} install rows)"
+    else
+        t_fail "TP-CLI-24 self unknown reprints this layer (install rows=${_exit_n}, want >=2)"
+    fi
     _out=$(printf '%s\n' 'sudoers' '0' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)
     assert_contains "TP-CLI-24 name sudoers opens the family" "${_out}" "3. print-sudoers:"
     _out=$(printf '%s\n' 'approval features' '0' '99' | env -u SUDOER_CLI_LANG HOME="${_lhome}" sh "${_runner}" 2>&1)

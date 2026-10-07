@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-interface.md  
-**Status**: Active (Version 3.14.1) — stay-honest `VERSION` 1.32.0; front **1** approval features; front **7** sudoers; menu **5** languages; TTY empty argv is the numbered list; off-TTY empty argv is Type O; login-hook doorbell `sudoer-review-hook`  
+**Status**: Active (Version 3.15.0) — stay-honest `VERSION` 1.33.0; front **1** approval features; front **7** sudoers; front **8** self-management; menu **5** languages; TTY empty argv is the numbered list; off-TTY empty argv is Type O; login-hook doorbell `sudoer-review-hook`  
 **Area**: shell  
 **Key**: `requirement-shell-cli-interface`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -100,11 +100,11 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 | **Primary executable** | `src/sudoer-cli` (POSIX `/bin/sh`, single-file ship unit) |
 | **Dispatcher** | `app_main` |
 | **Output SSOT** | `out_text` + wrappers (`out_info`, `out_success`, `out_warn`, `out_error`, `out_die`, `out_plain`, `out_json`, …) |
-| **Version SSOT** | `VERSION="1.32.0"` hard-assign in ship unit |
+| **Version SSOT** | `VERSION="1.33.0"` hard-assign in ship unit |
 | **Interactive rc write path** | `BASHRC` default `${HOME}/.bashrc`. User-bin `install` PATH ensure creates/modifies this file. Tests/CI **MAY** set `BASHRC` to a file in a temp folder. Dual mention: `requirement-shell-path-and-shell-support`. |
 | **Install paths** | Global: `GLOBAL_BIN` default `/usr/local/bin`; User: `USER_BIN` default `${HOME}/.local/bin` |
 | **Primary install story** | `curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli \| sh` → user bin; `sudo curl … \| sudo sh` → global; login-hook-symlink `/usr/local/bin/sudoer-review-hook` after global place |
-| **Default CLI main menu** | **Claimed.** TTY empty argv (including `--debug` with no command) opens the numbered list. Off-TTY empty argv is Type O install-ensure. Verb `menu` / `main` opens the same list on a TTY and prints help off-TTY. `--json` with no command is JSON help. Front **1** is approval features (listing included). Front **5** is languages (**51–63**). Front **7** is sudoers. Exit **99**. Topic owner: `requirement-shell-cli-default-interaction`. Language copy: `requirement-shell-cli-language`. Look printers: `util_app_ident` / `out_menu_choice` (**TP-CLI-17**, **TP-CLI-24**, **TP-CLI-29**) |
+| **Default CLI main menu** | **Claimed.** TTY empty argv (including `--debug` with no command) opens the numbered list. Off-TTY empty argv is Type O install-ensure. Verb `menu` / `main` opens the same list on a TTY and prints help off-TTY. `--json` with no command is JSON help. Front **1** is approval features (listing included). Front **5** is languages (**51–63**). Front **7** is sudoers. Front **8** is self-management (**81–87**). Exit **99**. Topic owner: `requirement-shell-cli-default-interaction`. Language copy: `requirement-shell-cli-language`. Look printers: `util_app_ident` / `out_menu_choice` (**TP-CLI-17**, **TP-CLI-24**, **TP-CLI-29**) |
 | **Online channel env** | `SCRIPT_URL` composed `https://raw.githubusercontent.com/${REPO_USER}/${REPO_NAME}/main/src/${APP_NAME}` |
 | **Type 1 / Type 2 commands** | Type 1 **routed, fail closed** without euid 0; setup = any admin sudo (live useradd/F6/hook); approve = same elev (F6 extra); Type 2 **not used** |
 | **Dedicated system user** | `sudoer-adm` (authorizer; see LPU REQ) |
@@ -116,6 +116,7 @@ In JSON mode, help **MUST NOT** dump long human text; return a short structured 
 |---------|------|----------------|-------------------|
 | *(no command token — empty argv)* | Type 0 | TTY → `app_main_menu`; off-TTY → `inst_perform_install` / `inst_maybe_install`; `--json` → `app_help` | TTY numbered list (including `--debug`). Off-TTY **Type O install-ensure**. `--json` with no command is JSON help. Not `interactive` |
 | `install` | Type 0 | `inst_perform_install` | Place from `SCRIPT_URL`; user-bin companion PATH/profile (`inst_ensure_companion`). Idempotent unless `--force`. Dual mention: `requirement-shell-self-management` · `requirement-shell-path-and-shell-support` |
+| `self-install` | Type 0 | `inst_perform_install` | Same place as `install`. Menu row **87**. This product has no payload separate from placing the CLI |
 | `version-check` | Type 0 | `ver_check` | Local vs remote on channel; fail loud if channel missing |
 | `self-update` | Type 0 | `inst_self_update` | Fetch newer from channel; no silent downgrade |
 | `self-uninstall` | Type 0 | `inst_self_uninstall` | Remove managed binary; scoped PATH cleanup. Dual mention: `requirement-shell-self-management` · `requirement-shell-path-and-shell-support` |
@@ -295,6 +296,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | 2026-09-03 | Active 3.10.0 | Claimed case-3 `menu` / `main`; empty argv stays help; `VERSION` 1.19.0 |
 | 2026-09-03 | Active 3.10.1 | Stay-honest Implementation Notes `VERSION` 1.20.0 |
 | 2026-09-06 | Active 3.10.3 | Stay-honest Implementation Notes `VERSION` 1.21.0 |
+| 2026-10-07 | Active 3.15.0 | Stay-honest `VERSION` 1.33.0. Front **8** self-management. `self-install` shares `inst_perform_install`. |
 | 2026-10-04 | Active 3.14.1 | Stay-honest `VERSION` 1.32.0. Login-hook path check does not rename a command filename. |
 | 2026-10-04 | Active 3.14.0 | Stay-honest `VERSION` 1.31.0. Front **1** approval features. Front **7** sudoers. Languages stay **51–63**. Exit stays **99**. |
 | 2026-10-04 | Active 3.13.0 | Stay-honest `VERSION` 1.30.0. TTY empty argv (including `--debug`) is the numbered list. Off-TTY empty argv stays Type O. `--json` with no command is JSON help. |
@@ -306,6 +308,6 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 ---
 
-**Last Updated**: 2026-10-04 (3.13.0 — TTY empty argv menu)  
+**Last Updated**: 2026-10-07 (3.15.0 — front **8** self-management; ship unit **1.33.0**)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

@@ -1,6 +1,6 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.32.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.33.0-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
@@ -126,7 +126,7 @@ Approve this request (y/N)?
 
 ## Features
 
-- **Install and keep yourself** — `install`, `version-check`, `self-update`, `self-uninstall`, `version`, `about`, `help` work in your user bin and in `/usr/local/bin`
+- **Install and keep yourself** — `install`, `self-install`, `version-check`, `self-update`, `self-uninstall`, `version`, `about`, and `help` work in your user bin and in `/usr/local/bin`. Front **8** opens the same lifecycle verbs as rows **81–87**
 - **No arguments at a prompt opens the list** — `sudoer-cli` or `sudoer-cli --debug` on a real terminal shows the numbered list. A pipe or script with no command installs or confirms install (`curl | sh`). `sudoer-cli --json` with no command prints JSON help. None of these start a review
 - **Numbered start list** — the same list as `sudoer-cli menu` (or `main`) on a real terminal; a pipe of `menu` still prints help
 - **Everyone can run the installed program** — mode `0755`
@@ -208,14 +208,15 @@ This product is **online-installable**. Global vs local here means install *loca
 
 ```text
 $ sudoer-cli
-[INFO] **sudoer-cli**(*1.31.0*) — numbered list of live commands
+[INFO] **sudoer-cli**(*1.33.0*) — numbered list of live commands
 1. approval features: Queue, list, show, and decide requests
 5. languages: display language for this menu
 7. sudoers: Convert and print sudoers text
+8. self-management: this CLI install, version, update, uninstall
 99. Exit
 ```
 
-`1` opens approval work, including `list-approving`, `list-approved`, and `list-rejected`. `7` opens `sudoers-to-json`, `json-to-sudoers`, `print-sudoers`, and `print-sudoers-install-script`. `0` on either family goes back. `99` leaves. `5` opens languages **51** English through **63** Greek (same names and order as sibling grok-cli; **50** and **64–69** are not printed). A language pick is saved at `~/.local/sudoer-cli/language` and the list redraws in that language. `0` on that board goes back and does not save. A number or name that is not on the current list prints an error, reprints **this** list, and waits. Type `99` (or `exit` / `quit`) to leave.
+`1` opens approval work, including `list-approving`, `list-approved`, and `list-rejected`. `7` opens `sudoers-to-json`, `json-to-sudoers`, `print-sudoers`, and `print-sudoers-install-script`. `8` opens self-management: **81** `install`, **82** `version` (shows about), **83** `about`, **84** `version-check`, **85** `self-update`, **86** `self-uninstall`, **87** `self-install`. `0` on a family goes back. `99` leaves. `5` opens languages **51** English through **63** Greek (same names and order as sibling grok-cli; **50** and **64–69** are not printed). A language pick is saved at `~/.local/sudoer-cli/language` and the list redraws in that language. `0` on that board goes back and does not save. A number or name that is not on the current list prints an error, reprints **this** list, and waits. Type `99` (or `exit` / `quit`) to leave.
 
 **Source repository:** [cloudgen/sudoer-cli](https://github.com/cloudgen/sudoer-cli)  
 Config identity: `REPO_USER=cloudgen`, `REPO_NAME=sudoer-cli`. Default channel: `https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli`.
@@ -229,6 +230,7 @@ sudoer-cli about
 sudoer-cli --json about
 
 sudoer-cli install
+sudoer-cli self-install
 sudoer-cli version-check
 sudoer-cli self-update
 sudoer-cli self-uninstall --force
@@ -302,6 +304,8 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
+2026-10-07 — version **1.33.0** (front **8** self-management, rows **81–87**; `self-install` places this CLI the same way `install` does; Exit stays **99**).
+2026-10-04 — version **1.32.0** (a login-hook command path must already be `/usr/local/bin/sudoer-review-hook`; a mismatch is refused and the filename stays as submitted).
 2026-10-04 — version **1.31.0** (front **1** approval features, including listing; front **7** sudoers; languages stay **51–63**).
 2026-10-04 — version **1.30.0** (at a prompt, `sudoer-cli` or `sudoer-cli --debug` opens the numbered list; a pipe with no command still installs or confirms install; `sudoer-cli --json` with no command prints JSON help).
 2026-10-02 — version **1.29.0** (menu **5** languages; rows **51–63** saved at `~/.local/sudoer-cli/language`; old **5–15** shift to **6–16**; Exit stays **99**).

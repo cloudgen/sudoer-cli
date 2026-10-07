@@ -1,7 +1,7 @@
 # Requirement ↔ test matrix — sudoer-cli
 
-**Updated:** 2026-10-04 (TTY empty argv menu; **TP-CLI-29**)  
-**Product VERSION:** 1.32.0  
+**Updated:** 2026-10-07 (front **8** self-management **81–87**; ship unit **1.33.0**)  
+**Product VERSION:** 1.33.0  
 **Suite:** `tests/run.sh`
 
 | Requirement key | Area | TP families | Coverage notes |
@@ -11,9 +11,9 @@
 | requirement-project-folder | architecture | TP-LC-01 | src ship unit + user bin |
 | requirement-shell-cli-interface | shell | TP-CLI-* (incl. **15** / **16** / **17** / **18..22** / **24**) | Commands, flags, dispatch; **test-purpose** `test-well-known-binary` / `fence-test` / `rc-test` routed; help lists testers apart from operational; claimed `menu` / `main`; invalid-choice retry; menu language |
 | requirement-shell-cli-zero-arguments | shell | TP-CLI-07 · **TP-CLI-18** · **TP-CLI-29** · **TP-LC-11/14/15/18** · **TP-CURL-02/03/08** | TTY empty argv is the numbered list; off-TTY Type O; `--json` no command is JSON help |
-| requirement-shell-cli-default-interaction | shell | **TP-CLI-17** · **TP-CLI-18..22** · **TP-CLI-24** · **TP-CLI-29** · **TP-ELEV-10** | Case 3: TTY empty argv and `menu` / `main`; off-TTY empty argv is Type O; row **1** approval features; row **5** languages; row **7** sudoers; Exit **99**; unused **2** / **6** / **17**; no `$()` of `prompt_ask`; invalid choice reprints this layer |
-| requirement-shell-cli-language | shell | **TP-CLI-24** · **TP-CLI-29** · **TP-CLI-20** · **TP-ELEV-10** | Thirteen codes **51–63**; `${HOME}/.local/${APP_NAME}/language` mode 0600; `SUDOER_CLI_LANG` does not rewrite; TTY empty argv, help, and about follow `APP_LANG` |
-| requirement-shell-self-management | shell | **TP-LC-01..08/12/13/16/17** · **TP-CLI-04/10** | install / version-check / self-update / self-uninstall / about; PATH companion **call site** |
+| requirement-shell-cli-default-interaction | shell | **TP-CLI-17** · **TP-CLI-18..22** · **TP-CLI-24** · **TP-CLI-29** · **TP-ELEV-10** | Case 3: TTY empty argv and `menu` / `main`; off-TTY empty argv is Type O; row **1** approval features; row **5** languages; row **7** sudoers; row **8** self-management **81–87**; Exit **99**; unused **2** / **6** / **17**; no `$()` of `prompt_ask`; invalid choice reprints this layer |
+| requirement-shell-cli-language | shell | **TP-CLI-24** · **TP-CLI-29** · **TP-CLI-20** · **TP-ELEV-10** | Thirteen codes **51–63**; `${HOME}/.local/${APP_NAME}/language` mode 0600; `SUDOER_CLI_LANG` does not rewrite; TTY empty argv, help, about, and the self-management board follow `APP_LANG` |
+| requirement-shell-self-management | shell | **TP-LC-01..08/12/13/16/17** · **TP-CLI-04/10** · **TP-CLI-20** · **TP-CLI-24** | `install` / `self-install` / version-check / self-update / self-uninstall / about; TTY front **8** rows **81–87**; PATH companion **call site** |
 | requirement-shell-path-and-shell-support | shell | **TP-LC-20..22** · **TP-LC-27..31** · **TP-CLI-04** | This-login PATH / profile; sibling unify; scoped uninstall; heal; `rc-test` |
 | requirement-shell-automatic-checksum | shell | **TP-CSUM-01..05** · **TP-CURL-01** | Companion sidecar; pin mismatch/match; help/about omit CHECKSUM |
 | requirement-shell-local-self-management | shell | (superseded) | Historical local-copy package; online self-management owns lifecycle |

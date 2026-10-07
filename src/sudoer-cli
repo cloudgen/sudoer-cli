@@ -42,7 +42,7 @@
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
 # APP NAME: hard-assign APP_NAME="sudoer-cli"
-# VERSION: hard-assign VERSION="1.32.0"
+# VERSION: hard-assign VERSION="1.33.0"
 # BASHRC: interactive rc write path for PATH ensure (default ${HOME}/.bashrc).
 #   Override for tests/CI so install can target a temp file instead of this
 #   login's real ~/.bashrc. Law: requirement-shell-path-and-shell-support.md.
@@ -62,7 +62,7 @@ APP_NAME="sudoer-cli"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
 : "${DESCRIPTION:=POSIX /bin/sh CLI: convert a sudoers fragment to JSON, queue it, and let a host admin who has used password sudo accept or decline it. First-time setup creates sudoer-adm.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.32.0"
+VERSION="1.33.0"
 : "${VERSION:=1.29.0}"
 # Shared login doorbell (requirement-login-interactive-review-hook.md).
 : "${COMMON_LOGIN_HOOK_NAME:=sudoer-review-hook}"
@@ -6677,6 +6677,74 @@ app_menu_text() {
                 *) _mt_out="Convert and print sudoers text" ;;
             esac
             ;;
+        cat_self)
+            case "${_mt_lang}" in
+                zh-Hant) _mt_out="自我管理" ;;
+                es) _mt_out="autogestión" ;;
+                fr) _mt_out="autogestion" ;;
+                de) _mt_out="Selbstverwaltung" ;;
+                zh-Hans) _mt_out="自我管理" ;;
+                ja) _mt_out="自己管理" ;;
+                ko) _mt_out="자기관리" ;;
+                ar) _mt_out="إدارة-ذاتية" ;;
+                pt) _mt_out="autogestão" ;;
+                ru) _mt_out="самоуправление" ;;
+                nl) _mt_out="zelfbeheer" ;;
+                el) _mt_out="αυτοδιαχείριση" ;;
+                *) _mt_out="self-management" ;;
+            esac
+            ;;
+        front_self_long)
+            case "${_mt_lang}" in
+                zh-Hant) _mt_out="這個 CLI 的安裝、版本、更新、移除" ;;
+                es) _mt_out="instalación, versión, actualización y desinstalación de este CLI" ;;
+                fr) _mt_out="installation, version, mise à jour et retrait de ce CLI" ;;
+                de) _mt_out="Installation, Version, Aktualisierung und Entfernen dieses CLI" ;;
+                zh-Hans) _mt_out="这个 CLI 的安装、版本、更新、移除" ;;
+                ja) _mt_out="この CLI のインストール、バージョン、更新、削除" ;;
+                ko) _mt_out="이 CLI의 설치, 버전, 업데이트, 제거" ;;
+                ar) _mt_out="تثبيت هذا CLI وإصداره وتحديثه وإزالته" ;;
+                pt) _mt_out="instalação, versão, atualização e remoção deste CLI" ;;
+                ru) _mt_out="установка, версия, обновление и удаление этого CLI" ;;
+                nl) _mt_out="installatie, versie, update en verwijdering van deze CLI" ;;
+                el) _mt_out="εγκατάσταση, έκδοση, ενημέρωση και αφαίρεση αυτού του CLI" ;;
+                *) _mt_out="this CLI install, version, update, uninstall" ;;
+            esac
+            ;;
+        self_82_long)
+            case "${_mt_lang}" in
+                zh-Hant) _mt_out="顯示版本與詳細診斷（about）" ;;
+                es) _mt_out="mostrar la versión y el diagnóstico detallado (about)" ;;
+                fr) _mt_out="afficher la version et le diagnostic détaillé (about)" ;;
+                de) _mt_out="Version und ausführliche Diagnose anzeigen (about)" ;;
+                zh-Hans) _mt_out="显示版本与详细诊断（about）" ;;
+                ja) _mt_out="バージョンと詳細な診断を表示（about）" ;;
+                ko) _mt_out="버전과 자세한 진단 표시(about)" ;;
+                ar) _mt_out="عرض الإصدار والتشخيص المفصل (about)" ;;
+                pt) _mt_out="mostrar a versão e o diagnóstico detalhado (about)" ;;
+                ru) _mt_out="показать версию и подробную диагностику (about)" ;;
+                nl) _mt_out="toon versie en uitgebreide diagnostiek (about)" ;;
+                el) _mt_out="εμφάνιση έκδοσης και λεπτομερούς διάγνωσης (about)" ;;
+                *) _mt_out="show version and detailed diagnostics (about)" ;;
+            esac
+            ;;
+        self_87_long)
+            case "${_mt_lang}" in
+                zh-Hant) _mt_out="從安裝通道放置這個 CLI" ;;
+                es) _mt_out="colocar este CLI desde el canal de instalación" ;;
+                fr) _mt_out="placer ce CLI depuis le canal d'installation" ;;
+                de) _mt_out="dieses CLI aus dem Installationskanal ablegen" ;;
+                zh-Hans) _mt_out="从安装通道放置这个 CLI" ;;
+                ja) _mt_out="導入チャネルからこの CLI を配置" ;;
+                ko) _mt_out="설치 채널에서 이 CLI 배치" ;;
+                ar) _mt_out="ضع هذا CLI من قناة التثبيت" ;;
+                pt) _mt_out="colocar este CLI a partir do canal de instalação" ;;
+                ru) _mt_out="разместить этот CLI из канала установки" ;;
+                nl) _mt_out="plaats deze CLI vanaf het installatiekanaal" ;;
+                el) _mt_out="τοποθέτηση αυτού του CLI από το κανάλι εγκατάστασης" ;;
+                *) _mt_out="Place this CLI from the install channel" ;;
+            esac
+            ;;
         lang_en_long)
             case "${_mt_lang}" in
                 zh-Hant) _mt_out="這個選單改用英文" ;;
@@ -7321,26 +7389,109 @@ app_menu_sudoers() {
 }
 
 # =============================================================================
+# app_menu_self_print() - Self-management list (front row 8)
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Sibling sshd-cli well-known card: 81 install, 82 version, 83 about,
+# 84 version-check, 85 self-update, 86 self-uninstall, 87 self-install.
+# On this product install and self-install both place the CLI from the
+# channel (there is no separate payload). Row 82 runs about. Back 0 and
+# Exit 99. Setup, help, and unit-test commands stay off this list.
+#
+# ALIGNMENT:
+# - requirement-shell-cli-default-interaction.md
+# - requirement-shell-self-management.md
+#
+# Last updated: 2026-10-07
+# =============================================================================
+app_menu_self_print() {
+    out_info "$(util_app_ident) — $(app_menu_text cat_self)"
+    out_menu_choice 81 install "$(app_menu_text help_install)"
+    out_menu_choice 82 version "$(app_menu_text self_82_long)"
+    out_menu_choice 83 about "$(app_menu_text help_about)"
+    out_menu_choice 84 version-check "$(app_menu_text help_version_check)"
+    out_menu_choice 85 self-update "$(app_menu_text help_self_update)"
+    out_menu_choice 86 self-uninstall "$(app_menu_text help_self_uninstall)"
+    out_menu_choice 87 self-install "$(app_menu_text self_87_long)"
+    out_plain "$(app_menu_text line_back)"
+    out_plain "$(app_menu_text line_exit)"
+}
+
+# =============================================================================
+# app_menu_self() - Self-management loop
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Same return codes as app_menu_approval. Row 82 (version) sets about:
+# the numbered board shows diagnostics. Argv version stays the one-liner.
+# A bad pick reprints this layer. MUST NOT out_die.
+#
+# ALIGNMENT:
+# - requirement-shell-cli-default-interaction.md
+# - requirement-shell-prompt.md
+#
+# Last updated: 2026-10-07
+# =============================================================================
+app_menu_self() {
+    : "${PROMPT_ASK_VALUE:=}"
+    local _choice=""
+    while true; do
+        app_menu_self_print
+        # WARNING — do-not-capture-read (PP-A-22)
+        prompt_ask "$(app_menu_text choice_label)" ""
+        _choice="${PROMPT_ASK_VALUE}"
+        _choice=$(printf '%s' "${_choice}" | tr -d '\r')
+        _choice=$(printf '%s' "${_choice}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        case "${_choice}" in
+            81|install) COMMAND=install ;;
+            82|version) COMMAND=about ;;
+            83|about) COMMAND=about ;;
+            84|version-check) COMMAND=version-check ;;
+            85|self-update) COMMAND=self-update ;;
+            86|self-uninstall) COMMAND=self-uninstall ;;
+            87|self-install) COMMAND=self-install ;;
+            0|back|Back|q|"")
+                unset _choice
+                return 0
+                ;;
+            99|exit|quit|Exit)
+                unset _choice
+                return 2
+                ;;
+            *)
+                out_error "$(app_menu_text unknown_family "${_choice}")"
+                continue
+                ;;
+        esac
+        unset _choice
+        return 3
+    done
+}
+
+# =============================================================================
 # app_main_menu_print() - Numbered start list (default-cli-main-menu-style)
 # =============================================================================
 #
 # GENERAL PURPOSE:
-# Front board: 1 approval features, 5 languages, 7 sudoers, Exit 99.
-# Operational verbs live under 1 and 7. Rows 51-63 are the language board
-# only (50 and 64-69 unprinted). Front 6 is not a row.
+# Front board: 1 approval features, 5 languages, 7 sudoers, 8 self-management,
+# Exit 99. Operational verbs live under 1 and 7. Lifecycle verbs live under 8
+# as 81-87. Rows 51-63 are the language board only (50 and 64-69 unprinted).
+# Front 6 is not a row.
 #
 # ALIGNMENT:
 # - requirement-shell-cli-default-interaction.md
 # - requirement-shell-cli-language.md
 # - requirement-shell-output-requirements.md (util_app_ident / out_menu_choice)
 #
-# Last updated: 2026-10-04
+# Last updated: 2026-10-07
 # =============================================================================
 app_main_menu_print() {
     out_info "$(util_app_ident) — $(app_menu_text menu_header)"
     out_menu_choice 1 "$(app_menu_text cat_approval)" "$(app_menu_text long_approval)"
     out_menu_choice 5 "$(app_menu_text cat_languages)" "$(app_menu_text front_language_long)"
     out_menu_choice 7 "$(app_menu_text cat_sudoers)" "$(app_menu_text long_sudoers)"
+    out_menu_choice 8 "$(app_menu_text cat_self)" "$(app_menu_text front_self_long)"
     out_plain "$(app_menu_text line_exit)"
 }
 
@@ -7352,9 +7503,10 @@ app_main_menu_print() {
 # Interactive (TTY=1): ignore --json, draw the numbered list, read a choice
 # in the current shell (PROMPT_ASK_VALUE; MUST NOT $() prompt_ask), open a
 # family or run that handler. Invalid choice: out_error, reprint this layer,
-# re-prompt (MUST NOT out_die). Nested layers (approval, sudoers, language)
-# retry on that layer. Empty line / EOF on the front board leaves. On a
-# family layer, empty / 0 is Back. 99 on a family layer leaves the whole menu.
+# re-prompt (MUST NOT out_die). Nested layers (approval, sudoers, language,
+# self-management) retry on that layer. Empty line / EOF on the front board
+# leaves. On a family layer, empty / 0 is Back. 99 on a family layer leaves
+# the whole menu.
 # Non-interactive: help (human or JSON). MUST NOT hang. MUST NOT swallow
 # help under --quiet.
 #
@@ -7388,7 +7540,7 @@ app_main_menu() {
     QUIET=0
 
     # Invalid choice retries this layer (out_error + reprint; MUST NOT out_die).
-    # Nested numbered submenu (language board, approval, sudoers) uses the same retry on that layer.
+    # Nested numbered submenu (language board, approval, sudoers, self-management) uses the same retry on that layer.
     while true; do
         app_main_menu_print
         # WARNING — do-not-capture-read (PP-A-22)
@@ -7419,6 +7571,20 @@ app_main_menu() {
                 ;;
             7|sudoers)
                 app_menu_sudoers
+                _layer=$?
+                if [ "${_layer}" -eq 0 ]; then
+                    continue
+                fi
+                if [ "${_layer}" -eq 2 ]; then
+                    JSON="${_menu_json}"
+                    QUIET="${_menu_quiet}"
+                    unset _choice _layer
+                    return 0
+                fi
+                break
+                ;;
+            8|self-management|自我管理|autogestión|autogestão|autogestion|Selbstverwaltung|selbstverwaltung|自己管理|자기관리|إدارة-ذاتية|самоуправление|zelfbeheer|αυτοδιαχείριση)
+                app_menu_self
                 _layer=$?
                 if [ "${_layer}" -eq 0 ]; then
                     continue
@@ -7469,6 +7635,7 @@ app_run_command() {
         version)      app_version ;;
         about)        app_about ;;
         install)      inst_perform_install ;;
+        self-install) inst_perform_install ;;
         version-check) ver_check ;;
         self-update)  inst_self_update ;;
         self-uninstall) inst_self_uninstall ;;
@@ -7511,7 +7678,7 @@ app_help() {
     if [ "${JSON}" -eq 1 ]; then
         out_json "success" "Help text available in human-readable mode. Run without --json." \
             "command" "help" \
-            "note" "Use --json with version, about, install, version-check, self-update, self-uninstall, rc-test."
+            "note" "Use --json with version, about, install, self-install, version-check, self-update, self-uninstall, rc-test."
         return 0
     fi
     if [ "${QUIET}" -eq 1 ]; then
@@ -7530,6 +7697,7 @@ app_help() {
     out_plain "  version-check        $(app_menu_text help_version_check)"
     out_plain "  self-update          $(app_menu_text help_self_update)"
     out_plain "  self-uninstall       $(app_menu_text help_self_uninstall)"
+    out_plain "  self-install         $(app_menu_text self_87_long)"
     out_plain "  version              $(app_menu_text help_version)"
     out_plain "  about                $(app_menu_text help_about)"
     out_plain "  menu / main          $(app_menu_text help_menu)"
@@ -7740,7 +7908,7 @@ app_main() {
             --orphans)    SR_ORPHANS=1 ;;
             --uninstall)  SR_UNINSTALL=1 ;;
             --purge-queues) SR_PURGE_QUEUES=1 ;;
-            version|about|help|install|version-check|self-update|self-uninstall|menu|main|\
+            version|about|help|install|self-install|version-check|self-update|self-uninstall|menu|main|\
             sudoers-to-json|json-to-sudoers|test-json-format|test-well-known-binary|fence-test|rc-test|print-sudoers|print-sudoers-install-script|\
             add-sudoer-request|update-sudoer-request|remove-sudoer-request|\
             list-approving|list-approved|list-rejected|show|approve|reject|\

@@ -3,9 +3,9 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.32.0  
-**Last plan update:** 2026-10-04 (TTY empty argv is the numbered list; off-TTY stays Type O)  
-**Last suite run:** PASS=922 FAIL=0 SKIP=10 (2026-10-07; 1.32.0 login-hook path check; live Type 1 skipped)  
+**Product VERSION:** 1.33.0  
+**Last plan update:** 2026-10-07 (front **8** self-management **81–87**; ship unit **1.33.0**)  
+**Last suite run:** PASS=957 FAIL=0 SKIP=10 (2026-10-07; 1.33.0 front 8 self-management; live Type 1 skipped)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)
@@ -194,10 +194,10 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-CLI-18 | `menu` / `main` routed; off-TTY empty argv is Type O (not the list) | `tests/test_cli.sh` | requirement-shell-cli-default-interaction · requirement-shell-cli-zero-arguments | **have** |
 | TP-CLI-29 | Overlay `--debug` / `--quiet` follow empty argv; TTY `--debug` is the numbered list; `--json --debug` is JSON help; `SUDOER_CLI_LANG=ja` shows `99. 終了` and does not write the language file | `tests/test_cli.sh` | requirement-shell-cli-zero-arguments · requirement-shell-cli-default-interaction · requirement-shell-cli-language | **have** |
 | TP-CLI-19 | Off-TTY `menu` is help; `--json` JSON help; `--quiet` does not swallow | `tests/test_cli.sh` | requirement-shell-cli-default-interaction · requirement-shell-interactive-vs-noninteractive | **have** |
-| TP-CLI-20 | Membership: front **1** approval features and **7** sudoers; listing under approval; no help/install/setup/testers/`menu`; Exit **99** in `app_menu_text` `line_exit` | `tests/test_cli.sh` | requirement-shell-cli-default-interaction · requirement-shell-cli-language | **have** |
+| TP-CLI-20 | Membership: front **1** approval features, **7** sudoers, and **8** self-management (**81–87**); listing under approval; install/version/about stay off the front board; no help/setup/testers/`menu` on the self layer; Exit **99** in `app_menu_text` `line_exit` | `tests/test_cli.sh` | requirement-shell-cli-default-interaction · requirement-shell-cli-language | **have** |
 | TP-CLI-21 | Interactive `menu --json` still draws the list | `tests/test_cli.sh` | requirement-shell-cli-default-interaction | **have** |
 | TP-CLI-22 | Invalid TTY menu choice retries this layer (`out_error` + reprint; unused `17`; unknown name; **MUST NOT** `out_die` / unknown-argv). Portable **TP-CLI-19** already names off-TTY `menu` help. | `tests/test_cli.sh` | requirement-shell-cli-default-interaction | **have** |
-| TP-CLI-24 | Menu **5** languages **51–63** (same names as sibling grok-cli; **50** and **64–69** unprinted); save mode 0600; Back does not write; front **1** approval including listing; front **7** sudoers; front **6** is not a row; `SUDOER_CLI_LANG` does not rewrite; ja/ko help and about | `tests/test_cli.sh` | requirement-shell-cli-language · requirement-shell-cli-default-interaction · requirement-shell-cli-storage | **have** |
+| TP-CLI-24 | Menu **5** languages **51–63** (same names as sibling grok-cli; **50** and **64–69** unprinted); save mode 0600; Back does not write; front **1** approval including listing; front **7** sudoers; front **8** self-management **81–87** (row **82** runs about); front **6** is not a row; `SUDOER_CLI_LANG` does not rewrite; ja/ko help and about | `tests/test_cli.sh` | requirement-shell-cli-language · requirement-shell-cli-default-interaction · requirement-shell-cli-storage | **have** |
 | TP-ELEV-10 | No `$()` of `prompt_ask`; `prompt_ask "$(app_menu_text choice_label)"` on the front board and the language board (portable TP-CLI-16 hosted here) | `tests/test_cli.sh` | requirement-shell-cli-default-interaction · requirement-shell-prompt · requirement-shell-cli-language | **have** |
 | TP-SR-PRIV-01 | Type 1 verbs: non-root fail-closed, no `/etc` write | `tests/test_domain_sr.sh` | requirement-domain-sudoer-approval · three-layer | **have** |
 | TP-SR-PRIV-02 | Bootstrap `setup` is any euid 0 (not `sudo -n`, not `sudoer-adm`); approve still requires euid 0 | `tests/test_domain_sr.sh` | requirement-three-layer-privilege-model · domain | **have** |

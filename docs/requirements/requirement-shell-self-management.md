@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-self-management.md  
-**Status**: Active (Version 1.2.2)  
+**Status**: Active (Version 1.2.3)  
 **Area**: shell  
 **Key**: `requirement-shell-self-management`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -127,7 +127,8 @@ Root may write global install path; non-root uses user path. Do not assume root 
 |------|------------------------|
 | **Product / binary** | `sudoer-cli` (`APP_NAME`) |
 | **Implementation file** | Repo root `src/sudoer-cli` |
-| **Dispatcher** | `app_main` routes `version-check` → `ver_check`; `self-update` → `inst_self_update`; `self-uninstall` → `inst_self_uninstall`; `about` → `app_about` |
+| **Dispatcher** | `app_main` routes `version-check` → `ver_check`; `self-update` → `inst_self_update`; `self-uninstall` → `inst_self_uninstall`; `about` → `app_about`; `self-install` → `inst_perform_install` (same place as `install`) |
+| **TTY menu** | Front **8** self-management. Rows **81** install, **82** version (runs about), **83** about, **84** version-check, **85** self-update, **86** self-uninstall, **87** self-install. Law of the numbers: `requirement-shell-cli-default-interaction` |
 | **Install orchestrator SSOT** | `inst_perform_install` (+ prepare / download with or without checksum / atomic install) |
 | **Version compare** | `ver_gt` (pure POSIX); local version via `inst_get_version` |
 | **Install presence** | `inst_is_installed` |
@@ -140,7 +141,7 @@ Root may write global install path; non-root uses user path. Do not assume root 
 | **Uninstall steps** | `inst_self_uninstall_determine_bin` → `inst_self_uninstall_confirm_and_remove` → `inst_self_uninstall_cleanup_path` |
 | **PATH / login rc** | **Call site only:** `inst_ensure_companion` → `path_add_shell` on user-bin install (including already-installed no-op). Bodies, exact PATH line, sibling unify, scoped uninstall, `BASHRC` env, and `rc-test`: `requirement-shell-path-and-shell-support` |
 | **Privilege** | Type 0 only for self-management surface; no dedicated system user |
-| **Version SSOT** | `VERSION` default `1.32.0` in script config block (`VERSION="1.32.0"`) |
+| **Version SSOT** | `VERSION` default `1.33.0` in script config block (`VERSION="1.33.0"`) |
 
 #### Normative acceptance behaviors (this project)
 
@@ -225,7 +226,7 @@ Root may write global install path; non-root uses user path. Do not assume root 
 
 Work claiming self-management support for sudoer-cli is **not done** if any of the following fail:
 
-1. User-facing lifecycle commands exist and are routed (`version-check`, `self-update`, `self-uninstall`, `about`).  
+1. User-facing lifecycle commands exist and are routed (`install`, `self-install`, `version-check`, `self-update`, `self-uninstall`, `about`). `self-install` uses the same place as `install`. Front **8** numbers them **81–87**.  
 2. Update path verifies integrity (pinned and/or companion digest policy) and uses atomic replace via install SSOT.  
 3. Downgrade is blocked without explicit force policy.  
 4. Uninstall does not over-delete and cleans PATH only when safe.  
@@ -264,6 +265,6 @@ This product may run on Termux, Git Bash, Windows cmd, or the same class (this l
 
 ---
 
-**Last Updated**: 2026-10-04  
+**Last Updated**: 2026-10-07 (1.2.3 front **8** rows **81–87**; ship unit **1.33.0**)  
 **Owner**: sudoer-cli project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; CIAO Principles 1, 2, 3, 5, 10, 11, 14, 4, 20 (v2.10.2) (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).
