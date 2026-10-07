@@ -96,7 +96,7 @@ These are **this product’s** structural contracts, inherited from selfmanaged 
 | Concern | Value |
 |---------|---------|
 | `APP_NAME` | `sudoer-cli` |
-| `VERSION` | `1.31.0` (product version SSOT in ship unit) |
+| `VERSION` | `1.32.0` (product version SSOT in ship unit) |
 | Primary install story | `curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli \| sh` |
 | README one-liner | **Yes** — B’s composed `SCRIPT_URL` |
 

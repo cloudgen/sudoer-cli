@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.32.0] - 2026-10-04
+
+### Changed
+
+- A `login-hook-elev` command path must already be `/usr/local/bin/sudoer-review-hook`. That check runs before submit, before convert writes a file, before the approval question, and before dest-write. A mismatch is refused. The filename is not changed. After a yes, dest-write stores the path from the approved JSON. A command filename changes only when a requirement names the old name and the new name. Sudoers-file REQ **1.4.0**. Login-hook REQ **1.4.0**. Domain **2.42.0**. **TP-SR-HOOK-08**. Ship unit **`VERSION="1.32.0"`**.
+
 ## [1.31.0] - 2026-10-04
 
 ### Changed

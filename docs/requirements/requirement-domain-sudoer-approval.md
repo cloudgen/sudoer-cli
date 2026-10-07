@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-domain-sudoer-approval.md  
-**Status**: Active (Version 2.41.1) — login hook **points** at `requirement-login-interactive-review-hook` (`sudoer-review-hook`); YAML review display indented two spaces; keep-latest duplicate inbound; unused on Termux / Git Bash / Windows cmd; empty argv is not `interactive`  
+**Status**: Active (Version 2.42.1) — a check does not change the input; login-hook path check is pre-approval only and does not rename; login hook **points** at `requirement-login-interactive-review-hook` (`sudoer-review-hook`); YAML review display indented two spaces; keep-latest duplicate inbound; unused on Termux / Git Bash / Windows cmd; empty argv is not `interactive`  
 **Area**: domain  
 **Key**: `requirement-domain-sudoer-approval`  
 **id**: RQ-DOMAIN-SUDOER-APPROVAL  
@@ -93,6 +93,8 @@ The queued file is the **evidence**. Approvers do **not** trust a world-writable
 | **Dest** | Approve add/update → `/etc/sudoers.d/{{service}}-{{username}}` from JSON `service`/`username` when present, else the name. Never `*-remove` |
 | **Re-validate** | Approve **re-runs** these checks. A tampered inbound file fails then, not at dest write |
 
+This check does not change the input. It refuses, warns, or asks as the rule above says. It does not change the input value, the input filename, or any other submitted field. Changing a value or a filename is a separate consequence. That change needs its own written rule that names both the old value and the new value, or confirmation from the operator. A silent change caused by this check is forbidden.
+
 CLI `--json` is **status** only (`out_json`). It is **not** the request file.
 
 #### Dest approval fencing conditions (closed)
@@ -111,6 +113,8 @@ Dest `approve` / `reject` / `interactive` **MUST** run this list **before** the 
 | `submit_app` ≠ dest `APP_NAME` / `submit_version` ≠ dest `VERSION` | **MUST NOT** fence — Type 0 stamps live Config; sibling submitters and mixed versions are dest-legal JSON. Missing stamp on dest **review**: **warn**, then ask. Type 0 testers / convert / new submit still require strings. **INC-20260821-002** |
 
 **MUST NOT** add a dest inbound fence that is not on this table.
+
+This check does not change the input. It refuses, warns, or asks as the rule above says. It does not change the input value, the input filename, or any other submitted field. Changing a value or a filename is a separate consequence. That change needs its own written rule that names both the old value and the new value, or confirmation from the operator. A silent change caused by this check is forbidden. The interactive move to rejected, named in the table above, keeps the same basename and the same bytes.
 
 ### 2.1 Specialized CLI subcommands (pillar 1)
 
@@ -395,16 +399,17 @@ Type 0 list/show **MUST** use a per-user sidecar `${XDG_STATE_HOME:-$HOME/.local
 4. Resolve queues once. Type 1 **MAY** readdir inbound. Consider only regular, non-symlink files whose basename matches the request grammar.  
 5. Empty inbound → human note (or JSON success) and exit **0**. Do not hang.  
 5a. **Duplicate inbound:** **before** fencing and **before** yes/no, dest **MUST** group remaining inbound files by dest identity (JSON `username` + `service` — one live `/etc/sudoers.d/{{service}}-{{username}}`). For each group with more than one file: **keep the latest**; move every older file inbound → rejected (snapshot + LPU owner + mode `0640` + unlink inbound). Latest = newer inbound mtime; equal mtime → later allocated basename. Files with no dest identity stay ungrouped. Different dest identities stay. **MUST NOT** dest-write `/etc/sudoers.d`. **MUST NOT** stamp `submit_by` on older copies. **MUST NOT** ask the approval question on them. **MUST NOT** treat this as a dest Fence. **MUST** print `superseded {old} (kept {new})`. **MUST NOT** say “skipped”. Standalone `approve` / `reject` of a remaining id stay **non-interactive**.  
-6. For each pending id (basename sort): **fence first** (`requirement-incorrect-json-format` — garbage JSON / symlink / action mismatch). If a fence **matches**: display the match in people/folder words; **MUST NOT** ask the approval question; **then** move inbound → rejected (snapshot + LPU owner + mode `0640` + unlink inbound; **MUST NOT** dest-write `/etc/sudoers.d`; **MUST NOT** stamp `submit_by`; **MUST NOT** call standalone `reject` re-validate). Continue to the next file. If **no** fence: **warn** on missing `submit_app` / `submit_version` and on a Cmnd that is not a well-known system binary (`requirement-well-known-sudoer-binary-fence`); print purpose + body as **YAML** (login-hook / `interactive` human display; **MUST NOT** dump inbound JSON as the review body); print `queued by {submit_app} {submit_version}` when those strings are present (expand under `set -u` only with defaults — **INC-20260821-002**); **MUST** indent the `queued by` line and every YAML review line by **two spaces** so one request reads as a group under the Request id line; **MUST NOT** indent the Request id line, the approval question, or superseded notes; ask the **approval question** (term `approval-question`): **one-off yes/no** via **one** `prompt_yes_no`. **Yes** = approve. **No** (including Enter) = reject. **MUST NOT** offer skip / quit / maybe. **MUST NOT** chain Approve then Reject then Quit as three `(y/N)` questions. **MUST NOT** dest-drain a waiting grant solely for missing stamp or untrusted Cmnd. The waiting file **MUST** stay JSON. Type 0 `show` still dumps that JSON file.  
+6. For each pending id (basename sort): **fence first** (`requirement-incorrect-json-format` — garbage JSON / symlink / action mismatch). If a fence **matches**: display the match in people/folder words; **MUST NOT** ask the approval question; **then** move inbound → rejected (snapshot + LPU owner + mode `0640` + unlink inbound; **MUST NOT** dest-write `/etc/sudoers.d`; **MUST NOT** stamp `submit_by`; **MUST NOT** call standalone `reject` re-validate). Continue to the next file. If **no** fence: **warn** on missing `submit_app` / `submit_version` and on a Cmnd that is not a well-known system binary (`requirement-well-known-sudoer-binary-fence`); print purpose + body as **YAML** (login-hook / `interactive` human display; **MUST NOT** dump inbound JSON as the review body); print `queued by {submit_app} {submit_version}` when those strings are present (expand under `set -u` only with defaults — **INC-20260821-002**); **MUST** indent the `queued by` line and every YAML review line by **two spaces** so one request reads as a group under the Request id line; **MUST NOT** indent the Request id line, the approval question, or superseded notes; ask the **approval question** (term `approval-question`): **one-off yes/no** via **one** `prompt_yes_no`. **Yes** = approve. **No** (including Enter) = reject. **MUST NOT** offer skip / quit / maybe. **MUST NOT** chain Approve then Reject then Quit as three `(y/N)` questions. **MUST NOT** dest-drain a waiting grant solely for missing stamp or untrusted Cmnd. The waiting file **MUST** stay JSON. Type 0 `show` still dumps that JSON file. This check does not change the input. It refuses, warns, or asks as the rule above says. It does not change the input value, the input filename, or any other submitted field. Changing a value or a filename is a separate consequence. That change needs its own written rule that names both the old value and the new value, or confirmation from the operator. A silent change caused by this check is forbidden. The move to rejected keeps the same basename and the same bytes.  
+6a. When `kind` is `login-hook-elev`, run the pre-approval path check in `requirement-sudoers-file` §2.0 rule 4 **after** the YAML body and **before** the approval question. A mismatch **MUST** be shown in people words, **MUST NOT** ask the approval question, **MUST NOT** dest-write, and **MUST** move that inbound file to rejected with the JSON bytes unchanged. **MUST NOT** rename the command filename. This check is not a new dest Fence catalog row. This check does not change the input. It refuses, warns, or asks as the rule above says. It does not change the input value, the input filename, or any other submitted field. Changing a value or a filename is a separate consequence. That change needs its own written rule that names both the old value and the new value, or confirmation from the operator. A silent change caused by this check is forbidden. The move to rejected keeps the same basename and the same bytes.  
 7. **yes** / **no** **MUST** run the same re-validate + dest/move as the standalone `approve` / `reject` verbs. Remaining inbound files stay in this loop (no quit). Direct `approve` / `reject` with a request id stay **non-interactive**.  
 8. A validate failure on one id **MUST NOT** abort the rest; emit the error and continue.  
 9. Empty argv **MUST NOT** reach this handler.
 
-The handler is **live**. Non-TTY / `--json` / `--quiet` fail closed `confirm_required`. `--force` does **not** auto-approve. Duplicate inbound files for the same dest are collapsed first (latest kept; older superseded → rejected). Each remaining unfenced id prints a YAML review body indented two spaces under the Request id line, then uses **one** `prompt_yes_no` (default no = reject), including after a **warn** on missing stamp or untrusted Cmnd. Each JSON-format fenced id is displayed, then archived to rejected, with no prompt.
+The handler is **live**. Non-TTY / `--json` / `--quiet` fail closed `confirm_required`. `--force` does **not** auto-approve. Duplicate inbound files for the same dest are collapsed first (latest kept; older superseded → rejected). Each remaining unfenced id prints a YAML review body indented two spaces under the Request id line. A `login-hook-elev` path that is not `/usr/local/bin/sudoer-review-hook` stops there: show the check, do not ask, do not dest-write, move that file to rejected, and do not rename the path. That check does not change the input value, the input filename, or any other submitted field. Every other remaining id then uses **one** `prompt_yes_no` (default no = reject), including after a **warn** on missing stamp or untrusted Cmnd. Each JSON-format fenced id is displayed, then archived to rejected, with no prompt.
 
 #### Warnings (not hard reject)
 
-`sr_validate_body` / interactive **SHOULD** warn when a request Cmnd is a shell, `sudo`, `visudo`, or writes `/etc/passwd` / `/etc/sudoers.d`. Approver still decides.
+`sr_validate_body` / interactive **SHOULD** warn when a request Cmnd is a shell, `sudo`, `visudo`, or writes `/etc/passwd` / `/etc/sudoers.d`. Approver still decides. This check does not change the input. It refuses, warns, or asks as the rule above says. It does not change the input value, the input filename, or any other submitted field. Changing a value or a filename is a separate consequence. That change needs its own written rule that names both the old value and the new value, or confirmation from the operator. A silent change caused by this check is forbidden.
 
 ### 2.3 Specialized project help items (pillar 3)
 
@@ -512,7 +517,8 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 31. Expand unset `SR_D_SUBMIT_APP` / `SR_D_SUBMIT_VERSION` in the `interactive` parent after a subshell Fence check (`set -u` crash).  
 32. In `interactive` (login hook included), walk every inbound copy of the same dest (`username` + `service`). **MUST** keep the latest and move older duplicates to rejected without dest-write and without yes/no. **MUST NOT** add “duplicate” as a dest Fence.  
 33. In `interactive` (login hook included), print the unfenced grant as **YAML**. **MUST NOT** dump inbound JSON as the review body. The waiting file **MUST** stay JSON. Type 0 `show` still dumps that JSON file. **MUST NOT** add “yaml” as a dest Fence.  
-34. In `interactive` (login hook included), indent the `queued by` line and every YAML review line by **two spaces** so each request groups under the Request id line. **MUST NOT** leave that body flush-left. **MUST NOT** indent the Request id line, the approval question, or superseded notes.
+34. In `interactive` (login hook included), indent the `queued by` line and every YAML review line by **two spaces** so each request groups under the Request id line. **MUST NOT** leave that body flush-left. **MUST NOT** indent the Request id line, the approval question, or superseded notes.  
+35. Treat an input check, an input verification, a submission check, or a fence as a license to change the input value, the input filename, or any other submitted field. A change needs its own written rule that names both the old value and the new value, or confirmation from the operator. The interactive move to rejected keeps the same basename and the same bytes.
 
 **Violating this rule is a critical domain-SSOT / privilege regression.**
 
@@ -606,6 +612,8 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-10-04 | Active 2.42.1 | A check does not change the input. The sentence sits after JSON verify, after the dest fence table, and on the login-hook path check. A change of a value or a filename needs its own written rule or the operator’s confirmation. |
+| 2026-10-04 | Active 2.42.0 | `login-hook-elev` doorbell check runs before the approval question. A mismatch is not renamed and is not dest-written. |
 | 2026-10-04 | Active 2.41.1 | Empty argv is not `interactive`: off-TTY Type O; TTY numbered menu. |
 | 2026-09-13 | Active 2.41.0 | Login hook **points** at `requirement-login-interactive-review-hook` (`/usr/local/bin/sudoer-review-hook`). `login-hook-elev` sudoers path **points** at `requirement-sudoers-file`. |
 | 2026-09-08 | Active 2.40.0 | Login hook **points** at independent `requirement-login-interactive-review-hook` (labeled `/usr/local/bin/{{APP_NAME}}-hook`). Review loop stays here. |
@@ -655,6 +663,6 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 ---
 
-**Last Updated**: 2026-10-04  
+**Last Updated**: 2026-10-04 (2.42.1 a check does not change the input)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; peer `requirement-login-interactive-review-hook.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

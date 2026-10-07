@@ -140,7 +140,7 @@ Root may write global install path; non-root uses user path. Do not assume root 
 | **Uninstall steps** | `inst_self_uninstall_determine_bin` → `inst_self_uninstall_confirm_and_remove` → `inst_self_uninstall_cleanup_path` |
 | **PATH / login rc** | **Call site only:** `inst_ensure_companion` → `path_add_shell` on user-bin install (including already-installed no-op). Bodies, exact PATH line, sibling unify, scoped uninstall, `BASHRC` env, and `rc-test`: `requirement-shell-path-and-shell-support` |
 | **Privilege** | Type 0 only for self-management surface; no dedicated system user |
-| **Version SSOT** | `VERSION` default `1.31.0` in script config block (`VERSION="1.31.0"`) |
+| **Version SSOT** | `VERSION` default `1.32.0` in script config block (`VERSION="1.32.0"`) |
 
 #### Normative acceptance behaviors (this project)
 

@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-script-coding.md  
-**Status**: Active (Version 1.4.1 – unused on Termux / Git Bash / Windows cmd)  
+**Status**: Active (Version 1.4.2 – no silent filename change while saving)  
 **Area**: shell  
 **Key**: `requirement-shell-script-coding`  
 **id**: RQ-SHELL-SCRIPT-CODING  
@@ -97,6 +97,14 @@ Record **n/a** for a dedicated coding-style family in `reviews/test-plan.md`.
 21. In-tool sudo **MUST** use the sudo-wrapping function and check before sudo. **chmod example:** `[ -O path ]` then no `sudo chmod` on match.  
 22. **Owner:** `requirement-shell-sudo-command` (`util_sudo` / `util_chmod`). This file **points**; it does **not** keep the wrapper bodies.
 
+### 2.6c Filename while saving
+
+23. When this product **saves a file**, the basename that lands **MUST** be the basename the owning requirement already named.  
+24. An agent who thinks a filename must change **MUST** tell the operator the old name, the new name, and why **before** any rename. The filename is the identity of the file. A quiet rename breaks the chain of evidence: the name in the requirement is not the name on disk.  
+25. This product has more than one requirement. The agent **MUST** ask whether that change is written into the requirement that already owns the file, or into a new standalone requirement.  
+26. **MUST NOT** change the filename until that requirement names both the old filename and the new filename, or the operator has confirmed the change. A silent change with neither is forbidden.  
+27. These are not a filename change: a scratch leaf moved onto the **same** final basename the caller named; a requirement that already names both an old hook name and `sudoer-review-hook`; a check that refuses a path and does not rewrite it.
+
 ### 2.7 Pointed peers (do not duplicate)
 
 | Slice | Owner | This file |
@@ -167,7 +175,8 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 7. Change the shebang away from `#!/bin/sh` without an explicit product-language change.  
 8. Treat “linter none” as permission to skip this requirement.  
 9. Keep sudo-wrapping / check-before-sudo bodies here instead of `requirement-shell-sudo-command`.  
-10. Probe with `sudo ls` / `sudo stat` to decide whether to sudo.
+10. Probe with `sudo ls` / `sudo stat` to decide whether to sudo.  
+11. Silently change a filename while saving a file or while writing code that saves a file. Tell the operator first. Ask whether the change belongs in the owning requirement or in a standalone requirement.
 
 **Violating any of these is a critical regression.**
 
@@ -208,6 +217,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-10-04 | Active 1.4.2 | No silent filename change while saving. Tell the operator. This product has more than one requirement: ask which requirement records both names |
 | 2026-09-06 | Active 1.4.1 | Under command line for normal user only |
 | 2026-08-20 | Active 1.0.0 | Specialize-in home for portable POSIX writing lessons |
 | 2026-08-20 | Active 1.1.0 | Before `sudo chmod`, non-sudo owner probe (`[ -O path ]`); if match, no elevated chmod |
@@ -215,7 +225,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 | 2026-08-20 | Active 1.3.0 | Own-or-point: sudo-wrapping bodies on `requirement-shell-sudo-command` |
 | 2026-09-03 | Active 1.4.0 | Adopt do-not-capture-read; point at prompt + default-interaction |
 
-**Last Updated**: 2026-09-03  
+**Last Updated**: 2026-10-04  
   
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

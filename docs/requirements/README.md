@@ -9,7 +9,7 @@ Authoritative specialized product law for **sudoer-cli** lives here.
 | Field | Value |
 |-------|--------|
 | Product / `APP_NAME` | `sudoer-cli` |
-| Version SSOT | `1.31.0` (ship unit hard-assign) |
+| Version SSOT | `1.32.0` (ship unit hard-assign) |
 | Ship unit | `src/sudoer-cli` |
 | Default install | `curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli \| sh` → `~/.local/bin/sudoer-cli` (global `/usr/local/bin/sudoer-cli` so `sudoer-adm` can review without a password) |
 | Install mode | **online-installable** (`curl \| sh`) |

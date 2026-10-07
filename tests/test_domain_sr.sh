@@ -184,17 +184,30 @@ EOF
     assert_not_contains "TP-SR-21 no host validation jargon" "${_err}" "host validation"
     assert_not_contains "TP-SR-21 no host-checker jargon" "${_err}" "host sudoers checker"
 
-    # TP-SR-HOOK-08 login-hook-elev sudoers emit uses the shared doorbell
+    # TP-SR-HOOK-08 login-hook-elev path is a pre-approval check, not a rename
     _fx="${TESTS_ROOT}/fixtures/login-hook-elev-dns-adm.json"
-    HOME="${CI_HOME}" sh "${SCRIPT}" json-to-sudoers --file "${_fx}" --out "${CI_HOME}/hook-elev.sudoers" >/dev/null 2>&1
-    assert_eq "TP-SR-HOOK-08 login-hook-elev json-to-sudoers exit 0" 0 "$?"
-    _he=$(cat "${CI_HOME}/hook-elev.sudoers")
-    assert_contains "TP-SR-HOOK-08 sudoers uses sudoer-review-hook" "${_he}" "/usr/local/bin/sudoer-review-hook"
+    _err=$(HOME="${CI_HOME}" sh "${SCRIPT}" json-to-sudoers --file "${_fx}" --out "${CI_HOME}/hook-elev.sudoers" 2>&1 >/dev/null)
+    assert_eq "TP-SR-HOOK-08 sibling path json-to-sudoers exit 1" 1 "$?"
+    assert_contains "TP-SR-HOOK-08 names the submitted path" "${_err}" "/usr/local/bin/dns-cli"
+    assert_contains "TP-SR-HOOK-08 requires the doorbell" "${_err}" "/usr/local/bin/sudoer-review-hook"
+    assert_contains "TP-SR-HOOK-08 filename was not changed" "${_err}" "The filename was not changed."
+    if [ -f "${CI_HOME}/hook-elev.sudoers" ]; then
+        _wrote=1
+    else
+        _wrote=0
+    fi
+    assert_eq "TP-SR-HOOK-08 no renamed sudoers file" 0 "${_wrote}"
+    cat >"${CI_HOME}/hook-ok.json" <<EOF
+{"schema_version":1,"kind":"login-hook-elev","purpose":"Allow the login hook to run the shared doorbell.","username":"dns-adm","service":"dns-cli","action":"add","submit_app":"sudoer-cli","submit_version":"${PRODUCT_VERSION}","commands":[{"runas":"root","tags":["NOPASSWD"],"path":"/usr/local/bin/sudoer-review-hook","args":["interactive"]}]}
+EOF
+    HOME="${CI_HOME}" sh "${SCRIPT}" json-to-sudoers --file "${CI_HOME}/hook-ok.json" --out "${CI_HOME}/hook-ok.sudoers" >/dev/null 2>&1
+    assert_eq "TP-SR-HOOK-08 doorbell path json-to-sudoers exit 0" 0 "$?"
+    _he=$(cat "${CI_HOME}/hook-ok.sudoers")
+    assert_contains "TP-SR-HOOK-08 sudoers keeps the doorbell" "${_he}" "/usr/local/bin/sudoer-review-hook"
     assert_contains "TP-SR-HOOK-08 sudoers keeps interactive" "${_he}" "interactive"
-    assert_not_contains "TP-SR-HOOK-08 sudoers not sibling product binary" "${_he}" "/usr/local/bin/dns-cli"
-    _rew=$(sed -n '/^sr_rewrite_login_hook_elev_cmds()/,/^}/p' "${SCRIPT}")
-    assert_contains "TP-SR-HOOK-08 rewrite helper exists" "${_rew}" 'login-hook-elev'
-    assert_contains "TP-SR-HOOK-08 rewrite uses COMMON_LOGIN_HOOK_NAME" "${_rew}" 'COMMON_LOGIN_HOOK_NAME'
+    _src=$(cat "${SCRIPT}")
+    assert_not_contains "TP-SR-HOOK-08 no silent path rewrite helper" "${_src}" "sr_rewrite_login_hook_elev_cmds"
+    assert_contains "TP-SR-HOOK-08 pre-approval check helper" "${_src}" "sr_login_hook_elev_path_check"
 
     # TP-SR-08 remove purpose-only
     printf '%s\n' '{"purpose":"Revoke my webservice sudoers grant; I no longer operate nginx."}' >"${CI_HOME}/rm.json"

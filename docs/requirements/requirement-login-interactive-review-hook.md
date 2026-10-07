@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-login-interactive-review-hook.md  
-**Status**: Active (Version 1.3.0) — shared doorbell `/usr/local/bin/sudoer-review-hook`; heal old `login-review-hook`; F6 grant **MUST** match snippet `sudo -n`  
+**Status**: Active (Version 1.4.1) — a check does not change the input; shared doorbell `/usr/local/bin/sudoer-review-hook`; heal old `login-review-hook`; F6 grant **MUST** match snippet `sudo -n`; `login-hook-elev` path check is pre-approval only  
 **Area**: shell  
 **Key**: `requirement-login-interactive-review-hook`  
 **id**: RQ-LOGIN-INTERACTIVE-REVIEW-HOOK  
@@ -27,7 +27,7 @@ This-login PATH / profile after user-bin install is **not** this file — `requi
 
 | Includes | Excludes |
 |----------|----------|
-| `.bashrc` snippet; missing `.profile` sample; rc owner; shared `/usr/local/bin/sudoer-review-hook`; Type 1 `setup` **and** `interactive` **review** of `{{APP_NAME}}-adm` rc: old product-binary **and** old `{{APP_NAME}}-hook` **MUST** become `sudoer-review-hook`; skip copy with Next:; skip scp / no TTY | Dest yes/no; YAML review body; dest-write `/etc/sudoers.d` (sudoers REQ rewrites `login-hook-elev` path); Type 2 switch path; empty argv becoming review; overwriting a retargeted hook name; rewriting rc that already uses `sudoer-review-hook`; planting a second per-app `*-hook` |
+| `.bashrc` snippet; missing `.profile` sample; rc owner; shared `/usr/local/bin/sudoer-review-hook`; Type 1 `setup` **and** `interactive` **review** of `{{APP_NAME}}-adm` rc: old product-binary **and** old `{{APP_NAME}}-hook` **MUST** become `sudoer-review-hook`; skip copy with Next:; skip scp / no TTY | Dest yes/no; YAML review body; dest-write `/etc/sudoers.d` (sudoers REQ checks `login-hook-elev` path before approval and does not rename it); Type 2 switch path; empty argv becoming review; overwriting a retargeted hook name; rewriting rc that already uses `sudoer-review-hook`; planting a second per-app `*-hook` |
 
 | Surface | What you open | What for |
 |---------|---------------|----------|
@@ -54,11 +54,12 @@ This-login PATH / profile after user-bin install is **not** this file — `requi
 2. **MUST** reuse that **same** doorbell on every similar host-mutating CLI. **MUST NOT** plant a per-app second doorbell (`{{APP_NAME}}-hook`, `dns-cli-hook`). **MUST NOT** invent a third alias.  
 3. Type 1 `setup` (and a global place of the ship unit), when `{{GLOBAL_BIN}}/{{APP_NAME}}` exists **and** the common name is **absent**: **MUST** `ln -s` the product binary → `sudoer-review-hook`.  
 4. **MUST NOT** overwrite an existing file or symlink (any target). A host admin **MAY** retarget the labeled name at another similar program without rewriting `.bashrc` or the F6 hook line.  
-5. The rc snippet and `login-hook-elev` `commands[].path` **MUST** use `sudoer-review-hook`. Type 2 switch grants stay `{{GLOBAL_BIN}}/{{APP_NAME}}`.  
+5. The rc snippet and `login-hook-elev` `commands[].path` **MUST** use `sudoer-review-hook`. That path check is pre-approval (`requirement-sudoers-file` §2.0 rule 4). It does not rename a path after approval. Type 2 switch grants stay `{{GLOBAL_BIN}}/{{APP_NAME}}`.  
+5a. This check does not change the input. It refuses, warns, or asks as the rule above says. It does not change the input value, the input filename, or any other submitted field. Changing a value or a filename is a separate consequence. That change needs its own written rule that names both the old value and the new value, or confirmation from the operator. A silent change caused by this check is forbidden.  
 6. Heal **MUST** rewrite an old `sudo -n {{GLOBAL_BIN}}/{{APP_NAME}} {{REVIEW_VERB}}` line, an old `{{APP_NAME}}-hook` line, **and** an old `login-review-hook` line to `sudoer-review-hook`.  
 7. Test-mode **MUST NOT** write live `/usr/local/bin`. **MUST NOT** copy a live `$GLOBAL_BIN` install-isolation path into emit or the snippet.  
 8. F7 / `remove-lpu` **MUST NOT** unlink the global hook name.  
-9. F6 Table A and dest-written `login-hook-elev` sudoers **MUST** grant `{{GLOBAL_BIN}}/sudoer-review-hook` (owners: `requirement-three-layer-privilege-model` · `requirement-sudoers-file`). The path the snippet `sudo -n`s **MUST** be a F6 `NOPASSWD` Cmnd (product binary **MAY** stay as a second line). Type 1 `setup` **MUST** rewrite on-disk F6 that still grants **only** `{{GLOBAL_BIN}}/{{APP_NAME}}` **or** still names `{{APP_NAME}}-hook` **or** `login-review-hook`. Convert / dest-write of `kind=login-hook-elev` **MUST** emit that doorbell even when inbound JSON still names the product binary or `*-hook`.
+9. F6 Table A **MUST** grant `{{GLOBAL_BIN}}/sudoer-review-hook` (owners: `requirement-three-layer-privilege-model` · `requirement-sudoers-file`). The path the snippet `sudo -n`s **MUST** be a F6 `NOPASSWD` Cmnd (product binary **MAY** stay as a second line). Type 1 `setup` **MUST** rewrite on-disk F6 that still grants **only** `{{GLOBAL_BIN}}/{{APP_NAME}}` **or** still names `{{APP_NAME}}-hook` **or** `login-review-hook`. Those three old F6 names and the new name are the specified rename. A sibling `login-hook-elev` path that is not the doorbell is the pre-approval check on `requirement-sudoers-file` §2.0 rule 4. Dest-write stores the path the approved JSON named. It does not rename that path.
 
 ### 2.0a Review old product-binary hook on the dedicated account
 
@@ -128,7 +129,7 @@ This file **starts** the review verb. Fence first, YAML body, two-space indent, 
 | **Helpers** | `lpu_ensure_login_hook_symlink` · `lpu_install_hook` · `lpu_ensure_profile` · `lpu_review_old_login_hook` |
 | **Test-mode skip** | `SUDOER_CLI_ALLOW_TEST_ROOTS=1` does not `ln` live `/usr/local/bin` |
 | **F6 hook Cmnd** | Table A on `requirement-three-layer-privilege-model` **points here** |
-| **Grant kind** | `login-hook-elev` path **MUST** be `/usr/local/bin/sudoer-review-hook` (sudoers emit/dest-write rewrite old product-binary / `*-hook`) |
+| **Grant kind** | `login-hook-elev` path **MUST** be `/usr/local/bin/sudoer-review-hook` before approval. Dest-write does not rename it (`requirement-sudoers-file` §2.0 rules 4 and 5) |
 
 **Worked snippet** (markers required):
 
@@ -209,7 +210,8 @@ When this program runs on Termux, Git Bash, Windows cmd, or the same class (no r
 14. After Type 1 `setup` or `interactive`, leave `{{APPROVER}}` rc calling `{{GLOBAL_BIN}}/{{APP_NAME}} {{REVIEW_VERB}}` or `{{APP_NAME}}-hook` instead of `sudoer-review-hook`.  
 15. Rewrite rc that already uses `sudoer-review-hook`, or inspect another user’s rc.  
 16. Print only `interactive hook skipped` when `sudo -n` fails — the skip line **MUST** say what happened, that login continues, and `Next: sudo {{APP_NAME}} interactive`.  
-17. Leave F6 or dest-written `login-hook-elev` sudoers granting `{{APP_NAME}}-hook` after setup / dest-write, **or** leave F6 granting only the product binary while the snippet `sudo -n`s `sudoer-review-hook` (that prints `sudo: a password is required` and skips review).
+17. Leave F6 granting only the product binary, `{{APP_NAME}}-hook`, or `login-review-hook` while the snippet `sudo -n`s `sudoer-review-hook` (that prints `sudo: a password is required` and skips review). Those old F6 names are the specified heal in §2.0 rule 9. **MUST NOT** silently rename a sibling `login-hook-elev` command path on dest-write.  
+18. Treat the pre-approval path check as a license to change the input value, the input filename, or any other submitted field. A change needs its own written rule that names both the old value and the new value, or confirmation from the operator. Rules 6 and 9 name both hook names. They stay legal.
 
 **Violating this rule is a critical login-hook / privilege regression.**
 
@@ -249,6 +251,8 @@ When this program runs on Termux, Git Bash, Windows cmd, or the same class (no r
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-10-04 | Active 1.4.1 | §2.0 rule 5a: the path check does not change the input. A change of a value or a filename needs its own written rule or the operator’s confirmation. Rules 6 and 9 stay the specified heal. |
+| 2026-10-04 | Active 1.4.0 | `login-hook-elev` doorbell check stays pre-approval. Dest-write does not rename the submitted path. F6 heal of the three old names stays a specified rename. |
 | 2026-09-13 | Active 1.3.0 | Shared doorbell `/usr/local/bin/sudoer-review-hook` (not `login-review-hook`). Heal old `login-review-hook` rc and F6. **TP-SR-HOOK-05..09**. |
 | 2026-09-13 | Active 1.2.1 | F6 grant **MUST** match snippet `sudo -n`; setup rewrites stale product-binary-only / `*-hook` F6. **TP-SR-HOOK-09**. |
 | 2026-09-13 | Active 1.2.0 | Shared doorbell `/usr/local/bin/login-review-hook` (not per-app `{{APP_NAME}}-hook`). Skip copy fills happened / Next:. F6 and `login-hook-elev` sudoers **MUST** grant that name. **TP-SR-HOOK-05..08**. |
@@ -257,6 +261,6 @@ When this program runs on Termux, Git Bash, Windows cmd, or the same class (no r
 
 ---
 
-**Last Updated**: 2026-09-13 (1.3.0 `sudoer-review-hook`)  
+**Last Updated**: 2026-10-04 (1.4.1 a check does not change the input)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

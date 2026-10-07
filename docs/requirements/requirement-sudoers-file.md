@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-sudoers-file.md  
-**Status**: Active (Version 1.3.0) — `login-hook-elev` sudoers emit/dest-write **MUST** use `/usr/local/bin/sudoer-review-hook`  
+**Status**: Active (Version 1.4.2) — a check does not change the input; `login-hook-elev` path check is pre-approval only; no silent filename rename  
 **Area**: domain  
 **Key**: `requirement-sudoers-file`  
 **id**: RQ-SUDOERS-FILE  
@@ -48,7 +48,9 @@ The dest fence table on `requirement-domain-sudoer-approval.md` **MUST** still p
 1. **MUST** name **exactly this** topic: the **grant sudoers file** (text dual of request JSON).  
 2. Dest inbound `commands[].path` **MAY** be a service-catalog binary (`/usr/sbin/nginx`, `/usr/local/bin/take-ownership`, …). **MUST NOT** claim every dest grant path is `/usr/local/bin/sudoer-cli`.  
 3. Dest **MUST NOT** treat visudo reject as a dest **Fence**. Convert / submit / dest-write **MUST** fail closed.  
-4. When `kind` is `login-hook-elev`, convert (`json-to-sudoers`), Type 0 submit visudo, and Type 1 dest-write **MUST** emit `commands[].path` as `/usr/local/bin/sudoer-review-hook` (live doorbell on `requirement-login-interactive-review-hook`). Inbound JSON that still names the sibling product binary or `{{service}}-hook` **MUST** be rewritten in the sudoers **text**. JSON-format Fence / `test-json-format` **MUST NOT** rewrite inbound JSON. Type 2 switch grants stay the submitted path. F6 Table A emit stays on `requirement-three-layer-privilege-model` and **MUST** grant the same doorbell.
+4. When `kind` is `login-hook-elev`, every `commands[].path` **MUST** be `/usr/local/bin/sudoer-review-hook` (live doorbell on `requirement-login-interactive-review-hook`). This rule is a **pre-approval check** only. It runs at Type 0 submit, at `json-to-sudoers`, before the approval question, and at the start of dest-write **before any file is written**. A mismatch **MUST** fail closed: do not queue, do not ask yes/no, do not dest-write. **MUST NOT** rewrite the inbound JSON. **MUST NOT** rewrite the sudoers text. **MUST NOT** change the filename after the human yes, and **MUST NOT** edit a grant that is already on disk. Type 2 switch grants stay the submitted path. JSON-format Fence / `test-json-format` **MUST NOT** rewrite inbound JSON. F6 Table A emit stays on `requirement-three-layer-privilege-model` and **MUST** grant the same doorbell. Rc and F6 heals that name an old hook and the new hook stay on `requirement-login-interactive-review-hook`.  
+4b. This check does not change the input. It refuses, warns, or asks as the rule above says. It does not change the input value, the input filename, or any other submitted field. Changing a value or a filename is a separate consequence. That change needs its own written rule that names both the old value and the new value, or confirmation from the operator. A silent change caused by this check is forbidden.  
+5. **No silent filename rename.** Convert, submit, review, and dest-write **MUST NOT** change a command filename (`commands[].path`, or the filename at the end of that path) unless a requirement states both the old filename and the new filename. A check that refuses a path is not a rename. After approval, the live grant **MUST** keep the filename the approved JSON named. **Why:** the filename is which program the submitter asked for. A quiet rename means that program is not the program the live grant runs. The chain of evidence breaks. Helpers rename a path to look cleaner or to match a local name and do not say so. That is forbidden. An agent who thinks a command filename must change **MUST** tell the operator the old name and the new name before any change. This product has more than one requirement. Ask whether the change is written in this requirement or in a standalone requirement. Do not change the filename until a requirement names both names, or the operator confirms. Rc and F6 heals that already name both hook filenames stay legal.
 
 ### 2.1 Text dual
 
@@ -114,7 +116,7 @@ JSON `message` **MUST** be the same sentence. **MUST NOT** dest-write. **MUST NO
 | Worked star | `--ownership *` stays `*` (not a glob) |
 | visudo skip | `command -v visudo` missing → skip `-cf` |
 | Command identity | Sibling service-catalog Cmnds (not `/usr/local/bin/sudoer-cli` only). F6 Table A stays three-layer |
-| **login-hook-elev path** | Convert / dest-write **MUST** emit `/usr/local/bin/sudoer-review-hook`. Helper: `sr_rewrite_login_hook_elev_cmds` |
+| **login-hook-elev path** | Pre-approval check only. Submit, convert, the review before yes, and the start of dest-write fail closed when the path is not `/usr/local/bin/sudoer-review-hook`. The path is not renamed. Helper: `sr_login_hook_elev_path_check` |
 | Operator-readable slots | visudo-fail: happened / means / Next json-to-sudoers; JSON `message` same sentence |
 
 ### 2.x Why This Requirement Exists (Direct CIAO Alignment)
@@ -146,7 +148,9 @@ JSON `message` **MUST** be the same sentence. **MUST NOT** dest-write. **MUST NO
 9. Write `/etc/passwd` or the main `/etc/sudoers` file.  
 10. Claim dest inbound grants must be `/usr/local/bin/sudoer-cli` only.  
 11. Give JSON a different visudo-fail story than the human `[ERROR]` line.  
-12. Dest-write or convert a `login-hook-elev` grant that still names `{{APP_NAME}}-hook` or the sibling product binary instead of `/usr/local/bin/sudoer-review-hook`.
+12. Rewrite a `login-hook-elev` command path on convert, on dest-write, or after the human yes. The doorbell rule is the pre-approval check in §2.0 rule 4. A mismatch is refused. The filename stays as submitted.  
+13. Silently rename a command filename. A rename is allowed only when a requirement names the old filename and the new filename.  
+14. Treat the pre-approval path check as a license to change the input value, the input filename, or any other submitted field.
 
 ## Design-time verification
 
@@ -159,7 +163,7 @@ JSON `message` **MUST** be the same sentence. **MUST NOT** dest-write. **MUST NO
 | **TP-SR-19** | `tests/test_domain_sr.sh` | have | json-to-sudoers `--ownership user:group` → `user\:group`; visudo -cf Pass; unescaped control fails visudo; round-trip JSON has `alice:ops` (portable visudo-legal colon) |
 | **TP-SR-20** | `tests/test_domain_sr.sh` | have | json-to-sudoers `--ownership *` keeps star operand; visudo -cf Pass (portable visudo-legal star) |
 | **TP-SR-21** | `tests/test_domain_sr.sh` | have | visudo reject says “visudo rejected”; quotes syntax; Next json-to-sudoers; no “host validation” (operator-readable visudo-fail) |
-| **TP-SR-HOOK-08** | `tests/test_domain_sr.sh` | have | `json-to-sudoers` of `kind=login-hook-elev` emits `/usr/local/bin/sudoer-review-hook` even when inbound JSON still names the sibling product binary |
+| **TP-SR-HOOK-08** | `tests/test_domain_sr.sh` | have | `json-to-sudoers` of `kind=login-hook-elev` that names a sibling path fails closed and does not emit a renamed sudoers file. A grant that already names `/usr/local/bin/sudoer-review-hook` converts with that path unchanged |
 
 **Matrix:** `reviews/requirement-test-matrix.md`  
 **Map:** `reviews/test-plan.md`.
@@ -186,9 +190,12 @@ JSON `message` **MUST** be the same sentence. **MUST NOT** dest-write. **MUST NO
 |------|--------|------|
 | 2026-08-26 | Active 1.0.0 | Independent REQ: grant sudoers text dual, Cmnd arg escape (`\:`), visudo -cf, visudo-fail copy. Extracted from domain **2.32.0** body. **TP-SR-19..21**. |
 | 2026-08-26 | Active 1.1.0 | Aligned to portable sudoer-file text dual: stay-honest sibling grants (not own-binary-only); re-encode fidelity; visudo-legal; operator-readable visudo-fail slots. |
+| 2026-10-04 | Active 1.4.2 | §2.0 rule 4b: the login-hook path check does not change the input. A change of a value or a filename needs its own written rule that names both sides, or confirmation from the operator. |
+| 2026-10-04 | Active 1.4.1 | §2.0 rule 5 states why a silent command-filename rename is forbidden: the live grant would name a different program than the submitter asked for. An agent who wants a new name tells the operator and asks which requirement records both names. |
+| 2026-10-04 | Active 1.4.0 | §2.0 rule 4 stays a pre-approval check for `/usr/local/bin/sudoer-review-hook`. It does not rename after approval. §2.0 rule 5: no silent filename rename unless a requirement names both filenames. **TP-SR-HOOK-08**. |
 | 2026-09-13 | Active 1.3.0 | `login-hook-elev` convert / dest-write **MUST** emit `/usr/local/bin/sudoer-review-hook`. Heal old `login-review-hook`. **TP-SR-HOOK-08**. |
 | 2026-09-13 | Active 1.2.0 | `login-hook-elev` convert / dest-write **MUST** emit `/usr/local/bin/login-review-hook`. **TP-SR-HOOK-08**. |
 
-**Last Updated**: 2026-09-13  
+**Last Updated**: 2026-10-04 (1.4.2 a check does not change the input)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

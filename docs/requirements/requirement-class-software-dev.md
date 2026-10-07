@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-class-software-dev.md  
-**Status**: Active (Version 1.11.5 – stay-honest VERSION 1.31.0; front **1** approval features; front **7** sudoers; shared doorbell `sudoer-review-hook`)  
+**Status**: Active (Version 1.11.7 – stay-honest VERSION 1.32.0; a check does not change the input; front **1** approval features; front **7** sudoers; shared doorbell `sudoer-review-hook`)  
 **Area**: class  
 **Key**: `requirement-class-software-dev`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -99,7 +99,8 @@ This file is **not** a second copy of install, output, storage, or writing-style
 33. This product’s dest **Fence** is **incorrect JSON format** (`requirement-incorrect-json-format`). **Well-known sudoer binary** (`requirement-well-known-sudoer-binary-fence`) is dest **warn then ask** plus convert/submit/tester fail-closed. Dest table on `requirement-domain-sudoer-approval` **MUST** still print and **point** at those REQs.  
 34. Dest **MUST NOT** fence rows stay on dest tables only.  
 35. **MUST NOT** invent a dest fence.  
-36. When dest has any dest **Fence**, the product **MUST** ship Type 0 **`fence-test`** as a **test-purpose** verb: **unit test** of dest fence functions against a JSON **file location** in a **local test folder**. **MUST NOT** require `sudo` to run. The only allowed in-tool elev is wrapping **chmod** / **chown** of that folder (check before sudo). **MUST NOT** sudo otherwise. **MUST NOT** queue, dest-write, `setup`, or `approve`. Dest review / queue / host install **MUST NOT** count as that tester. Help **MUST** list test-purpose verbs **apart** from **operational** verbs. Dual mention: CLI-interface REQ **and** domain SSOT. This product: `fence-test --file tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json`. Per-row testers **MAY** also exist (`test-json-format`, `test-well-known-binary`) and are also test-purpose. Privilege Type 0 does **not** mean “unit test.”
+36. When dest has any dest **Fence**, the product **MUST** ship Type 0 **`fence-test`** as a **test-purpose** verb: **unit test** of dest fence functions against a JSON **file location** in a **local test folder**. **MUST NOT** require `sudo` to run. The only allowed in-tool elev is wrapping **chmod** / **chown** of that folder (check before sudo). **MUST NOT** sudo otherwise. **MUST NOT** queue, dest-write, `setup`, or `approve`. Dest review / queue / host install **MUST NOT** count as that tester. Help **MUST** list test-purpose verbs **apart** from **operational** verbs. Dual mention: CLI-interface REQ **and** domain SSOT. This product: `fence-test --file tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json`. Per-row testers **MAY** also exist (`test-json-format`, `test-well-known-binary`) and are also test-purpose. Privilege Type 0 does **not** mean “unit test.”  
+36a. This check does not change the input. It refuses, warns, or asks as the rule above says. It does not change the input value, the input filename, or any other submitted field. Changing a value or a filename is a separate consequence. That change needs its own written rule that names both the old value and the new value, or confirmation from the operator. A silent change caused by this check is forbidden.
 
 ### 2.9 Coding-style related requirement (MUST have)
 
@@ -129,7 +130,7 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | **Architectures supported** | any arch with POSIX sh and the external tools the script invokes |
 | **Git surface** | used when product is published |
 | **Ship unit / install** | yes — `src/sudoer-cli`; **online-installable** (`curl \| sh` via `SCRIPT_URL`) |
-| **Product version SSOT** | `VERSION="1.31.0"` hard-assign in `src/sudoer-cli` |
+| **Product version SSOT** | `VERSION="1.32.0"` hard-assign in `src/sudoer-cli` |
 | **Bootstrap origin** | Historical **cli-template**. This product is **sudoer-cli**. No live parent ship unit. |
 
 **Residual ownership table:**
@@ -200,7 +201,8 @@ This file is **not** a second copy of install, output, storage, or writing-style
 9. Skip the actor / role / subject / approver consider, or invent an extra approver.  
 10. Skip dest-fence review, leave a dest **Fence** as only a table cell, invent a dest fence, leave dest Fences without Type 0 `fence-test`, treat `sudo` / a sudoers fragment / the waiting folder as that tester, group testers with operational verbs in help, or `sudo` on a tester except wrapping chmod/chown of the local test folder.  
 11. Skip `requirement-shell-script-coding`, leave writing style only as residual “when present”, or treat portable coding lessons as product law because that file is missing.  
-12. Skip `requirement-shell-sudo-command` when the ship unit has in-tool sudo, or keep sudo-wrapping / check-before-sudo bodies only on the coding-style REQ.
+12. Skip `requirement-shell-sudo-command` when the ship unit has in-tool sudo, or keep sudo-wrapping / check-before-sudo bodies only on the coding-style REQ.  
+13. Treat a dest fence, an input check, or an input verification as a license to change the input value, the input filename, or any other submitted field. A change needs its own written rule that names both the old value and the new value, or confirmation from the operator.
 
 **Violating any of these is considered a critical regression.**
 
@@ -286,6 +288,8 @@ This file is **not** a second copy of install, output, storage, or writing-style
 | 2026-09-08 | Active 1.10.1 | Stay-honest Implementation Notes `VERSION` 1.23.0 (YAML review body two-space indent) |
 | 2026-09-08 | Active 1.10.2 | Residual **points** at `requirement-login-interactive-review-hook` |
 | 2026-09-08 | Active 1.10.3 | Stay-honest Implementation Notes `VERSION` 1.24.0 (old-hook review on `interactive`) |
+| 2026-10-04 | Active 1.11.7 | §2.8 rule 36a: a check does not change the input. Ship unit stays 1.32.0. |
+| 2026-10-04 | Active 1.11.6 | Stay-honest Implementation Notes `VERSION` 1.32.0. |
 | 2026-10-04 | Active 1.11.5 | Stay-honest Implementation Notes `VERSION` 1.31.0; front **1** approval features; front **7** sudoers |
 | 2026-10-04 | Active 1.11.4 | Stay-honest Implementation Notes `VERSION` 1.30.0; TTY empty argv is the numbered list |
 | 2026-10-02 | Active 1.11.3 | Stay-honest Implementation Notes `VERSION` 1.29.0; menu **5** languages |
@@ -296,6 +300,6 @@ This file is **not** a second copy of install, output, storage, or writing-style
 
 ---
 
-**Last Updated**: 2026-10-04  
+**Last Updated**: 2026-10-04 (1.11.7 a check does not change the input)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

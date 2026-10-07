@@ -42,7 +42,7 @@
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
 # APP NAME: hard-assign APP_NAME="sudoer-cli"
-# VERSION: hard-assign VERSION="1.31.0"
+# VERSION: hard-assign VERSION="1.32.0"
 # BASHRC: interactive rc write path for PATH ensure (default ${HOME}/.bashrc).
 #   Override for tests/CI so install can target a temp file instead of this
 #   login's real ~/.bashrc. Law: requirement-shell-path-and-shell-support.md.
@@ -62,7 +62,7 @@ APP_NAME="sudoer-cli"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
 : "${DESCRIPTION:=POSIX /bin/sh CLI: convert a sudoers fragment to JSON, queue it, and let a host admin who has used password sudo accept or decline it. First-time setup creates sudoer-adm.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.31.0"
+VERSION="1.32.0"
 : "${VERSION:=1.29.0}"
 # Shared login doorbell (requirement-login-interactive-review-hook.md).
 : "${COMMON_LOGIN_HOOK_NAME:=sudoer-review-hook}"
@@ -3385,37 +3385,49 @@ sr_json_decode_to_fields() {
 }
 
 # =============================================================================
-# sr_rewrite_login_hook_elev_cmds() - login-hook-elev Cmnd path → doorbell
+# sr_login_hook_elev_path_check() - pre-approval doorbell check
 # =============================================================================
 #
 # GENERAL PURPOSE:
-# Convert / dest-write of kind=login-hook-elev MUST emit the shared
-# doorbell even when inbound JSON still names the sibling product
-# binary or an old {{APP_NAME}}-hook.
+# When kind is login-hook-elev, every commands[].path must already be
+# /usr/local/bin/${COMMON_LOGIN_HOOK_NAME}. Used before submit, before
+# convert emit, before the approval question, and before dest-write.
+# Does not change SR_D_CMDS or any filename. A mismatch sets
+# SR_HOOK_PATH_BAD and returns 1.
 #
 # ALIGNMENT:
-# - requirement-sudoers-file.md
-# - requirement-login-interactive-review-hook.md
+# - requirement-sudoers-file.md §2.0 rules 4 and 5
 #
-# Last updated: 2026-09-13
+# Last updated: 2026-10-04
 # =============================================================================
-sr_rewrite_login_hook_elev_cmds() {
+sr_login_hook_elev_path_check() {
+    SR_HOOK_PATH_BAD=""
     : "${SR_D_KIND:=}"
     [ "${SR_D_KIND}" = "login-hook-elev" ] || return 0
     : "${COMMON_LOGIN_HOOK_NAME:=sudoer-review-hook}"
-    # Production doorbell — MUST NOT copy test-isolation $GLOBAL_BIN into dest sudoers.
-    _np="/usr/local/bin/${COMMON_LOGIN_HOOK_NAME}"
-    [ -n "${SR_D_CMDS}" ] || return 0
+    _need="/usr/local/bin/${COMMON_LOGIN_HOOK_NAME}"
+    [ -n "${SR_D_CMDS-}" ] || return 0
     _tf=$(util_mktemp)
     printf '%s' "${SR_D_CMDS}" >"${_tf}"
-    _out=""
+    _bad=""
     while IFS='|' read -r _runas _tags _path _args || [ -n "${_path-}" ]; do
         [ -n "${_path}" ] || continue
-        _out="${_out}${_runas}|${_tags}|${_np}|${_args}
-"
+        if [ "${_path}" != "${_need}" ]; then
+            _bad="${_path}"
+            break
+        fi
     done <"${_tf}"
     rm -f "${_tf}"
-    SR_D_CMDS="${_out}"
+    [ -z "${_bad}" ] && return 0
+    SR_HOOK_PATH_BAD="${_bad}"
+    return 1
+}
+
+sr_login_hook_elev_path_refuse() {
+    : "${COMMON_LOGIN_HOOK_NAME:=sudoer-review-hook}"
+    : "${SR_HOOK_PATH_BAD:=}"
+    sr_die "This login-hook request names ${SR_HOOK_PATH_BAD}. Before approval that path must be /usr/local/bin/${COMMON_LOGIN_HOOK_NAME}. The filename was not changed." "login_hook_path" \
+        "submit a login-hook request whose commands[].path is /usr/local/bin/${COMMON_LOGIN_HOOK_NAME}"
 }
 
 sr_sudoers_to_json() {
@@ -3472,7 +3484,9 @@ sr_json_to_sudoers() {
         "$(sr_operator_cmd) test-well-known-binary --file request.json"
     sr_service_infer "${SR_D_CMDS}" "${SR_D_SVC}"
     _svc="${SR_INFERRED}"
-    sr_rewrite_login_hook_elev_cmds
+    if ! sr_login_hook_elev_path_check; then
+        sr_login_hook_elev_path_refuse
+    fi
     _txt=$(sr_render_sudoers "${SR_D_PURPOSE}" "${SR_D_USER}" "${SR_D_ACT}" "${SR_D_CMDS}")
     sr_visudo_text "${_txt}"
     sr_write_payload "${_txt}"
@@ -3879,8 +3893,10 @@ sr_submit() {
         sr_service_infer "${SR_D_CMDS}" "${_svc}"
         _svc="${SR_INFERRED}"
         _user="${SR_D_USER:-${_me}}"
+        if ! sr_login_hook_elev_path_check; then
+            sr_login_hook_elev_path_refuse
+        fi
         _js=$(sr_json_encode_request "${SR_D_PURPOSE}" "${_user}" "${_svc}" "${_act}" "${SR_D_CMDS}")
-        sr_rewrite_login_hook_elev_cmds
     fi
     _txt=$(sr_render_sudoers "${_purpose:-${SR_D_PURPOSE}}" "${_user}" "${_act}" "${SR_P_CMDS:-${SR_D_CMDS}}")
     sr_visudo_text "${_txt}"
@@ -4423,7 +4439,9 @@ sr_approve() {
     fi
     [ -n "${_user}" ] || sr_die "username required" "invalid_json"
     [ -n "${_svc}" ] || sr_die "service required" "unknown_service"
-    sr_rewrite_login_hook_elev_cmds
+    if [ "${_act}" != "remove" ] && ! sr_login_hook_elev_path_check; then
+        sr_login_hook_elev_path_refuse
+    fi
     _dest=$(sr_grant_dest "${_user}" "${_svc}")
     sr_forbid_passwd_or_main_sudoers "${_dest}"
     sr_require_product_sudoers_d "${_dest}"
@@ -4821,6 +4839,15 @@ sr_interactive() {
         # Waiting file stays JSON. Login-hook review body is YAML, indented
         # two spaces so each request groups under [INFO] Request {id}.
         sr_print_review_yaml
+        # Pre-approval check only. A mismatch does not rename the path and does not ask.
+        if ! sr_login_hook_elev_path_check; then
+            out_error "This login-hook request names ${SR_HOOK_PATH_BAD}. Before approval that path must be /usr/local/bin/${COMMON_LOGIN_HOOK_NAME}. The filename was not changed."
+            out_error "Next: submit a login-hook request whose commands[].path is /usr/local/bin/${COMMON_LOGIN_HOOK_NAME}"
+            if ! ( sr_archive_fenced_rejected "${_in}/${_bn}" "${_bn}" ); then
+                out_error "could not move ${_bn} to rejected; continuing"
+            fi
+            continue
+        fi
         # One-off approval question (requirement-domain-sudoer-approval): yes=approve, no/Enter=reject.
         if prompt_yes_no "Approve this request"; then
             if ! ( SR_OPERAND="${_bn}"; sr_approve ); then

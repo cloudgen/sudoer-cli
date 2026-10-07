@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-incorrect-json-format.md  
-**Status**: Active (Version 1.5.0) — dest review warns on missing `submit_app` / `submit_version`; testers still require strings  
+**Status**: Active (Version 1.5.1) — a check does not change the input; dest review warns on missing `submit_app` / `submit_version`; testers still require strings  
 **Area**: domain  
 **Key**: `requirement-incorrect-json-format`  
 **id**: RQ-INCORRECT-JSON-FORMAT  
@@ -43,6 +43,7 @@ This requirement is **one dest Fence**: **incorrect JSON format**. Dest `approve
 3. **MUST NOT** treat basename **subject token** ≠ JSON `username` as this Fence. User SSOT is the JSON field.  
 4. On match: dest **MUST** display the match in people/folder words (what happened / what it means / next). **MUST NOT** ask the approval question (one-off yes/no) for that file. Standalone `approve` / `reject` **MUST** fail closed with the same sentence; that file **stays inbound**.  
 4a. Dest `interactive` (including the login hook) **MUST**, **after** that display, move the file inbound → rejected (snapshot + LPU owner + mode `0640` + unlink inbound). **MUST NOT** dest-write `/etc/sudoers.d`. **MUST NOT** stamp `submit_by`. **MUST NOT** call standalone `reject` re-validate to drain it (that re-validate would fail closed and leave the file inbound).  
+4b. This check does not change the input. It refuses, warns, or asks as the rule above says. It does not change the input value, the input filename, or any other submitted field. Changing a value or a filename is a separate consequence. That change needs its own written rule that names both the old value and the new value, or confirmation from the operator. A silent change caused by this check is forbidden. The rejected-queue move in rule 4a keeps the same basename and the same bytes.  
 5. **MUST NOT** ask yes/no before this Fence runs. **MUST NOT** move before the display.  
 6. Dest **MUST NOT** fence rows (file-ownership, who submitted, JSON `username` ≠ `sudoer-adm`, dest-written `submit_by`) **MUST NOT** live in this file.  
 7. **MUST** ship a Type 0 **test-purpose** test subcommand for this Fence (unit test of a **local test folder**). Dest `approve` / `reject` / `interactive` **MUST NOT** count as that verb. The test verb **MUST** take stdin **xor** `--file PATH`, **MUST NOT** write `/etc/passwd` or `/etc/sudoers.d`, **MUST NOT** queue, **MUST NOT** require the waiting folder, and **MUST NOT** `sudo` except wrapping **chmod** / **chown** of that local test folder (check before sudo). Help **MUST** list it apart from operational verbs. Basename grammar and basename **action** match apply **only** when the input basename already matches request-id grammar.
@@ -90,7 +91,8 @@ This requirement is **one dest Fence**: **incorrect JSON format**. Dest `approve
 8. Ask yes/no, or move, **before** the display.  
 9. Treat Type 0 `submit_app` / `submit_version` as unknown, or fence dest because those values ≠ dest identity.  
 10. Dest-write `submit_app` / `submit_version`, or leave Type 0 add/update without those strings.  
-11. Dest-drain a waiting add/update in `interactive` solely because `submit_app` / `submit_version` is missing (**INC-20260821-002**).
+11. Dest-drain a waiting add/update in `interactive` solely because `submit_app` / `submit_version` is missing (**INC-20260821-002**).  
+12. Treat this Fence as a license to change the input value, the input filename, or any other submitted field. The move to rejected keeps the same basename and the same bytes.
 
 ## Design-time verification
 
@@ -128,6 +130,6 @@ This requirement is **one dest Fence**: **incorrect JSON format**. Dest `approve
 | `requirement-shell-cli-interface` | Dual mention of `test-json-format` |
 | `requirement-domain-sudoer-approval` | Dual mention of Type 0 `fence-test` (closed dest fence list) |
 
-**Last Updated**: 2026-08-21 (1.5.0 dest review warns on missing stamp; testers still require strings)  
+**Last Updated**: 2026-10-04 (1.5.1 a check does not change the input)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

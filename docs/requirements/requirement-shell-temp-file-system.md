@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-temp-file-system.md  
-**Status**: Active (Version 1.0.0)  
+**Status**: Active (Version 1.0.1)  
 **Area**: shell  
 **Key**: `requirement-shell-temp-file-system`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -49,7 +49,8 @@ This requirement is the **project Single Source of Truth** for **scratch file le
 2. **MUST NOT** use predictable names as the only entropy: `/tmp/sr-enc.$$`, `/tmp/sr-parse.in.$$`, `/tmp/${APP_NAME}.tmp`, fixed `sudoer-cli-….sh` under `/tmp`.  
 3. `$$` in `ps -p $$` (current PID query) is **not** a temp path and is allowed.  
 4. One helper **SHOULD** own creation: `util_mktemp` (stdout path; class-B). Callers **MUST NOT** invent a second leaf policy.  
-5. If `mktemp` fails → **fail closed** via `out_*` / `sr_die`.
+5. If `mktemp` fails → **fail closed** via `out_*` / `sr_die`.  
+6. Promoting a scratch leaf onto a durable path **MUST** keep the final basename the caller named. The scratch name is not a product filename. Changing that final basename is forbidden unless the operator was told the old name and the new name, and a requirement names both names or the operator confirmed. This product has more than one requirement: ask whether the change goes in the requirement that owns the file or in a standalone requirement. A silent change with neither is forbidden.
 
 ### 2.3 Cleanup
 
@@ -141,7 +142,8 @@ printf '%s' "${_cmds}" >"${TMPDIR:-/tmp}/sr-enc.$$"
 1. Reintroduce `/tmp/sr-*.$$` or other PID-only scratch names.  
 2. Skip cleanup on `sr_die` / `out_die`.  
 3. Invent a second root chain that contradicts storage resolve.  
-4. Treat this REQ as domain JSON/sudoers schema (those stay on the domain SSOT).
+4. Treat this REQ as domain JSON/sudoers schema (those stay on the domain SSOT).  
+5. Change the final basename while publishing a scratch leaf. Tell the operator first.
 
 **Violating this rule is a critical temp-safety regression.**
 
@@ -185,10 +187,11 @@ printf '%s' "${_cmds}" >"${TMPDIR:-/tmp}/sr-enc.$$"
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-10-04 | Active 1.0.1 | Publish keeps the final basename. A filename change is told to the operator and written in a requirement |
 | 2026-08-14 | Active 1.0.0 | Leaf `mktemp`; ban `$$` scratch |
 
 ---
 
-**Last Updated**: 2026-08-14  
+**Last Updated**: 2026-10-04  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

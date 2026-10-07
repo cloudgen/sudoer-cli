@@ -3,9 +3,9 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.31.0  
+**Product VERSION:** 1.32.0  
 **Last plan update:** 2026-10-04 (TTY empty argv is the numbered list; off-TTY stays Type O)  
-**Last suite run:** PASS=918 FAIL=0 SKIP=10 (2026-10-04; 1.31.0 approval and sudoers families; live Type 1 skipped)  
+**Last suite run:** PASS=922 FAIL=0 SKIP=10 (2026-10-07; 1.32.0 login-hook path check; live Type 1 skipped)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)

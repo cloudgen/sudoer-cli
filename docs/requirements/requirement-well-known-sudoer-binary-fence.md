@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-well-known-sudoer-binary-fence.md  
-**Status**: Active (Version 1.2.0 – dest review warns then asks; testers/convert still fail closed)  
+**Status**: Active (Version 1.2.1 – a check does not change the input; dest review warns then asks; testers/convert still fail closed)  
 **Area**: domain  
 **Key**: `requirement-well-known-sudoer-binary-fence`  
 **id**: RQ-WELL-KNOWN-SUDOER-BINARY-FENCE  
@@ -51,6 +51,7 @@ This requirement is the **well-known sudoer binary** checker. Convert, Type 0 su
 7. **MUST NOT** add open `/opt/`, `/snap/bin/`, `/home/`, `/etc/nginx/`, `/var/www/`, or `/usr/lib/python3/` as trusted prefixes in v1. `/opt/gitlab/bin/` is the only `/opt/` leaf (dest `gitlab` family). Revising the closed prefix list is a versioned change of this REQ.  
 8. On match: dest **MUST** display the match in people/folder words as a **warning**. Dest **MUST** then ask the approval question. Standalone `approve` / `reject` **MUST NOT** fail closed on this match (human already decided, or will decide). Dest `interactive` **MUST NOT** dest-drain on this match. Dest-write still requires visudo on rendered text after **yes**. **INC-20260821-002**.  
 9. Convert (`sudoers-to-json` / `json-to-sudoers`) and Type 0 submit add/update **MUST** fail closed on the same match (no queue).  
+9a. This check does not change the input. It refuses, warns, or asks as the rule above says. It does not change the input value, the input filename, or any other submitted field. Changing a value or a filename is a separate consequence. That change needs its own written rule that names both the old value and the new value, or confirmation from the operator. A silent change caused by this check is forbidden.  
 10. Machine code **MUST** be `untrusted_path` (not `invalid_json`).  
 11. **MUST** ship Type 0 **test-purpose** `test-well-known-binary` (stdin **xor** `--file PATH`; unit test of a **local test folder**). Dest review verbs **MUST NOT** count as that tester. Dual mention: this file **and** `requirement-shell-cli-interface`. Invocation: `sudoer-cli test-well-known-binary --file request.json`. The closed dest fence **list** tester is Type 0 **test-purpose** **`fence-test`** (JSON **file location** in a local test folder; **MUST NOT** require `sudo` to run; sudo wrap **only** chmod/chown of that folder; **MUST NOT** require a sudoers fragment or the waiting folder). Help **MUST** list testers apart from operational verbs. Dual mention: `requirement-domain-sudoer-approval` **and** `requirement-shell-cli-interface`. Sample: `tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json`. Invocation: `sudoer-cli fence-test --file tests/fixtures/fence-test/pass/login-hook-elev-dns-adm.json`.  
 12. Dest **MUST NOT** fence rows (file-ownership, who submitted, JSON `username` ≠ dest LPU, dest-written `submit_by`) **MUST NOT** live in this file.  
@@ -98,7 +99,8 @@ This requirement is the **well-known sudoer binary** checker. Convert, Type 0 su
 7. Treat dest `approve` / `reject` / `interactive` as the Type 0 tester.  
 8. Leave this Fence without Type 0 `test-well-known-binary`.  
 8b. Treat dest review as `fence-test`, or leave dest Fences without Type 0 `fence-test`.  
-9. Dest-write `/etc/sudoers.d` **without** a human yes after the warning.
+9. Dest-write `/etc/sudoers.d` **without** a human yes after the warning.  
+10. Treat this check as a license to change the input value, the input filename, or any other submitted field.
 
 ## Design-time verification
 
@@ -134,6 +136,6 @@ This requirement is the **well-known sudoer binary** checker. Convert, Type 0 su
 | `requirement-domain-sudoer-approval` | Dual mention of Type 0 `fence-test` (closed dest fence list) |
 | `src/sudoer-cli` | Ship unit |
 
-**Last Updated**: 2026-08-21 (1.2.0 dest review warns then asks; testers/convert fail closed)  
+**Last Updated**: 2026-10-04 (1.2.1 a check does not change the input)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).
