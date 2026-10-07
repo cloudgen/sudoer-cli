@@ -3,9 +3,9 @@
 Maps **TP-*** coverage to `tests/`.  
 **Suite entry:** `./tests/run.sh`  
 **Ship unit:** `src/sudoer-cli`  
-**Product VERSION:** 1.33.0  
-**Last plan update:** 2026-10-07 (front **8** self-management **81–87**; ship unit **1.33.0**)  
-**Last suite run:** PASS=957 FAIL=0 SKIP=10 (2026-10-07; 1.33.0 front 8 self-management; live Type 1 skipped)  
+**Product VERSION:** 1.34.0  
+**Last plan update:** 2026-10-07 (executed-copy install; ship unit **1.34.0**)  
+**Last suite run:** PASS=968 FAIL=0 SKIP=10 (2026-10-07; 1.34.0 executed-copy install; live Type 1 skipped)  
 **Domain subject token:** `SR` = sudoer-request (`requirement-domain-sudoer-approval` → family **TP-SR-***, not `TP-DOM-*`)
 
 Status: **have** = automated today · **todo** = needed · **optional** · **n/a** · **skip** (environment)
@@ -103,13 +103,14 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-LC-29 | already-installed heal missing PATH | test_local_lifecycle | requirement-shell-path-and-shell-support | **have** |
 | TP-LC-30 | uninstall does not delete `.profile` | test_local_lifecycle | requirement-shell-path-and-shell-support | **have** |
 | TP-LC-31 | `rc-test` create/modify/noop against `--root` | test_local_lifecycle | requirement-shell-path-and-shell-support | **have** |
+| TP-LC-32 | file `self-install` copies executed bytes; shell `$0` still downloads | test_local_lifecycle | requirement-shell-self-management | **have** |
 
 ### TP-CSUM (companion digest)
 
 | TP-ID | Intent | Suite | Primary requirement(s) | Status |
 |-------|--------|-------|------------------------|--------|
 | TP-CSUM-01 | Publisher sidecar matches ship unit | test_local_lifecycle | requirement-shell-automatic-checksum | **have** |
-| TP-CSUM-02 | Human --force install shows link / value / PASS | test_local_lifecycle | requirement-shell-automatic-checksum | **have** |
+| TP-CSUM-02 | Human --force install via shell `$0` shows link / value / PASS | test_local_lifecycle | requirement-shell-automatic-checksum | **have** |
 | TP-CSUM-03 | CHECKSUM pin mismatch aborts | test_local_lifecycle | requirement-shell-automatic-checksum | **have** |
 | TP-CSUM-04 | CHECKSUM pin match installs | test_local_lifecycle | requirement-shell-automatic-checksum | **have** |
 | TP-CSUM-05 | help/about omit CHECKSUM | test_cli (TP-CLI-04/06) | requirement-shell-automatic-checksum · interface | **have** |
@@ -125,7 +126,7 @@ Status: **have** = automated today · **todo** = needed · **optional** · **n/a
 | TP-CURL-05 | Bad URL curl is not silent | test_online_curl_install | interactive-vs-noninteractive | **have** |
 | TP-CURL-06 | Product supports `sh` (no bash-required gate) | test_online_curl_install | requirement-shell-cli-interface | **have** |
 | TP-CURL-07 | `curl \| sh -s -- version` | test_online_curl_install | requirement-shell-cli-interface | **have** |
-| TP-CURL-08 | Unreachable channel empty argv non-zero, not silent | test_online_curl_install | requirement-shell-cli-zero-arguments | **have** |
+| TP-CURL-08 | Unreachable channel, shell `$0`, empty argv non-zero, not silent | test_online_curl_install | requirement-shell-cli-zero-arguments | **have** |
 | TP-CURL-09 | Published online channel smoke | test_online_curl_install | self-management | **optional** |
 
 ### TP-SR (sudoers-request domain — Type 0 routed)

@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-zero-arguments.md  
-**Status**: Active (Version 1.4.0)  
+**Status**: Active (Version 1.4.1)  
 **Area**: shell  
 **Key**: `requirement-shell-cli-zero-arguments`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -94,7 +94,7 @@ Jargon: **Type O** (letter) means “a pipe with no command = self-install.” T
 
 1. **Empty argv** is: after global-flag parse, **no command token** was present. `$# -eq 0` at entry to `app_main` is one form. Flags-only overlay argv is the same form.  
 2. **Interactive** (`TTY=1`): route to `app_main_menu` (numbered start list, including row **5** languages). **MUST NOT** self-install. **MUST NOT** print the help dump.  
-3. **Not interactive** (`TTY=0`): **Type O self-install** (`inst_perform_install` / `inst_maybe_install` as in §2.4). **MUST NOT** print help. **MUST NOT** draw the numbered list. **MUST NOT** prompt on a pipe. Not installed → place. Already installed → success no-op (no `--force` required). `--force` re-downloads.  
+3. **Not interactive** (`TTY=0`): **Type O self-install** (`inst_perform_install` / `inst_maybe_install` as in §2.4). **MUST NOT** print help. **MUST NOT** draw the numbered list. **MUST NOT** prompt on a pipe. Not installed → place. Already installed → success no-op (no `--force` required). `--force` replaces: a shell `$0` re-downloads; a ship-unit `$0` copies that file again.  
 4. Overlay switches with no command token **MUST** follow rules 2–3 (they **are** empty argv). `sudoer-cli --debug` **MUST** match `DEBUG=1 sudoer-cli`. `--quiet` / `-q`, `--force`, and `--global` with no command token **MUST** likewise follow empty argv.  
 5. **`--json` special case:** `--json` with no command token **is** empty argv. Outcome **MUST** be JSON help on **TTY and off-TTY**. **MUST NOT** the numbered list. **MUST NOT** Type O self-install. `sudoer-cli menu --json` on a TTY remains the list (`requirement-shell-cli-default-interaction`).  
 6. Explicit `sudoer-cli help` remains the full-usage path for help text.  
@@ -121,8 +121,8 @@ When this product is used as **bootstrap origin A** for a specialized product **
 | Case | Detect condition (project) | Off-TTY empty argv, `FORCE_REINSTALL=0` | Off-TTY empty argv / install with force |
 |------|----------------------------|--------------------------------|---------------------------------|
 | **A. Not installed** | `inst_is_installed` false | Install into privilege-correct path (§2.4) | Same first-time install |
-| **B. Installed — local** | User binary present via detect SSOT | Success no-op: already installed; no re-download; **no help** | `inst_perform_install` re-download/replace (user path when non-root) |
-| **C. Installed — global** | Global binary present via detect SSOT | Success no-op: already installed; no re-download; **no help** | Re-download/replace (global path when root / global binary policy) |
+| **B. Installed — local** | User binary present via detect SSOT | Success no-op: already installed; no replace; **no help** | `inst_perform_install` replace (download when `$0` is a shell; copy the ship unit when `$0` is that file; user path when non-root) |
+| **C. Installed — global** | Global binary present via detect SSOT | Success no-op: already installed; no replace; **no help** | Replace (same source rule; global path when root / global binary policy) |
 
 **TTY empty argv (any detect case, force off, `--json` off):** numbered start list. **MUST NOT** install. **MUST NOT** print help.
 
@@ -195,7 +195,7 @@ Off-TTY quiet empty argv in `app_main` is **not** a license for the helper to no
 | **Product / binary** | `sudoer-cli` (`APP_NAME`) |
 | **Ship unit** | Repo root `src/sudoer-cli` |
 | **Dispatcher** | `app_main` — empty argv **after** flag parse. TTY → `COMMAND=menu`. Off-TTY → `COMMAND=ensure` (install functions, not a public verb). `--json` no command → `COMMAND=help` |
-| **Install ensure** | Off-TTY `inst_perform_install` (quiet and already-installed no-op; `--force` re-downloads) |
+| **Install ensure** | Off-TTY `inst_perform_install` (quiet and already-installed no-op; `--force` replaces from the executed file or from the channel when `$0` is a shell) |
 | **Friendly first install** | Off-TTY, not quiet, not installed: `inst_maybe_install` (pipe auto). Quiet **MUST** call `inst_perform_install` (SM-BUG-01 fixed 2026-09-02). TTY empty argv does **not** call these. |
 | **Detect SSOT** | `inst_is_installed` ← `inst_get_version` |
 | **Global path** | `GLOBAL_BIN` default `/usr/local/bin` |
@@ -351,10 +351,11 @@ This product may run on Termux, Git Bash, Windows cmd, or the same class (this l
 | 2026-08-11 | v1.2.0: Specializee contract — empty argv stays Type O; domain setup uses explicit verbs; test GLOBAL_BIN isolation | Grok (gitlab-nginx specialize reflection) |
 | 2026-09-08 | v1.3.0 | Quiet/json helper places or fail closed (SM-BUG-01) |
 | 2026-10-04 | v1.4.0 | Empty argv = no command token. TTY (including `--debug`) opens the numbered menu. Off-TTY stays self-install. `--json` with no command is JSON help. |
+| 2026-10-07 | v1.4.1 | Off-TTY place copies the ship unit when `$0` is that file. A shell `$0` still downloads. |
 
 ---
 
-**Last Updated**: 2026-10-04  
+**Last Updated**: 2026-10-07  
 **Owner**: sudoer-cli project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; CIAO Principles 1, 2, 3, 6, 16, 4, 20 (v2.10.2) (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).
 

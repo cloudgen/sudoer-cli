@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-self-management.md  
-**Status**: Active (Version 1.2.3)  
+**Status**: Active (Version 1.2.4)  
 **Area**: shell  
 **Key**: `requirement-shell-self-management`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -129,19 +129,21 @@ Root may write global install path; non-root uses user path. Do not assume root 
 | **Implementation file** | Repo root `src/sudoer-cli` |
 | **Dispatcher** | `app_main` routes `version-check` → `ver_check`; `self-update` → `inst_self_update`; `self-uninstall` → `inst_self_uninstall`; `about` → `app_about`; `self-install` → `inst_perform_install` (same place as `install`) |
 | **TTY menu** | Front **8** self-management. Rows **81** install, **82** version (runs about), **83** about, **84** version-check, **85** self-update, **86** self-uninstall, **87** self-install. Law of the numbers: `requirement-shell-cli-default-interaction` |
-| **Install orchestrator SSOT** | `inst_perform_install` (+ prepare / download with or without checksum / atomic install) |
+| **Install orchestrator SSOT** | `inst_perform_install` (+ prepare / executed-copy **or** download with or without checksum / atomic install) |
+| **Executed copy** | `install` / `self-install` / off-TTY empty-argv place: when `$0` resolves to this ship unit, copy that file. No channel download. No companion fetch. No `CHECKSUM` pin. `$0` is a shell when its basename is `sh`, `bash`, `dash`, `ash`, `zsh`, `ksh`, `busybox`, or `rbash` (path form included: `/bin/sh`, `/bin/bash`; optional leading `-`). The file is this ship unit only when it contains both the `APP_NAME="…"` hard-assign and `inst_perform_install() {`. Any other `$0`, including a sourced test runner, stays on the download path |
+| **Channel download** | Shell `$0` (`curl \| sh`) downloads `SCRIPT_URL` and verifies per automatic-checksum. `self-update` always downloads (`INST_FORCE_CHANNEL=1`) even when `$0` is the installed file |
 | **Version compare** | `ver_gt` (pure POSIX); local version via `inst_get_version` |
 | **Install presence** | `inst_is_installed` |
 | **Paths** | `GLOBAL_BIN` default `/usr/local/bin`; `USER_BIN` default `${HOME}/.local/bin` |
 | **Repository identity** | `REPO_USER` default `cloudgen`; `REPO_NAME` default `sudoer-cli` |
 | **Release channel** | `SCRIPT_URL` Config default composed as `https://raw.githubusercontent.com/${REPO_USER}/${REPO_NAME}/main/src/${APP_NAME}` (this project: `https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli` — product channel SSOT; override `SCRIPT_URL` or `REPO_*` via env if needed) |
-| **Strict digest pin** | Runtime `CHECKSUM` when set in process env → `inst_perform_install_download_with_checksum` (secondary install-path only; **not** shown in `help`/`about`; see automatic-checksum requirement) |
-| **Companion digest** | Default `${SCRIPT_URL}.sha256` via `inst_perform_install_download_without_checksum` — law + transparency: `requirement-shell-automatic-checksum.md` |
+| **Strict digest pin** | Download path only. Runtime `CHECKSUM` when set in process env → `inst_perform_install_download_with_checksum` (secondary; **not** shown in `help`/`about`; see automatic-checksum requirement). Executed-copy install does not read it |
+| **Companion digest** | Download path only. Default `${SCRIPT_URL}.sha256` via `inst_perform_install_download_without_checksum` — law + transparency: `requirement-shell-automatic-checksum.md` |
 | **Force reinstall** | `FORCE_REINSTALL`; CLI `--force` required by CLI interface requirement |
 | **Uninstall steps** | `inst_self_uninstall_determine_bin` → `inst_self_uninstall_confirm_and_remove` → `inst_self_uninstall_cleanup_path` |
 | **PATH / login rc** | **Call site only:** `inst_ensure_companion` → `path_add_shell` on user-bin install (including already-installed no-op). Bodies, exact PATH line, sibling unify, scoped uninstall, `BASHRC` env, and `rc-test`: `requirement-shell-path-and-shell-support` |
 | **Privilege** | Type 0 only for self-management surface; no dedicated system user |
-| **Version SSOT** | `VERSION` default `1.33.0` in script config block (`VERSION="1.33.0"`) |
+| **Version SSOT** | `VERSION` default `1.34.0` in script config block (`VERSION="1.34.0"`) |
 
 #### Normative acceptance behaviors (this project)
 
@@ -153,7 +155,8 @@ Root may write global install path; non-root uses user path. Do not assume root 
    - If remote is newer (or force policy allows reinstall) → set reinstall and call `inst_perform_install` with integrity + atomic replace.  
 3. **`self-uninstall`:** Resolve binary; confirm when interactive and force off; remove only that binary; clean PATH only if `~/.local/bin` empty (non-root); never delete unrelated trees.  
 4. **`about`:** Human diagnostics + JSON about object; no secrets; **no `CHECKSUM` name/value**.  
-5. **Shared install path:** Self-update **must not** introduce a parallel curl-to-final-path overwrite outside `inst_perform_install*`.
+5. **Shared install path:** Self-update **must not** introduce a parallel curl-to-final-path overwrite outside `inst_perform_install*`. It **must** download (`INST_FORCE_CHANNEL=1`).  
+6. **Executed copy:** `install` and `self-install` copy the running ship unit when `$0` is that file. They **must not** download in that case. A shell `$0` downloads.
 
 #### Compliance notes (implementation status)
 
@@ -200,7 +203,9 @@ Root may write global install path; non-root uses user path. Do not assume root 
 7. Use raw user-facing `echo`/`printf` instead of the centralized output system.  
 8. Hard-code project secrets or private tokens into update URLs in the tree.  
 9. Require a dedicated system user solely for Type 0 CLI self-update without a specialized architecture requirement.  
-10. Invent a second update implementation path that bypasses `inst_perform_install*`.
+10. Invent a second update implementation path that bypasses `inst_perform_install*`.  
+11. Make `install` / `self-install` download when the operator executed this ship unit file.  
+12. Make `self-update` copy the local file instead of downloading the channel.
 
 **Self-management is critical for long-term maintainability of one-command shell CLIs. Violating this rule is a critical regression.**
 
@@ -220,6 +225,7 @@ Root may write global install path; non-root uses user path. Do not assume root 
 | **TP-CLI-04** | `tests/test_cli.sh` | have |
 | **TP-CLI-10** | `tests/test_cli.sh` | have |
 | **TP-LC-20..22, 27..31** | `tests/test_local_lifecycle.sh` | have — **primary owner:** `requirement-shell-path-and-shell-support` |
+| **TP-LC-32** | `tests/test_local_lifecycle.sh` | have — executed-copy `self-install`; shell `$0` still downloads |
 
 **Matrix:** `reviews/requirement-test-matrix.md`  
 **Map:** `reviews/test-plan.md`
@@ -265,6 +271,6 @@ This product may run on Termux, Git Bash, Windows cmd, or the same class (this l
 
 ---
 
-**Last Updated**: 2026-10-07 (1.2.3 front **8** rows **81–87**; ship unit **1.33.0**)  
+**Last Updated**: 2026-10-07 (1.2.4 executed-copy install; ship unit **1.34.0**)  
 **Owner**: sudoer-cli project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; CIAO Principles 1, 2, 3, 5, 10, 11, 14, 4, 20 (v2.10.2) (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

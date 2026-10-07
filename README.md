@@ -1,6 +1,6 @@
 # sudoer-cli - Least-privilege sudoers-request approval CLI
 
-![Version](https://img.shields.io/badge/Version-1.33.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.34.0-blue?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 [![CIAO](https://img.shields.io/badge/Philosophy-CIAO%20(Caution%20%E2%80%A2%20Intentional%20%E2%80%A2%20Anti--fragile%20%E2%80%A2%20Over--engineered)-purple.svg)](https://github.com/cloudgen/ciao)
 [![Stars](https://img.shields.io/github/stars/cloudgen/sudoer-cli?style=flat-square)](https://github.com/cloudgen/sudoer-cli)
@@ -17,7 +17,7 @@ Where the program is **installed** is still **both**:
 - **your user bin** → `~/.local/bin/sudoer-cli` (ordinary login)
 - **the system bin** → `/usr/local/bin/sudoer-cli` (needs root / `--global`) — later required so `sudoer-adm` can run the program without a password. Global setup also creates `/usr/local/bin/sudoer-review-hook` (a symlink) and plants that name in the approver’s `.bashrc`. If login review does not start, the skip line says to run `sudo sudoer-cli interactive` from a host admin.
 
-Install is **online**: `curl | sh` places the program. “Local” vs “global” here still means **which directory the binary lives in**.
+Install is **online** when you pipe it: `curl | sh` downloads the program, because `$0` is the shell. Running the file (`sh src/sudoer-cli install`) copies that file. “Local” vs “global” here still means **which directory the binary lives in**.
 
 ## How file-based JSON approval works
 
@@ -159,7 +159,7 @@ sudoer-cli about
 
 ### Integrity (automatic checksum)
 
-**Primary path:** the program downloads the companion digest **itself**. You do **not** set `CHECKSUM` for normal online install or self-update.
+**Primary path:** when the program **downloads** itself (`curl | sh`, or `self-update`), it also downloads the companion digest. You do **not** set `CHECKSUM` for that path. Running the script file (`sh src/sudoer-cli install`) copies that file and does not fetch the companion.
 
 Online install / self-update does **not** only trust the download blindly:
 
@@ -176,16 +176,18 @@ https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli.sha256
 
 In this repository the companion file is **`src/sudoer-cli.sha256`** (bare 64-char hex of `src/sudoer-cli`). Same-channel SHA-256 proves **consistency** of the two files on that channel; it is not a substitute for signed releases.
 
-**From this repository checkout** (same channel, or override `SCRIPT_URL` in tests):
+**From this repository checkout** (copies the file you run; no download):
 
 ```sh
 sh src/sudoer-cli install
-# or force refresh after updates
-sh src/sudoer-cli install --force
+# or replace an existing install with this file
+sudo src/sudoer-cli self-install --force
 
 # Ensure ~/.local/bin is on PATH, then:
 sudoer-cli version
 ```
+
+Running `src/sudoer-cli` (or `sh src/sudoer-cli`) places **that** file. `$0` is the script, not `/bin/sh` or `/bin/bash`, so the installer does not fetch the channel or the companion digest. `curl | sh` still downloads, because `$0` is the shell. `self-update` still downloads.
 
 **Global (system bin / multi-user hosts):**
 
@@ -208,7 +210,7 @@ This product is **online-installable**. Global vs local here means install *loca
 
 ```text
 $ sudoer-cli
-[INFO] **sudoer-cli**(*1.33.0*) — numbered list of live commands
+[INFO] **sudoer-cli**(*1.34.0*) — numbered list of live commands
 1. approval features: Queue, list, show, and decide requests
 5. languages: display language for this menu
 7. sudoers: Convert and print sudoers text
@@ -304,6 +306,7 @@ MIT License — see [`LICENSE.md`](./LICENSE.md).
 
 ## Last Update
 
+2026-10-07 — version **1.34.0** (`install` / `self-install` copy the file you executed when `$0` is that file; `curl | sh` and `self-update` still download).
 2026-10-07 — version **1.33.0** (front **8** self-management, rows **81–87**; `self-install` places this CLI the same way `install` does; Exit stays **99**).
 2026-10-04 — version **1.32.0** (a login-hook command path must already be `/usr/local/bin/sudoer-review-hook`; a mismatch is refused and the filename stays as submitted).
 2026-10-04 — version **1.31.0** (front **1** approval features, including listing; front **7** sudoers; languages stay **51–63**).

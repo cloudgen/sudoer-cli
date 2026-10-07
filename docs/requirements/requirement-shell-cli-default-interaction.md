@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-cli-default-interaction.md  
-**Status**: Active (Version 1.6.0)  
+**Status**: Active (Version 1.6.1)  
 **Area**: shell  
 **Key**: `requirement-shell-cli-default-interaction`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -69,7 +69,7 @@ This requirement is the **project Single Source of Truth** for sudoer-cli’s **
 2. The front board uses fixed family numbers, not a dense **1 … N** list: **1** approval features, **5** languages, **7** sudoers, **8** self-management. Front **6** is not a row. Operational verbs are not front tokens. Lifecycle verbs are tokens on the self-management layer (**81–87**), not on the front board.  
 3. Each printed row **MUST** be `name: what it does` (the short name, colon, space, then the one-line meaning). On a family layer the short name is the Latin command token. On the front board the short name is the family label (`approval features` in English, `sudoers`, or the languages short).  
 4. **MUST NOT** list `help`.  
-5. The front board **MUST NOT** list install, setup, diagnostics (`version`, `about`), **any** unit-test command (`test-json-format`, `test-well-known-binary`, `fence-test`), gap names, or **`menu` / `main` itself**. The self-management layer (front **8**) **MUST** number **81** `install`, **82** `version`, **83** `about`, **84** `version-check`, **85** `self-update`, **86** `self-uninstall`, and **87** `self-install`. Row **82** **MUST** run `about` (diagnostics). Argv `version` stays the one-line version. On this product **81** and **87** both call `inst_perform_install` (the install already places this CLI; there is no separate payload). **MUST NOT** number `setup`, `help`, `uninstall`, `where-is-me`, unit-test commands, or `menu` / `main` on that layer.  
+5. The front board **MUST NOT** list install, setup, diagnostics (`version`, `about`), **any** unit-test command (`test-json-format`, `test-well-known-binary`, `fence-test`), gap names, or **`menu` / `main` itself**. The self-management layer (front **8**) **MUST** number **81** `install`, **82** `version`, **83** `about`, **84** `version-check`, **85** `self-update`, **86** `self-uninstall`, and **87** `self-install`. Row **82** **MUST** run `about` (diagnostics). Argv `version` stays the one-line version. On this product **81** and **87** both call `inst_perform_install` (the install already places this CLI; there is no separate payload). A file execution copies that file. A shell `$0` downloads the channel. **MUST NOT** number `setup`, `help`, `uninstall`, `where-is-me`, unit-test commands, or `menu` / `main` on that layer.  
 6. Last extra row is **Exit** (not a command token). Exit number **MUST** be:
 
 | Command rows **N** | Exit number |
@@ -223,6 +223,7 @@ Detect (typical): Termux — `PREFIX` contains `com.termux` or `TERMUX_VERSION` 
 
 | Date | Status | Note |
 |------|--------|------|
+| 2026-10-07 | Active 1.6.1 | **81** and **87** still share `inst_perform_install`. A file execution copies that file. A shell `$0` downloads. |
 | 2026-10-07 | Active 1.6.0 | Front **8** self-management, rows **81–87**, same card as sibling sshd-cli. Row **82** runs about. **81** and **87** share `inst_perform_install`. Exit stays **99**. Proof **TP-CLI-20** · **TP-CLI-24**. |
 | 2026-10-04 | Active 1.5.0 | Front **1** approval features (listing included). Front **7** sudoers (convert and print). Front **5** languages. Exit stays **99**. Front **6** is not a row. Proof **TP-CLI-20** · **TP-CLI-24**. |
 | 2026-10-04 | Active 1.4.0 | TTY empty argv, including `--debug` with no command, draws this list. Off-TTY empty argv stays Type O. `--json` with no command is JSON help. Proof **TP-CLI-07** · **TP-CLI-29**. |

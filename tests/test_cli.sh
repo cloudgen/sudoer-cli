@@ -90,9 +90,11 @@ run_test_cli() {
     assert_not_contains "TP-CLI-06 no CHECKSUM key" "$_out" '"checksum"'
 
     # TP-CLI-07 empty argv: off-TTY Type O (not help). TTY: numbered menu.
+    # Dead channel is the pipe form ($0 is /bin/sh). A file execution copies.
     ci_isolated_env
     _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
-        SCRIPT_URL="http://127.0.0.1:1/sudoer-cli-unreachable" sh "${SCRIPT}" </dev/null 2>/dev/null)
+        SCRIPT_URL="http://127.0.0.1:1/sudoer-cli-unreachable" \
+        /bin/sh -s < "${SCRIPT}" 2>/dev/null)
     _ec=$?
     if [ "${_ec}" -ne 0 ]; then
         t_pass "TP-CLI-07 empty argv dead channel exits non-zero"

@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-shell-automatic-checksum.md  
-**Status**: Active (Version 1.1.0)  
+**Status**: Active (Version 1.2.0)  
 **Area**: shell  
 **Key**: `requirement-shell-automatic-checksum`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -15,7 +15,7 @@ This requirement is the **project Single Source of Truth** for **automatic compa
 
 ### 1.1 Human-facing
 
-**In one sentence:** When the tool downloads itself, it also fetches a **sidecar checksum file**, checks the bytes, and **tells you** the link, the expected value, and whether the check passed — it does not hide that work, and it does not pretend the checksum is a vendor signature.
+**In one sentence:** When the tool downloads itself (`curl \| sh`, or `self-update`), it also fetches a **sidecar checksum file**, checks the bytes, and **tells you** the link, the expected value, and whether the check passed — it does not hide that work, and it does not pretend the checksum is a vendor signature. Running the script file copies that file and does not use this check.
 
 | Box | Meaning | Example |
 |-----|---------|---------|
@@ -46,7 +46,7 @@ This requirement is the **project Single Source of Truth** for **automatic compa
 
 | Requirement | Meaning |
 |-------------|---------|
-| **Default path** | When `CHECKSUM` is **unset** / empty, install and self-update download paths **MUST** use automatic companion verification (not “no integrity”). |
+| **Default path** | When `CHECKSUM` is **unset** / empty, **download** installs (shell `$0`, including `curl \| sh`) and `self-update` **MUST** use automatic companion verification (not “no integrity”). An executed-copy install (`$0` is the ship unit) **MUST NOT** download and **MUST NOT** fetch the companion. |
 | **No operator pin required** | Primary online install and self-update **MUST** work without exporting `CHECKSUM`. |
 | **Companion URL** | Companion is **`${SCRIPT_URL}.sha256`** (same scheme/host/path as channel + `.sha256` suffix). |
 | **In-repo publisher SSOT** | Companion file **`src/sudoer-cli.sha256`** (bare SHA-256 hex of `src/sudoer-cli`) **MUST** ship next to the installable script for the release channel. |
@@ -198,7 +198,7 @@ When this requirement is **Active** for the product:
 
 **Future AI assistants, Grok, or maintainers MUST NOT**:
 
-1. Remove automatic `${SCRIPT_URL}.sha256` fetch while this requirement is Active.  
+1. Remove automatic `${SCRIPT_URL}.sha256` fetch from the **download** path (`curl \| sh`, `self-update`) while this requirement is Active. Do not fetch it on an executed-copy install.  
 2. Embed the expected SHA-256 of `src/sudoer-cli` **inside** `src/sudoer-cli` as verification.  
 3. Require or **primary-document** external `CHECKSUM` for normal online install when automatic mode exists.  
 4. **List or print `CHECKSUM` in `help` or `about`** (human Environment block, diagnostics, or JSON about fields).  
@@ -230,7 +230,7 @@ Violating this rule is a requirements failure and must be recorded (incident or 
 
 Integrity work for sudoer-cli is **not done** if any of the following fail:
 
-1. When `CHECKSUM` env is unset, install download path attempts automatic companion fetch at `${SCRIPT_URL}.sha256`.  
+1. When `CHECKSUM` env is unset, the **download** install path attempts automatic companion fetch at `${SCRIPT_URL}.sha256`. Executed-copy install does not.  
 2. Companion mismatch aborts install (fail closed); no corrupt binary left as success.  
 3. Missing companion warns with companion URL and does not pretend “always verified.”  
 4. Human mode shows companion **link**, expected **value**, and verification **result** (or documented equivalent transparency).  
@@ -274,9 +274,10 @@ This product may run on Termux, Git Bash, Windows cmd, or the same class (this l
 | 2026-07-13 | Initial Active v1.0.0 — automatic companion digest + transparency (link/value/result); secondary CHECKSUM; README primary-path rules | Multi-agent council |
 | 2026-07-13 | `CHECKSUM` = install-path runtime variable only; **MUST NOT** display in `help` / `about` | Multi-agent council |
 | 2026-07-19 | CIAO v2.10.2 principle renumber; Definition of done; scrub harness skill name from compliance notes | Requirements review fix |
+| 2026-10-07 | v1.2.0 | Companion fetch stays on the download path. Executed-copy install does not fetch it. |
 
 ---
 
-**Last Updated**: 2026-09-08  
+**Last Updated**: 2026-10-07  
 **Owner**: sudoer-cli project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; CIAO Principles 1, 2, 3, 5, 14, 4, 20 (v2.10.2) (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

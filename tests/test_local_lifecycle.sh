@@ -198,8 +198,10 @@ run_test_local_lifecycle() {
     assert_contains "TP-LC-13 self-update already-latest success" "$_out" '"type":"out_success"'
     assert_contains "TP-LC-13 self-update already-latest message" "$_out" "Already running the latest version"
 
-    # TP-CSUM-02 human --force install transparency
-    _out=$(_run --force install 2>"${_errf}")
+    # TP-CSUM-02 human --force install transparency (pipe: $0 is the shell)
+    _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        SCRIPT_URL="${CI_SCRIPT_URL}" \
+        /bin/sh -s -- --force install < "${SCRIPT}" 2>"${_errf}")
     _ec=$?
     assert_eq "TP-CSUM-02 human --force install exit 0" 0 "$_ec"
     assert_contains "TP-CSUM-02 companion link" "$_out" "Companion link:"
@@ -239,11 +241,11 @@ run_test_local_lifecycle() {
     _live_hex=$(sha256sum "${SCRIPT}" | awk '{print $1}')
     assert_eq "TP-CSUM-01 repo sidecar matches ship unit" "${_live_hex}" "${_repo_hex}"
 
-    # TP-CSUM-03 strict CHECKSUM pin mismatch aborts
+    # TP-CSUM-03 strict CHECKSUM pin mismatch aborts (pipe: $0 is the shell)
     _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
         SCRIPT_URL="${CI_SCRIPT_URL}" \
         CHECKSUM="0000000000000000000000000000000000000000000000000000000000000000" \
-        sh "${SCRIPT}" --json install 2>"${_errf}")
+        /bin/sh -s -- --json install < "${SCRIPT}" 2>"${_errf}")
     _ec=$?
     _err=$(cat "${_errf}" 2>/dev/null || true)
     assert_eq "TP-CSUM-03 CHECKSUM mismatch aborts (non-zero)" 1 "$_ec"
@@ -251,13 +253,43 @@ run_test_local_lifecycle() {
     assert_contains "TP-CSUM-03 mismatch human" "$_err" "does not match"
     assert_file_missing "TP-CSUM-03 no install after bad CHECKSUM" "${_app_bin}"
 
-    # TP-CSUM-04 strict CHECKSUM pin match succeeds
+    # TP-CSUM-04 strict CHECKSUM pin match succeeds (pipe: $0 is the shell)
     _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
         SCRIPT_URL="${CI_SCRIPT_URL}" CHECKSUM="${_live_hex}" \
-        sh "${SCRIPT}" --json install 2>"${_errf}")
+        /bin/sh -s -- --json install < "${SCRIPT}" 2>"${_errf}")
     _ec=$?
     assert_eq "TP-CSUM-04 CHECKSUM match install exit 0" 0 "$_ec"
     assert_file_exists "TP-CSUM-04 install with good CHECKSUM" "${_app_bin}"
+
+    # TP-LC-32 file execution copies that file; a shell $0 still downloads
+    _probed="${CI_HOME}/executed-copy-ship"
+    cp "${SCRIPT}" "${_probed}"
+    printf '\n# executed-copy-probe\n' >> "${_probed}"
+    _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        SCRIPT_URL="http://127.0.0.1:1/${APP_NAME}-unreachable" \
+        CHECKSUM="0000000000000000000000000000000000000000000000000000000000000000" \
+        sh "${_probed}" --force self-install 2>"${_errf}")
+    _ec=$?
+    _err=$(cat "${_errf}" 2>/dev/null || true)
+    assert_eq "TP-LC-32 executed-copy self-install exit 0" 0 "$_ec"
+    assert_contains "TP-LC-32 executed-copy message" "${_out}" "executed copy"
+    assert_not_contains "TP-LC-32 executed-copy skips companion" "${_out}${_err}" "Companion link:"
+    assert_not_contains "TP-LC-32 executed-copy skips download fail" "${_out}${_err}" "Download failed"
+    assert_not_contains "TP-LC-32 executed-copy not verified-download" "${_out}${_err}" "cryptographically verified"
+    assert_contains "TP-LC-32 installed bytes are the executed file" "$(cat "${_app_bin}")" "executed-copy-probe"
+    _probe_hex=$(sha256sum "${_probed}" | awk '{print $1}')
+    _inst_hex=$(sha256sum "${_app_bin}" | awk '{print $1}')
+    assert_eq "TP-LC-32 installed digest matches executed file" "${_probe_hex}" "${_inst_hex}"
+
+    _out=$(HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
+        SCRIPT_URL="${CI_SCRIPT_URL}" \
+        /bin/sh -s -- --force install < "${SCRIPT}" 2>"${_errf}")
+    _ec=$?
+    assert_eq "TP-LC-32 shell \$0 reinstall downloads exit 0" 0 "$_ec"
+    assert_contains "TP-LC-32 shell \$0 shows companion" "${_out}" "Companion link:"
+    assert_not_contains "TP-LC-32 shell \$0 did not copy the probe" "$(cat "${_app_bin}")" "executed-copy-probe"
+    _loc=$(grep '^VERSION="' "${_app_bin}" | cut -d'"' -f2)
+    assert_eq "TP-LC-32 shell \$0 installed channel version" "${PRODUCT_VERSION}" "${_loc}"
 
     # TP-LC-16 / TP-LC-17 downgrade refuse without --force; allow with --force
     _older="${CI_CHANNEL_DIR}/src/${APP_NAME}"

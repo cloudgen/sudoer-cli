@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.34.0] - 2026-10-07
+
+### Added
+
+- `install` and `self-install` copy the file you executed when `$0` is that file (`sh src/sudoer-cli install`, `sudo src/sudoer-cli self-install --force`). They do not download the channel and do not fetch the companion digest. `curl | sh` still downloads: `$0` is the shell (`sh`, `/bin/sh`, `/bin/bash`, and the same family). `self-update` still downloads and checks the companion. **TP-LC-32**. Ship unit **`VERSION="1.34.0"`**.
+
 ## [1.33.0] - 2026-10-07
 
 ### Added

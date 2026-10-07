@@ -1,5 +1,5 @@
 **file**: docs/requirements/requirement-bootstrap-chain.md  
-**Status**: Active (Version 5.3.6)  
+**Status**: Active (Version 5.3.7)  
 **Area**: architecture  
 **Key**: `requirement-bootstrap-chain`  
 **Philosophy**: CIAO **v2.10.2** / CIAO-Lite (Caution • Intentional • Anti-fragile • Over-engineered / Over-protect)
@@ -88,7 +88,7 @@ These are **this product’s** structural contracts, inherited from selfmanaged 
 | Type O empty argv | **Keep (from A) off-TTY** | Off-TTY empty argv = install-ensure. TTY empty argv is the numbered list |
 | Domain backup + restore | **Absent** | Not this product’s domain |
 | Sudoers print / setup / submit / approve / interactive | **Live** (Type 0 convert/submit; Type 1 `setup` / `interactive`; dest `/etc/sudoers.d/{{service}}-{{user}}` on authorized `approve`) | `requirement-domain-sudoer-approval` |
-| Local `install` / `uninstall` / `where-is-me` | **Trim uninstall / where-is-me** | Place command is channel `install`; remove is `self-uninstall` |
+| Local `install` / `uninstall` / `where-is-me` | **Trim uninstall / where-is-me** | Place command copies the executed file, or downloads when `$0` is a shell; remove is `self-uninstall` |
 | Domain / out Protection Zones | **Keep spirit** | Do not simplify `out_*` |
 
 ### 2.5 Identity (this origin)
@@ -96,7 +96,7 @@ These are **this product’s** structural contracts, inherited from selfmanaged 
 | Concern | Value |
 |---------|---------|
 | `APP_NAME` | `sudoer-cli` |
-| `VERSION` | `1.33.0` (product version SSOT in ship unit) |
+| `VERSION` | `1.34.0` (product version SSOT in ship unit) |
 | Primary install story | `curl -fsSL https://raw.githubusercontent.com/cloudgen/sudoer-cli/main/src/sudoer-cli \| sh` |
 | README one-liner | **Yes** — B’s composed `SCRIPT_URL` |
 
@@ -195,6 +195,7 @@ These are **this product’s** structural contracts, inherited from selfmanaged 
 | 2026-09-03 | Active 5.2.3 | Stay-honest Implementation Notes `VERSION` **1.20.0** |
 | 2026-09-06 | Active 5.2.4 | Stay-honest Implementation Notes `VERSION` **1.21.0** |
 | 2026-09-07 | Active 5.3.0 | Live origin **selfmanaged**; Type O `curl \| sh`; VERSION **1.22.0** |
+| 2026-10-07 | Active 5.3.7 | Stay-honest `VERSION` **1.34.0**. Executed-copy install. |
 | 2026-10-07 | Active 5.3.6 | Stay-honest `VERSION` **1.33.0**. Front **8** self-management. |
 | 2026-10-04 | Active 5.3.5 | Stay-honest `VERSION` **1.31.0**. Front **1** approval features. Front **7** sudoers. Languages stay **51–63** |
 | 2026-10-04 | Active 5.3.4 | Stay-honest `VERSION` **1.30.0**. Off-TTY empty argv stays Type O. TTY empty argv is the numbered list |
@@ -205,6 +206,6 @@ These are **this product’s** structural contracts, inherited from selfmanaged 
 
 ---
 
-**Last Updated**: 2026-10-07 (5.3.6 ship unit **1.33.0**)  
+**Last Updated**: 2026-10-07 (5.3.7 ship unit **1.34.0**)  
 **Owner**: project maintainers  
 **Alignment**: Registry `docs/requirements/index.md`; **CIAO** (https://github.com/cloudgen/ciao); CIAO-Lite (https://github.com/cloudgen/ciao-lite).

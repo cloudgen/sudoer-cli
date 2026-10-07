@@ -13,7 +13,8 @@ Inventory from the dispatcher. Help is not a route. Empty argv is not a verb.
 
 | verb | handler | privilege | last modified date | human-readable |
 |------|---------|-----------|--------------------|----------------|
-| install | `inst_perform_install` | you | 2026-09-07 | `install: Place sudoer-cli from the install channel` |
+| install | `inst_perform_install` | you | 2026-10-07 | `install: Copy the file you ran, or download when piped to sh` |
+| self-install | `inst_perform_install` | you | 2026-10-07 | `self-install: Place this CLI from the file you ran, or the channel when piped to sh` |
 | version-check | `ver_check` | you | 2026-09-07 | `version-check: Compare local version to the install channel` |
 | self-update | `inst_self_update` | you | 2026-09-07 | `self-update: Fetch a newer copy from the install channel` |
 | self-uninstall | `inst_self_uninstall` | you | 2026-09-07 | `self-uninstall: Remove the managed binary (confirm or --force)` |
@@ -42,7 +43,7 @@ Inventory from the dispatcher. Help is not a route. Empty argv is not a verb.
 | reject | `sr_reject` | change-the-computer | missing | `reject: Decline a waiting request` |
 | interactive | `sr_interactive` | change-the-computer | missing | `interactive: Review waiting requests one file at a time (not empty argv)` |
 
-**Live count:** 27
+**Live count:** 29
 
 ## Not-yet-wired
 

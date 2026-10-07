@@ -93,12 +93,13 @@ run_test_online_curl_install() {
     assert_not_silent "TP-CURL-07 pipe version not silent" "$_out" "$_err"
 
     # --- TP-CURL-08: empty argv / install download unreachable ---
+    # $0 must be the shell (/bin/sh). A file execution copies and would succeed.
     rm -f "${_app_bin}"
     : > "${_errf}"
     _out=$(
         env HOME="${CI_HOME}" USER_BIN="${CI_USER_BIN}" GLOBAL_BIN="${CI_GLOBAL_BIN}" \
         SCRIPT_URL="http://127.0.0.1:1/${APP_NAME}-unreachable" \
-        sh "${SCRIPT}" </dev/null 2>"${_errf}"
+        /bin/sh -s < "${SCRIPT}" 2>"${_errf}"
     )
     _ec=$?
     _err=$(cat "${_errf}" 2>/dev/null || true)

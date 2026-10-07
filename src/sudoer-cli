@@ -42,7 +42,7 @@
 # Single-file ship unit under src/; install to ~/.local/bin (user) or /usr/local/bin (root/--global).
 #
 # APP NAME: hard-assign APP_NAME="sudoer-cli"
-# VERSION: hard-assign VERSION="1.33.0"
+# VERSION: hard-assign VERSION="1.34.0"
 # BASHRC: interactive rc write path for PATH ensure (default ${HOME}/.bashrc).
 #   Override for tests/CI so install can target a temp file instead of this
 #   login's real ~/.bashrc. Law: requirement-shell-path-and-shell-support.md.
@@ -62,7 +62,7 @@ APP_NAME="sudoer-cli"
 : "${SHORT_DESCRIPTION:=${APP_DESC}}"
 : "${DESCRIPTION:=POSIX /bin/sh CLI: convert a sudoers fragment to JSON, queue it, and let a host admin who has used password sudo accept or decline it. First-time setup creates sudoer-adm.}"
 # Product version SSOT (semver). Extractors use: grep '^VERSION="'
-VERSION="1.33.0"
+VERSION="1.34.0"
 : "${VERSION:=1.29.0}"
 # Shared login doorbell (requirement-login-interactive-review-hook.md).
 : "${COMMON_LOGIN_HOOK_NAME:=sudoer-review-hook}"
@@ -1869,6 +1869,129 @@ ver_check() {
 # Do NOT use chmod +x alone after mktemp (0600|0111 → 0711 breaks multi-user exec).
 INST_MANAGED_MODE="0755"
 
+# =============================================================================
+# inst_executed_copy_path() - Ship unit path when this process is that file
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Print the absolute path of the ship unit to copy, or nothing when install
+# must download. Download when $0 is a shell (curl | sh, /bin/sh, /bin/bash,
+# and the same names with a path or a leading "-"). Copy when $0 is this
+# ship unit file (sudo src/sudoer-cli self-install). A sourced caller whose
+# $0 is some other program (the test runner) is not a copy source.
+#
+# PRINTF EXCEPTION (class B): path data for $(…) capture only.
+#
+# ALIGNMENT:
+# - requirement-shell-self-management.md
+#
+# Last reviewed: 2026-10-07
+# =============================================================================
+inst_executed_copy_path() {
+    : "${0:=}"
+    : "${APP_NAME:=sudoer-cli}"
+    local _src _base _via _resolved _dir _bn
+    _src="$0"
+    _resolved=""
+
+    if [ -z "${_src}" ]; then
+        printf '%s' ""
+        return 0
+    fi
+
+    _base=$(basename -- "${_src}" 2>/dev/null || printf '%s' "${_src}")
+    case "${_base}" in
+        -*) _base=${_base#-} ;;
+    esac
+    # Interpreter argv0, including /bin/sh and /bin/bash. Those paths exist
+    # as files; they are still the curl | sh case, not the ship unit.
+    case "${_base}" in
+        sh|bash|dash|ash|zsh|ksh|busybox|rbash)
+            printf '%s' ""
+            return 0
+            ;;
+    esac
+
+    if [ ! -f "${_src}" ] && [ ! -L "${_src}" ]; then
+        case "${_src}" in
+            */*)
+                printf '%s' ""
+                return 0
+                ;;
+            *)
+                _via=$(command -v "${_src}" 2>/dev/null || true)
+                if [ -z "${_via}" ] || { [ ! -f "${_via}" ] && [ ! -L "${_via}" ]; }; then
+                    printf '%s' ""
+                    return 0
+                fi
+                _src="${_via}"
+                ;;
+        esac
+    fi
+
+    if command -v readlink >/dev/null 2>&1; then
+        _resolved=$(readlink -f "${_src}" 2>/dev/null || true)
+    fi
+    if [ -z "${_resolved}" ] || [ ! -f "${_resolved}" ]; then
+        if command -v realpath >/dev/null 2>&1; then
+            _resolved=$(realpath "${_src}" 2>/dev/null || true)
+        fi
+    fi
+    if [ -z "${_resolved}" ] || [ ! -f "${_resolved}" ]; then
+        _dir=$(CDPATH= cd -- "$(dirname -- "${_src}")" 2>/dev/null && pwd)
+        _bn=$(basename -- "${_src}")
+        if [ -n "${_dir}" ] && [ -f "${_dir}/${_bn}" ]; then
+            _resolved="${_dir}/${_bn}"
+        fi
+    fi
+    if [ -z "${_resolved}" ] || [ ! -f "${_resolved}" ] || [ ! -r "${_resolved}" ]; then
+        printf '%s' ""
+        return 0
+    fi
+
+    # Both lines. tests/run.sh assigns APP_NAME but is not this ship unit.
+    if ! grep -qxF "APP_NAME=\"${APP_NAME}\"" "${_resolved}" 2>/dev/null; then
+        printf '%s' ""
+        return 0
+    fi
+    if ! grep -qxF "inst_perform_install() {" "${_resolved}" 2>/dev/null; then
+        printf '%s' ""
+        return 0
+    fi
+    printf '%s' "${_resolved}"
+}
+
+# =============================================================================
+# inst_perform_install_copy_executed() - Stage the executed ship unit
+# =============================================================================
+#
+# GENERAL PURPOSE:
+# Copy the file this process is running into the install temp. No network.
+# CHECKSUM and the companion sidecar apply to the download path only.
+#
+# ALIGNMENT:
+# - requirement-shell-self-management.md
+#
+# Last reviewed: 2026-10-07
+# =============================================================================
+inst_perform_install_copy_executed() {
+    local _src="$1"
+    local _dst="$2"
+
+    if [ "${JSON}" -eq 0 ]; then
+        out_info "Using the executed copy (no download): ${_src}"
+    fi
+    if ! cp "${_src}" "${_dst}"; then
+        if [ "${JSON}" -eq 1 ]; then
+            out_json_error "Failed to copy the executed file" "io_error"
+        else
+            out_error "Failed to copy the executed file ${_src}"
+        fi
+        return 1
+    fi
+    return 0
+}
+
 # inst_perform_install() - Perform the actual installation (v2 with checksum)
 # =============================================================================
 #
@@ -1877,9 +2000,12 @@ INST_MANAGED_MODE="0755"
 #   1. Privilege-aware path setup (root → /usr/local/bin, normal user → ~/.local/bin)
 #   2. Early exit if already installed (unless --force / FORCE_REINSTALL=1)
 #   3. Target directory preparation
-#   4. Secure download with layered checksum verification:
-#        - If CHECKSUM env var is set → strict verification (user/CI pinned version)
-#        - Otherwise → best-effort verification via ${SCRIPT_URL}.sha256 (if present)
+#   4. Source bytes:
+#        - Self-update (INST_FORCE_CHANNEL=1) always downloads.
+#        - Else if $0 is this ship unit (not /bin/sh, /bin/bash, or another
+#          shell) → copy that executed file. No download. No companion fetch.
+#        - Else (curl | sh, or $0 is not this ship unit) → download:
+#            CHECKSUM set → strict pin; else ${SCRIPT_URL}.sha256.
 #   5. Atomic move + chmod + PATH update via inst_perform_install_atomic_install()
 #
 # This is the SINGLE SOURCE OF TRUTH for all installation operations
@@ -1909,8 +2035,13 @@ INST_MANAGED_MODE="0755"
 #   - Added safe defaults for FORCE_REINSTALL and CHECKSUM.
 #   - Ensured tmp_file is always cleaned on failure paths.
 #   - Preserved full original defensive header and only appended this Lessons Learned section.
+# 2026-10-07:
+#   - File execution (sudo src/sudoer-cli self-install) was still downloading
+#     SCRIPT_URL and verifying the companion. When $0 is the ship unit, stage
+#     that file instead. Shell $0 (/bin/sh, /bin/bash, …) keeps the download.
+#     self-update sets INST_FORCE_CHANNEL so it still downloads.
 #
-# Last reviewed: 2026-06-26
+# Last reviewed: 2026-10-07
 # =============================================================================
 
 inst_perform_install() {
@@ -1976,8 +2107,23 @@ inst_perform_install() {
 
     local downloaded_checksum_ok=0
     : "${INST_AUTO_CHECKSUM_OK:=0}"
+    : "${INST_FORCE_CHANNEL:=0}"
 
-    if [ -n "${CHECKSUM}" ]; then
+    local _exec_copy=""
+    if [ "${INST_FORCE_CHANNEL:-0}" -eq 0 ]; then
+        _exec_copy=$(inst_executed_copy_path)
+    fi
+
+    if [ -n "${_exec_copy}" ]; then
+        # The operator ran this file. Place these bytes. Do not replace them
+        # with a channel download, and do not apply CHECKSUM to a download
+        # that did not happen.
+        if ! inst_perform_install_copy_executed "${_exec_copy}" "${tmp_file}"; then
+            rm -f "${tmp_file}" 2>/dev/null || true
+            return 1
+        fi
+        downloaded_checksum_ok=0
+    elif [ -n "${CHECKSUM}" ]; then
         # Strict user/CI-provided checksum (highest security)
         if inst_perform_install_download_with_checksum "${tmp_file}"; then
             downloaded_checksum_ok=1
@@ -2547,7 +2693,12 @@ inst_self_update() {
     fi
 
     FORCE_REINSTALL=1
+    # install / self-install copy the executed file. self-update must still
+    # download the channel. local keeps that flag from leaking to a later
+    # install in this process.
+    local INST_FORCE_CHANNEL=1
     inst_perform_install
+    return $?
 }
 
 # =============================================================================
@@ -6093,7 +6244,7 @@ app_menu_text() {
                 ru) _mt_out="разместить ${APP_NAME} из канала установки (root→система, пользователь→~/.local/bin)" ;;
                 nl) _mt_out="plaats ${APP_NAME} vanaf het installatiekanaal (root→globaal, gebruiker→~/.local/bin)" ;;
                 el) _mt_out="τοποθέτηση ${APP_NAME} από το κανάλι εγκατάστασης (root→καθολικά, χρήστης→~/.local/bin)" ;;
-                *) _mt_out="Place ${APP_NAME} from the install channel (root→global, user→~/.local/bin)" ;;
+                *) _mt_out="Copy this file into the bin, or download when piped to sh (root→global, user→~/.local/bin)" ;;
             esac
             ;;
         help_install_global)
@@ -6742,7 +6893,7 @@ app_menu_text() {
                 ru) _mt_out="разместить этот CLI из канала установки" ;;
                 nl) _mt_out="plaats deze CLI vanaf het installatiekanaal" ;;
                 el) _mt_out="τοποθέτηση αυτού του CLI από το κανάλι εγκατάστασης" ;;
-                *) _mt_out="Place this CLI from the install channel" ;;
+                *) _mt_out="Place this CLI from the file you ran, or the channel when piped to sh" ;;
             esac
             ;;
         lang_en_long)
@@ -7395,8 +7546,9 @@ app_menu_sudoers() {
 # GENERAL PURPOSE:
 # Sibling sshd-cli well-known card: 81 install, 82 version, 83 about,
 # 84 version-check, 85 self-update, 86 self-uninstall, 87 self-install.
-# On this product install and self-install both place the CLI from the
-# channel (there is no separate payload). Row 82 runs about. Back 0 and
+# On this product install and self-install both place this CLI (there is
+# no separate payload). A file execution copies that file. A shell $0
+# (curl | sh) downloads the channel. Row 82 runs about. Back 0 and
 # Exit 99. Setup, help, and unit-test commands stay off this list.
 #
 # ALIGNMENT:

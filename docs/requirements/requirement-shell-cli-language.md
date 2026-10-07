@@ -145,7 +145,7 @@ Back and Exit:
 Plain text of the front board, then the language board. The version token is the live `VERSION`. Choice prompt ends with the colon-space from `prompt_ask`.
 
 ```text
-[INFO] sudoer-cli(1.33.0) — numbered list of live commands
+[INFO] sudoer-cli(1.34.0) — numbered list of live commands
 1. approval features: Queue, list, show, and decide requests
 5. languages: display language for this menu
 7. sudoers: Convert and print sudoers text
@@ -263,7 +263,7 @@ When this program runs on Termux, Git Bash, Windows cmd, or the same class (no r
 
 | Date | Status | Note |
 |------|--------|------|
-| 2026-10-07 | Active 1.2.1 | Self-management board follows `APP_LANG`. Front **8** is not a language row. Ship unit **1.33.0**. |
+| 2026-10-07 | Active 1.2.1 | Self-management board follows `APP_LANG`. Front **8** is not a language row. Ship unit **1.34.0**. |
 | 2026-10-04 | Active 1.2.0 | Rows **51–63** stay the sibling grok-cli names and order. **50** and **64–69** stay unprinted. Front **1** and **7** are families, not language rows. Ship unit **1.31.0**. |
 | 2026-10-04 | Active 1.1.0 | `app_lang_load` runs for TTY empty argv and for `--json` with no command. TTY `--debug` shows the front board in `APP_LANG`. Proof **TP-CLI-29**. Ship unit **1.30.0**. |
 | 2026-10-02 | Active 1.0.0 | Menu **5** languages; block **50–69** assigned **51–63**; `SUDOER_CLI_LANG`; proof **TP-CLI-24**. Ship unit **1.29.0**. |
